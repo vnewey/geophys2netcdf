@@ -48,13 +48,13 @@ import cPickle
 import itertools
 import time
 import netCDF4
+import subprocess
 from osgeo import osr
 from osgeo import gdal
 from pprint import pprint
 from math import floor
 from distutils.util import strtobool
 from multiprocessing import Process, Lock, Pool, cpu_count
-import SharedArray as sa
 
 
 # Set handler for root logger to standard output
@@ -229,36 +229,57 @@ class Geophys2NetCDF(object):
         # Create master configuration dict containing both command line and config_file parameters
         self._config_file_object = ConfigFile(self._config_path)  
     
-    def translate_ers(self, input_dataset, netcdf_dataset): 
-        input_path = input_dataset.GetFileList()[0]
-          
-        metadata_dict = self.read_isi(os.path.splitext(input_path)[0] + '.isi')
+    def gdal_translate(self, input_path, output_path):
+        '''
+        '''
+        #=======================================================================
+        # input_shape = (input_dataset.RasterYSize, input_dataset.RasterXSize) #TODO: Check whether YX array ordering is a general thing
+        # 
+        # for band_index in range(input_dataset.RasterCount):
+        #     band = input_dataset.GetRasterBand(band_index + 1)
+        #     input_blocksize = band.GetBlockSize() # XY order
+        #     input_blocksize.reverse() # YX order - same as array shape
+        #     
+        #     block_counts = [(input_shape[index] - 1) // input_blocksize[index] + 1 for index in range(2)]
+        #=======================================================================
+            
+        gdal_command = ['gdal_translate', 
+                '-of', 'netCDF',
+                '-co', 'FORMAT=NC4C', 
+                '-co', 'COMPRESS=DEFLATE', 
+                '-co', 'WRITE_BOTTOMUP=YES', 
+                input_path, 
+                output_path]
+        
+        subprocess.check_call(gdal_command)
+         
+    def translate_ers_metadata(self, input_dataset, netcdf_dataset): 
+        metadata_dict = self.read_ers_metadata(input_dataset.GetFileList()[0])
 
-        for band_index in input_dataset.RasterCount:
-            pass 
 
     def translate(self, input_path, output_path=None):
         
+        # Default to outputting .nc file of same name in current dir
         if not output_path:
-            output_path = os.path.splitext(input_path)[0] + '.nc'
+            output_path = os.path.splitext(os.path.basename(input_path))[0] + '.nc'
                  
+        # Perform generic gdal datataset -> NetCDF translation using gdal_translate
+        self.gdal_translate(input_path, output_path)
+        
         input_dataset = gdal.Open(input_path)
         assert input_dataset, 'Unable to open input file %s' % input_path
-        
+         
         input_driver_name = input_dataset.GetDriver().GetDescription()
-        
-        netcdf_dataset = netcdf_dataset = netCDF4.Dataset(output_path, mode='w', format='NETCDF4_CLASSIC')
+         
+        netcdf_dataset = netCDF4.Dataset(output_path, mode='rw')
         
         if input_driver_name == 'ERS':
-            self.translate_ers(input_dataset, netcdf_dataset)
+            metadata_dict = self.read_ers_metadata(input_path)
             
-        elif input_driver_name == 'GeoTIFF':
-#            metadata_dict = input_dataset.GetMetadata_Dict()
-            pass
         else:
-            raise Exception('Unhandled input file type: %s' % input_driver_name)
+            metadata_dict = input_dataset.GetMetadata_Dict()
                 
-
+        logger.debug(metadata_dict)
     
     @property
     def debug(self):
@@ -273,3 +294,10 @@ class Geophys2NetCDF(object):
                 logger.setLevel(logging.DEBUG)
             else:
                 logger.setLevel(logging.INFO)
+
+def main():
+    g2n = Geophys2NetCDF(debug=True)
+    g2n.translate('IR_gravity_anomaly_Australia_V1/IR_gravity_anomaly_Australia_V1.ers')
+    
+if __name__ == 'main':
+    main()
