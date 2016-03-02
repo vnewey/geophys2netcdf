@@ -21,6 +21,8 @@ class Metadata(object):
 
     def __init__(self, source = None):
         """Instantiates Metadata object
+        Argument:
+            source: either a dict containing existing metadata or a string representing an input file to read
         """
         self._metadata_dict = {}
         self._filename=None
@@ -348,12 +350,3 @@ class Metadata(object):
         """Returns metadata dict containing the full metadata tree
         """
         return self._metadata_dict
-
-if __name__ == '__main__':
-    # Need a better test here
-    from ULA3.dataset import SceneDataset
-    l = SceneDataset()
-    l.Open('/home/alex/nbar/test_data/LS7_ETM_OTH_P51_GALPGS01_092_085_20100315')
-    print l.GetMetadata_List()
-
-

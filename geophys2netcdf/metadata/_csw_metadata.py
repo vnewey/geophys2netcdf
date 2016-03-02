@@ -10,12 +10,12 @@ import logging
 import os
 import re
 import unicodedata
-from . import Metadata
+from . import XMLMetadata
 
 logger = logging.getLogger('root.' + __name__)
 
-class XMLMetadata(Metadata):
-    """Subclass of Metadata to manage XML data
+class CSWMetadata(XMLMetadata):
+    """Subclass of XMLMetadata to manage XML data pulled from a CSW source
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'XML'
@@ -31,12 +31,15 @@ class XMLMetadata(Metadata):
             return result 
         
     def __init__(self, source = None, uses_attributes=False):
-        """Instantiates XMLMetadata object. Overrides Metadata method
+        """Instantiates CSWMetadata object. Overrides Metadata method
         """
         self._uses_attributes = uses_attributes # Boolean flag indicating whether values are stored as tag attributes
         self.processing_instruction = {} # Dict containing processing instruction name and value
         self.document_attributes = {} # Dict containing any attributes when not self._uses_attributes
-        Metadata.__init__(self, source); # Call inherited constructor
+        XMLMetadata.__init__(self); # Call inherited constructor
+        
+        if source:
+            pass
 
     #===========================================================================
     # # Attempted fix for whitespace issue using PyXML. Caused problems with SceneDataset config XML
@@ -49,207 +52,16 @@ class XMLMetadata(Metadata):
     #     return tmpStream.getvalue()
     #===========================================================================
 
-    def _populate_dict_from_node(self, node, tree_dict, level=0):
-        """Private recursive function to populate a nested dict from DOM tree or element node
-        Exposed to allow unit testing using a DOM tree constructed from a string
-        Arguments:
-            node: xml.dom.Node object to traverse
-            tree_dict: nested dict structure to hold result
-        """
-        # Traverse all non-text nodes
-        for child_node in [x for x in node.childNodes if x.nodeType == xml.dom.minidom.Node.ELEMENT_NODE]:
-            nodeName = child_node.nodeName
-            if nodeName:
-                nodeName = self.unicode_to_ascii(nodeName)
+#    def _populate_dict_from_node(self, node, tree_dict, level=0):
 
-                logger.debug('%sDOM Node name = %s, Node type = %s, Child nodes = %s, Attributes = %s',
-                             '  ' * level, nodeName, child_node.nodeType, child_node.childNodes, child_node.attributes)
+#    def _populate_node_from_dict(self, tree_dict, node, uses_attributes, owner_document=None, level=0):
 
-                subtree_dict = {}
-                if child_node.childNodes: # Recursive call to check for non-text child nodes
-                    self._populate_dict_from_node(child_node, subtree_dict, level + 1)
+#    def read_file(self, filename=None):
 
-                logger.debug('%s  subtree_dict = %s', '  ' * level, subtree_dict)
-                if child_node.attributes:
-                    logger.debug('%s  Child node attribute count = %s', '  ' * level, len(child_node.attributes))
+#    def write_file(self, filename=None, uses_attributes=None, save_backup=False):
 
-                if subtree_dict: # Not a leaf node - sub-nodes found
-                    tree_dict[nodeName] = subtree_dict
-
-                elif child_node.attributes: # Leaf node - values held in attributes
-                    self._uses_attributes = True # Remember that attributes are being used for this file
-
-                    subtree_dict = {}
-                    tree_dict[nodeName] = subtree_dict
-                    level += 1
-                    for attr_index in range(len(child_node.attributes)):
-                        attribute = child_node.attributes.item(attr_index)
-                        logger.debug('%s  Attribute: %s = %s', '  ' * level, attribute.name, attribute.value)
-                        subtree_dict[self.unicode_to_ascii(attribute.name)] = self.unicode_to_ascii(attribute.value)
-                    level -= 1
-
-                elif child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE: # Leaf node - value held in child text node
-                    # Take value of first text child node
-                    tree_dict[nodeName] = self.unicode_to_ascii(child_node.childNodes[0].nodeValue)
-                    logger.debug('%s  Node value = %s from text child node', '  ' * level, tree_dict[nodeName])
-                elif not child_node.childNodes: # Empty leaf node
-                    tree_dict[nodeName] = ''
-
-    def _populate_node_from_dict(self, tree_dict, node, uses_attributes, owner_document=None, level=0):
-        """Private recursive function to populate a nested dict from DOM tree or element node
-        Exposed to allow unit testing using a DOM tree constructed from a string
-        Arguments:
-            tree_dict: nested dict structure to traverse
-            node: xml.dom.Node object to hold result
-            uses_attributes: Boolean flag indicating whether to write values to tag attributes
-        """
-        owner_document = owner_document or node
-
-        for node_name in sorted(tree_dict.keys()):
-            child_item = tree_dict[node_name]
-            assert child_item is not None, node_name + ' node is empty - must hold either a string or subtree dict'
-            if type(child_item) == dict: # Subtree - descend to next level
-                logger.debug('%sElement Node %s', '  ' * level, node_name)
-                child_node = xml.dom.minidom.Element(node_name)
-                child_node.ownerDocument = owner_document
-                node.appendChild(child_node)
-
-                self._populate_node_from_dict(child_item, child_node, uses_attributes, owner_document, level + 1)
-
-            else: # Leaf node - store node value
-                if child_item is None:
-                    child_item = ''
-                assert type(child_item) == str, node_name + ' node is not a string'
-                if uses_attributes: # Store value in attribute
-                    logger.debug('%sAttribute for %s = %s', '  ' * level, node_name, repr(child_item))
-                    node.setAttribute(node_name, child_item)
-                else: # Store value in child text node
-                    logger.debug('%sText Child Node for %s = %s', '  ' * level, node_name, repr(child_item))
-
-                    child_node = xml.dom.minidom.Element(node_name)
-                    child_node.ownerDocument = owner_document
-                    node.appendChild(child_node)
-
-                    # Only add text node if value is non-empty
-                    if child_item:
-                        text_node = xml.dom.minidom.Text()
-                        text_node.ownerDocument = owner_document
-                        text_node.nodeValue = child_item
-                        child_node.appendChild(text_node)
-
-
-    def read_file(self, filename=None):
-        """Function to parse an XML metadata file and store the results in self._metadata_dict
-        Argument:
-            filename: XML Metadata file to be parsed and stored
-        Returns:
-            nested dict containing metadata
-        """
-        logger.debug('read_file(%s) called', filename)
-
-        filename = filename or self._filename
-        assert filename, 'Filename must be specified'
-
-        logger.debug('Parsing XML file %s', filename)
-
-        # Open XML document using minidom parser
-        dom_tree = xml.dom.minidom.parse(filename)
-
-        # Remember any processing instruction node
-        for node in dom_tree.childNodes:
-            if node.nodeType == xml.dom.minidom.Node.PROCESSING_INSTRUCTION_NODE:
-                processing_instruction_node = node
-                logger.debug('Processing Instruction Node found: Name = %s, Value = %s', processing_instruction_node.nodeName, processing_instruction_node.nodeValue)
-                self.processing_instruction['name'] = processing_instruction_node.nodeName
-                self.processing_instruction['value'] = processing_instruction_node.nodeValue
-            elif node.nodeType == xml.dom.minidom.Node.ELEMENT_NODE: # Root node has attributes
-                for attr_index in range(len(node.attributes)):
-                    attribute = node.attributes.item(attr_index)
-                    logger.debug('Document Attribute: %s = %s', attribute.name, attribute.value)
-                    self.document_attributes[self.unicode_to_ascii(attribute.name)] = self.unicode_to_ascii(attribute.value)
-
-        # Create nested dict from DOM tree
-        self._populate_dict_from_node(dom_tree, self._metadata_dict)
-        self._filename = filename
-
-        return self._metadata_dict
-
-    def write_file(self, filename=None, uses_attributes=None, save_backup=False):
-        """Function write the metadata contained in self._metadata_dict to an XML file
-        Argument:
-            filename: Metadata file to be written
-            uses_attributes: Boolean flag indicating whether to write values to tag attributes
-        """
-        logger.debug('write_file(%s) called', filename)
-
-        filename = filename or self._filename
-        assert filename, 'Filename must be specified'
-
-        # Allow values to be stored as attributes
-        if uses_attributes is None:
-            uses_attributes = self._uses_attributes
-
-        if save_backup and os.path.exists(filename + '.bck'):
-            os.remove(filename + '.bck')
-
-        if os.path.exists(filename):
-            if save_backup:
-                os.rename(filename, filename + '.bck')
-            else:
-                os.remove(filename)
-
-        # Open XML document
-        try:
-            outfile = open(filename, 'w')
-            assert outfile is not None, 'Unable to open XML file ' + filename + ' for writing'
-
-            logger.debug('Writing XML file %s', filename)
-
-            dom_tree = xml.dom.minidom.Document()
-
-            # Write any processing instruction node
-            if self.processing_instruction:
-                processing_instruction_node = xml.dom.minidom.ProcessingInstruction(self.processing_instruction['name'], self.processing_instruction['value'])
-                processing_instruction_node.ownerDocument = dom_tree
-                dom_tree.appendChild(processing_instruction_node)
-
-            # Open XML document using minidom parser
-            self._populate_node_from_dict(self._metadata_dict, dom_tree, uses_attributes)
-
-            # Set root node attributes if required
-            if self.document_attributes:
-                root_node = [node for node in dom_tree.childNodes if node.nodeType == xml.dom.minidom.Node.ELEMENT_NODE][0]
-                for attribute_name in self.document_attributes.keys():
-                    root_node.setAttribute(attribute_name, self.document_attributes[attribute_name])
-
-#            outfile.write(dom_tree.toxml(encoding='utf-8'))
-#            outfile.write(dom_tree.toprettyxml(encoding='utf-8'))
-#            outfile.write(self.toprettyxml_fixed(node, encoding='utf-8')) # PyXML required
-
-            #===================================================================
-            # # Strip all tabs and EOLs from around values
-            # outfile.write(re.sub('(\<\w*[^/]\>)\n(\t+\n)*(\t*)([^<>\n]*)\n\t*\n*(\t+)(\</\w+\>)',
-            #                      '\\1\\4\\6',
-            #                      dom_tree.toprettyxml(encoding='utf-8')
-            #                      )
-            #               )
-            #===================================================================
-
-            # Strip all tabs and EOLs from around values, remove all empty lines
-            outfile.write(re.sub('\>(\s+)(\n\t*)\<',
-                                 '>\\2<',
-                                 re.sub('(\<\w*[^/]\>)\n(\t*\n)*(\t*)([^<>\n]*)\n\t*\n*(\t+)(\</\w+\>)',
-                                        '\\1\\4\\6',
-                                        dom_tree.toprettyxml(encoding='utf-8')
-                                        )
-                                 )
-                          )
-
-        finally:
-            outfile.close()
-
-    def read_string(self, xml_string):
-        self._populate_dict_from_node(xml.dom.minidom.parseString(xml_string.translate(None, '\n')), self._metadata_dict)
+    def get_csw_metadata(self, csw_url):
+        pass
 
     @property
     def uses_attributes(self):
@@ -469,7 +281,7 @@ def main():
 </EODS_DATASET>"""
 
     # Instantiate empty MTLMetadata object and parse test string (strip all EOLs first)
-    xml_object = XMLMetadata()
+    xml_object = CSWMetadata()
     xml_object._populate_dict_from_node(xml.dom.minidom.parseString(TESTXML.translate(None, '\n')),
                                         xml_object.metadata_dict)
     assert xml_object.metadata_dict, 'No metadata_dict created'
