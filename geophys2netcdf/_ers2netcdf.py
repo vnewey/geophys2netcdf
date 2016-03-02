@@ -117,8 +117,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         csw.getrecords2(constraints=[title_query], maxrecords=2)
         
         # Ensure there is exactly one ID found
-        assert len(csw.results) > 0, 'No CSW records found for title "%s"' % title
-        assert len(csw.results) == 1, 'Multiple CSW records found for title "%s"' % title
+        assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
+        assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
         
         return csw.results[csw.results.keys()[0]]['identifier']
     
@@ -131,8 +131,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         csw.getrecords2(constraints=[id_query], esn='full', maxrecords=2)
         
         # Ensure there is exactly one ID found
-        assert len(csw.results) > 0, 'No CSW records found for ID "%s"' % identifier
-        assert len(csw.results) == 1, 'Multiple CSW records found for ID "%s"' % identifier
+        assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
+        assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
         
         return csw.results[csw.results.keys()[0]]
 
