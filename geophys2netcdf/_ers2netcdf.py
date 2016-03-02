@@ -64,8 +64,8 @@ from metadata import ERSMetadata, XMLMetadata
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
+#console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
@@ -120,21 +120,21 @@ class ERS2NetCDF(Geophys2NetCDF):
         assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
         assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
         
-        return csw.results[csw.results.keys()[0]]['identifier']
+        return csw.records.values()[0].identifier
     
     def get_csw_record_by_id(self, csw_url, identifier):
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
         
-        #csw.getrecordbyid(id=['221dcfd8-03d7-5083-e053-10a3070a64e3']) # This doesn't work for some reason
-        id_query = PropertyIsEqualTo('csw:Identifier', '221dcfd8-03d7-5083-e053-10a3070a64e3')
-        csw.getrecords2(constraints=[id_query], esn='full', maxrecords=2)
+        csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
+        #id_query = PropertyIsEqualTo('csw:Identifier', identifier)
+        #csw.getrecords2(constraints=[id_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
         
         # Ensure there is exactly one ID found
         assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
         assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
         
-        return csw.results[csw.results.keys()[0]]
+        return csw.records.values()[0]
 
 
     def get_xml_metadata_dict_from_record(self, csw_record):
@@ -165,17 +165,17 @@ class ERS2NetCDF(Geophys2NetCDF):
         for extension in ['isi', 'ers']:
             self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(input_path)[0] + '.' + extension).metadata_dict       
                 
-        logger.debug('self._metadata_dict = ', self._metadata_dict)
+        logger.debug('self._metadata_dict = %s', self._metadata_dict)
         
         # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
         uuid = self.get_csw_uuid_from_title(ERS2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
-        logger.debug('uuid = ', uuid)
+        logger.debug('uuid = %s', uuid)
 
         csw_record = self.get_csw_record_by_id(ERS2NetCDF.GA_CSW, uuid)
-        logger.debug('csw_record = ', csw_record)
+        logger.debug('csw_record = %s', csw_record)
         
         self._metadata_dict['CSW'] = self.get_xml_metadata_dict_from_record(csw_record)
         
-        logger.debug('self._metadata_dict = ', self._metadata_dict)
+        logger.debug('self._metadata_dict = %s', self._metadata_dict)
         
 

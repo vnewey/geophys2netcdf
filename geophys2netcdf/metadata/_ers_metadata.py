@@ -153,8 +153,8 @@ class ERSMetadata(Metadata):
                                 try:
                                     value = float(value)
                                 except:
-                                    pass # Leave value as string
-                                
+                                    value = value.replace('"', '') # Strip quotes from string
+
                             logger.debug('key = %s, value = %s' % (key, value))
                             section_dict[key] = value
                         except:
