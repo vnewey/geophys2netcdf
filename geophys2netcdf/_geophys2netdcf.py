@@ -166,6 +166,30 @@ class Geophys2NetCDF(object):
         
             return (min_lat, max_lat, min_lon, max_lon)
 
+        # Set geospatial attributes
+        geotransform = self._input_dataset.GetGeoTransform()
+        min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(self._input_dataset.RasterXSize,
+                                                              self._input_dataset.RasterYSize,
+                                                              geotransform
+                                                              )
+        
+        attribute_dict = dict(zip(['geospatial_lat_min', 'geospatial_lat_max', 'geospatial_lon_min', 'geospatial_lon_max'],
+                                  [min_lat, max_lat, min_lon, max_lon]
+                                  )
+                              )
+        attribute_dict['geospatial_lon_resolution'] = geotransform[1]
+        attribute_dict['geospatial_lat_resolution'] = geotransform[5]
+        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (min_lon, min_lat,
+                                                                                                max_lon, min_lat,
+                                                                                                max_lon, max_lat,
+                                                                                                min_lon, max_lat,
+                                                                                                min_lon, min_lat
+                                                                                                )
+        attribute_dict['geospatial_bounds_crs'] = self._input_dataset.GetProjection()
+
+        for key, value in attribute_dict.items():
+            setattr(self._netcdf_dataset, key, value)
+
         # Set attributes defined in self._metadata_mapping_dict
         for key in self._metadata_mapping_dict.keys():
             metadata_path = self._metadata_mapping_dict[key]
@@ -176,20 +200,6 @@ class Geophys2NetCDF(object):
             else:
                 logger.warning('Metadata path %s not found', metadata_path)
 
-        # Set geospatial attributes
-        geotransform = self._input_dataset.GetGeoTransform()
-        attribute_dict = dict(zip(['geospatial_lat_min', 'geospatial_lat_max', 'geospatial_lon_min', 'geospatial_lon_max'],
-                                   getMinMaxExtents(self._input_dataset.RasterXSize,
-                                                    self._input_dataset.RasterYSize,
-                                                    geotransform
-                                                    )
-                                  )
-                              )
-        attribute_dict['geospatial_lon_resolution'] = geotransform[1]
-        attribute_dict['geospatial_lat_resolution'] = geotransform[5]
-
-        for key, value in attribute_dict.items():
-            setattr(self._netcdf_dataset, key, value)
 
     @property
     def debug(self):
