@@ -79,6 +79,7 @@ class ERS2NetCDF(Geophys2NetCDF):
     
     def __init__(self, input_path=None, output_path=None, config=None, debug=False):
         '''
+        Constructor for class ERS2NetCDF
         '''
         Geophys2NetCDF.__init__(self, config, debug) # Call inherited constructor
         self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING)
@@ -104,25 +105,31 @@ class ERS2NetCDF(Geophys2NetCDF):
         subprocess.check_call(gdal_command)
          
     def get_csw_record_from_title(self, csw_url, title):
+        '''
+        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
+        '''
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
         
         title_query = PropertyIsEqualTo('csw:Title', title.replace('_', '%'))
         csw.getrecords2(constraints=[title_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
         
-        # Ensure there is exactly one ID found
+        # Ensure there is exactly one record found
         assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
         assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
         
         return csw.records.values()[0]
     
     def get_csw_record_by_id(self, csw_url, identifier):
+        '''
+        Function to return OWSLib CSW record record from specified CSW URL using UUID as the search criterion
+        '''
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
         
         csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
         
-        # Ensure there is exactly one ID found
+        # Ensure there is exactly one record found
         assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
         assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
         
@@ -130,6 +137,9 @@ class ERS2NetCDF(Geophys2NetCDF):
 
 
     def get_metadata_dict_from_xml(self, xml_string):
+        '''
+        Function to parse an XML string into a nested dict
+        '''
         xml_metadata = XMLMetadata()
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
