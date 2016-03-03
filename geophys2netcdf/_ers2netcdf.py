@@ -74,11 +74,14 @@ class ERS2NetCDF(Geophys2NetCDF):
 #                      ('date_created', 'CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
                       ]
     
-    def __init__(self, input_path = None, output_path = None):
+    def __init__(self, input_path=None, output_path=None, config=None, debug=False):
         '''
         '''
-        Geophys2NetCDF.__init__(self, input_path, output_path) # Call inherited constructor
-        self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING.reverse())
+        Geophys2NetCDF.__init__(self, config, debug) # Call inherited constructor
+        self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING)
+
+        if input_path:
+            self.translate(input_path, output_path)
     
     def gdal_translate(self, input_path, output_path):
         '''
@@ -133,9 +136,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         return csw.records.values()[0]
 
 
-    def get_metadata_dict_from_xml(self, xml_metadata):
+    def get_metadata_dict_from_xml(self, xml_string):
         xml_metadata = XMLMetadata()
-        xml_metadata.read_string(xml_metadata)
+        xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
         
         
@@ -165,7 +168,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         Ffunction to read metadata from all available sources and set self._metadata_dict. 
         Overrides Geophys2NetCDF.get_metadata()
         '''
-        Geophys2NetCDF.get_metadata() # Call inherited function (will only read GDAL metadata from source dataset)
+        Geophys2NetCDF.import_metadata(self) # Call inherited function (will only read GDAL metadata from source dataset)
         
         # Read data from both .ers and .isi files into separate  metadata subtrees
         for extension in ['isi', 'ers']:
@@ -175,7 +178,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
         csw_record = self.get_csw_record_from_title(ERS2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
         logger.debug('NCI csw_record = %s', csw_record)
-        self._metadata_dict['NCI_CSW'] = self.get_xml_metadata_dict_from_record(csw_record)
+        self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         uuid = csw_record.identifier
         logger.debug('uuid = %s', uuid)
         
