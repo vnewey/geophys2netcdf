@@ -35,26 +35,8 @@ Created on 29/02/2016
 import os
 import re
 import sys
-import threading
-import traceback
-import numpy as np
-from datetime import datetime, date, timedelta
-import pytz
-import calendar
-import collections
-import numexpr
+from collections import OrderedDict
 import logging
-import cPickle
-import itertools
-import time
-import netCDF4
-import subprocess
-from osgeo import osr
-from osgeo import gdal
-from pprint import pprint
-from math import floor
-from distutils.util import strtobool
-from multiprocessing import Process, Lock, Pool, cpu_count
 
 
 # Set handler for root logger to standard output
@@ -77,7 +59,6 @@ class Geophys2NetCDF(object):
     Base class for geophysics conversions
     '''
     DEFAULT_CONFIG_FILE = 'geophys2netcdf.conf' # N.B: Assumed to reside in code root directory
-    MAX_READ_SIZE = 2 * 1073741824 
 
     def __init__(self, config=None, debug=False):
         '''
@@ -86,14 +67,21 @@ class Geophys2NetCDF(object):
         self.debug = debug # Set property
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         self._config_path = config or os.path.join(self._code_root, Geophys2NetCDF.DEFAULT_CONFIG_FILE)
-        self._medatadata_dict = {}
+        
+        self._input_path = None
+        self._output_path = None
+        self._input_dataset = None
+        self._netcdf_dataset = None
+        self._metadata_dict = {}
+        self._metadata_mapping_dict = OrderedDict()
         
         # Create master configuration dict containing both command line and config_file parameters
         self._config_file_object = ConfigFile(self._config_path)  
     
     def translate(self, input_path, output_path=None):
         '''
-        Virtual function
+        Virtual function - performs basic initialisation for file translations
+        Should be overridden for each specific format
         '''
         assert os.path.exists(input_path), 'Input file %s does not exist' % input_path
         self._input_path = input_path
@@ -102,9 +90,53 @@ class Geophys2NetCDF(object):
         self._output_path = output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc'
             
         self._input_dataset = None
-        self._output_dataset = None
+        self._netcdf_dataset = None
         self._metadata_dict = {}
     
+    def import_metadata(self):
+        '''
+        Virtual function to read metadata from all available sources and set self._metadata_dict. 
+        Should be overridden for each specific format
+        '''
+        assert self._input_dataset, 'No GDAL-compatible input dataset defined.'
+        self._metadata_dict['GDAL'] = self._input_dataset.GetMetadata_Dict() # Read generic GDAL metadata (if any)
+        
+    def get_metadata(self, metadata_path):
+        '''
+        Function to read metadata from nested dict self._metadata_dict.
+        Returns None if atrribute does not exist
+        Argument:
+            metadata_path: Period-delineated path to required metadata element
+        '''
+        assert self._metadata_dict, 'No metadata acquired'
+
+        focus_element = self._metadata_dict
+        subkey_list = metadata_path.split('.')
+        for subkey in subkey_list:
+            focus_element = focus_element.get(subkey)
+            if not focus_element: # Atrribute not found
+                break
+            
+        return focus_element
+        
+    
+    def set_netcdf_metadata_attributes(self): 
+        '''
+        Function to set all NetCDF metadata attributes using self._metadata_mapping_dict to map from NetCDF attribute name to 
+        '''
+        assert self._metadata_mapping_dict, 'No metadata mapping defined'
+        assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
+        assert self._metadata_dict, 'No metadata acquired'
+        
+        for key in self._metadata_mapping_dict.keys():
+            metadata_path = self._metadata_mapping_dict[key]
+            value = self.get_metadata(metadata_path)
+            if value is not None:
+                logger.debug('Setting %s to %s', key, value)
+                self._netcdf_dataset.setattr(key, str(value)) #TODO: Check whether hierarchical metadata required
+            else:
+                logger.debug('Metadata path %s not found', metadata_path)
+          
     @property
     def debug(self):
         return self._debug

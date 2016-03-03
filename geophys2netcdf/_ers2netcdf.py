@@ -35,27 +35,11 @@ Created on 29/02/2016
 import os
 import re
 import sys
-import threading
-import traceback
-import numpy as np
-from datetime import datetime, date, timedelta
-import pytz
-import calendar
-import collections
-import numexpr
+from collections import OrderedDict
 import logging
-import cPickle
-import itertools
-import time
 import netCDF4
 import subprocess
-import gc
-from osgeo import osr
 from osgeo import gdal
-from pprint import pprint
-from math import floor
-from distutils.util import strtobool
-from multiprocessing import Process, Lock, Pool, cpu_count
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
 
@@ -81,6 +65,20 @@ class ERS2NetCDF(Geophys2NetCDF):
     '''
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
+    
+    METADATA_MAPPING=[ # ('netcdf_attribute', 'metadata.key'),
+                      ('identifier', 'CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                      ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
+                      ('summary', 'CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
+#                      ('product_version', 'CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
+#                      ('date_created', 'CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                      ]
+    
+    def __init__(self, input_path = None, output_path = None):
+        '''
+        '''
+        Geophys2NetCDF.__init__(self, input_path, output_path) # Call inherited constructor
+        self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING.reverse())
     
     def gdal_translate(self, input_path, output_path):
         '''
@@ -109,26 +107,24 @@ class ERS2NetCDF(Geophys2NetCDF):
         
         subprocess.check_call(gdal_command)
          
-    def get_csw_uuid_from_title(self, csw_url, title):
+    def get_csw_record_from_title(self, csw_url, title):
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
         
         title_query = PropertyIsEqualTo('csw:Title', title.replace('_', '%'))
-        csw.getrecords2(constraints=[title_query], maxrecords=2)
+        csw.getrecords2(constraints=[title_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
         
         # Ensure there is exactly one ID found
         assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
         assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
         
-        return csw.records.values()[0].identifier
+        return csw.records.values()[0]
     
     def get_csw_record_by_id(self, csw_url, identifier):
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
         
         csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
-        #id_query = PropertyIsEqualTo('csw:Identifier', identifier)
-        #csw.getrecords2(constraints=[id_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
         
         # Ensure there is exactly one ID found
         assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
@@ -137,19 +133,20 @@ class ERS2NetCDF(Geophys2NetCDF):
         return csw.records.values()[0]
 
 
-    def get_xml_metadata_dict_from_record(self, csw_record):
+    def get_metadata_dict_from_xml(self, xml_metadata):
         xml_metadata = XMLMetadata()
-        xml_metadata.read_string(csw_record.xml)
+        xml_metadata.read_string(xml_metadata)
         return xml_metadata.metadata_dict
         
         
     def translate(self, input_path, output_path=None):
         '''
-        Function overriding Geophys2NetCDF.translate to perform ERS format-specific translation
+        Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
+        Overrides Geophys2NetCDF.translate()
         '''
         Geophys2NetCDF.translate(self, input_path, output_path) # Perform initialisations
         
-        self.gdal_translate(self._input_path, self._output_path)
+        self.gdal_translate(self._input_path, self._output_path) # Use gdal_translate to create basic NetCDF
         
         self._input_dataset = gdal.Open(self._input_path)
         assert self._input_dataset, 'Unable to open input file %s' % self._input_path
@@ -159,23 +156,34 @@ class ERS2NetCDF(Geophys2NetCDF):
          
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='w')
         
-        self._metadata_dict['GDAL'] = self._input_dataset.GetMetadata_Dict() # Read generic GDAL metadata (if any)
+        self.import_metadata()
+        self.set_netcdf_metadata_attributes()
+        
+        
+    def import_metadata(self):
+        '''
+        Ffunction to read metadata from all available sources and set self._metadata_dict. 
+        Overrides Geophys2NetCDF.get_metadata()
+        '''
+        Geophys2NetCDF.get_metadata() # Call inherited function (will only read GDAL metadata from source dataset)
         
         # Read data from both .ers and .isi files into separate  metadata subtrees
         for extension in ['isi', 'ers']:
-            self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(input_path)[0] + '.' + extension).metadata_dict       
+            self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict       
                 
-        logger.debug('self._metadata_dict = %s', self._metadata_dict)
-        
         # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
-        uuid = self.get_csw_uuid_from_title(ERS2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
+        #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
+        csw_record = self.get_csw_record_from_title(ERS2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
+        logger.debug('NCI csw_record = %s', csw_record)
+        self._metadata_dict['NCI_CSW'] = self.get_xml_metadata_dict_from_record(csw_record)
+        uuid = csw_record.identifier
         logger.debug('uuid = %s', uuid)
-
-        csw_record = self.get_csw_record_by_id(ERS2NetCDF.GA_CSW, uuid)
-        logger.debug('csw_record = %s', csw_record)
         
-        self._metadata_dict['CSW'] = self.get_xml_metadata_dict_from_record(csw_record)
+        # Get record from GA CSW
+        #csw_record = self.get_csw_record_from_title(ERS2NetCDF.GA_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
+        csw_record = self.get_csw_record_by_id(ERS2NetCDF.GA_CSW, uuid)
+        logger.debug('GA csw_record = %s', csw_record)
+        
+        self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)
-        
-
