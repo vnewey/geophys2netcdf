@@ -39,6 +39,11 @@ from collections import OrderedDict
 import logging
 from osgeo import gdal, osr
 import numpy as np
+from owslib.csw import CatalogueServiceWeb
+from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
+
+from metadata import XMLMetadata
+
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
@@ -59,7 +64,8 @@ class Geophys2NetCDF(object):
     Class definition for Geophys2NETCDF
     Base class for geophysics conversions
     '''
-    DEFAULT_CONFIG_FILE = 'geophys2netcdf.conf' # N.B: Assumed to reside in code root directory
+    NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
+    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
 
     def __init__(self, config=None, debug=False):
         '''
@@ -201,6 +207,47 @@ class Geophys2NetCDF(object):
                 logger.warning('Metadata path %s not found', metadata_path)
 
 
+    def get_csw_record_from_title(self, csw_url, title):
+        '''
+        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
+        '''
+        csw = CatalogueServiceWeb(csw_url)
+        assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
+        
+        title_query = PropertyIsEqualTo('csw:Title', title.replace('_', '%'))
+        csw.getrecords2(constraints=[title_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
+        
+        # Ensure there is exactly one record found
+        assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
+        assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
+        
+        return csw.records.values()[0]
+    
+    def get_csw_record_by_id(self, csw_url, identifier):
+        '''
+        Function to return OWSLib CSW record record from specified CSW URL using UUID as the search criterion
+        '''
+        csw = CatalogueServiceWeb(csw_url)
+        assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
+        
+        csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
+        
+        # Ensure there is exactly one record found
+        assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
+        assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
+        
+        return csw.records.values()[0]
+
+
+    def get_metadata_dict_from_xml(self, xml_string):
+        '''
+        Function to parse an XML string into a nested dict
+        '''
+        xml_metadata = XMLMetadata()
+        xml_metadata.read_string(xml_string)
+        return xml_metadata.metadata_dict
+        
+        
     @property
     def debug(self):
         return self._debug

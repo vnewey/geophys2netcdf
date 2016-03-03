@@ -40,11 +40,9 @@ import logging
 import netCDF4
 import subprocess
 from osgeo import gdal
-from owslib.csw import CatalogueServiceWeb
-from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
 
 from _geophys2netdcf import Geophys2NetCDF
-from metadata import ERSMetadata, XMLMetadata
+from metadata import ERSMetadata
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
@@ -57,15 +55,9 @@ logging.root.addHandler(console_handler)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
 
-from gdf._arguments import CommandLineArgs
-from gdf._config_file import ConfigFile
-
 class ERS2NetCDF(Geophys2NetCDF):
     '''
     '''
-    NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
-    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
-    
     METADATA_MAPPING=[ # ('netcdf_attribute', 'metadata.key'),
                       ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
                       ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
@@ -87,72 +79,31 @@ class ERS2NetCDF(Geophys2NetCDF):
         if input_path:
             self.translate(input_path, output_path)
     
-    def gdal_translate(self, input_path, output_path):
-        '''
-        Function to use gdal_translate to perform initial format translation (format specific)
-        '''
-        gdal_command = ['gdal_translate', 
-                        '-of', 'netCDF',
-                        '-co', 'FORMAT=NC4C', 
-                        '-co', 'COMPRESS=DEFLATE', 
-                        '-co', 'WRITE_BOTTOMUP=YES', 
-                        input_path, 
-                        output_path
-                        ]
-        
-        logger.debug('gdal_command = %s', gdal_command)
-        
-        subprocess.check_call(gdal_command)
-         
-    def get_csw_record_from_title(self, csw_url, title):
-        '''
-        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
-        '''
-        csw = CatalogueServiceWeb(csw_url)
-        assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
-        
-        title_query = PropertyIsEqualTo('csw:Title', title.replace('_', '%'))
-        csw.getrecords2(constraints=[title_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
-        
-        # Ensure there is exactly one record found
-        assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
-        assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
-        
-        return csw.records.values()[0]
-    
-    def get_csw_record_by_id(self, csw_url, identifier):
-        '''
-        Function to return OWSLib CSW record record from specified CSW URL using UUID as the search criterion
-        '''
-        csw = CatalogueServiceWeb(csw_url)
-        assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
-        
-        csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
-        
-        # Ensure there is exactly one record found
-        assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
-        assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
-        
-        return csw.records.values()[0]
-
-
-    def get_metadata_dict_from_xml(self, xml_string):
-        '''
-        Function to parse an XML string into a nested dict
-        '''
-        xml_metadata = XMLMetadata()
-        xml_metadata.read_string(xml_string)
-        return xml_metadata.metadata_dict
-        
-        
     def translate(self, input_path, output_path=None):
         '''
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
         '''
+        def gdal_translate(input_path, output_path):
+            '''
+            Function to use gdal_translate to perform initial format translation (format specific)
+            '''
+            gdal_command = ['gdal_translate', 
+                            '-of', 'netCDF',
+                            '-co', 'FORMAT=NC4C', 
+                            '-co', 'COMPRESS=DEFLATE', 
+                            '-co', 'WRITE_BOTTOMUP=YES', 
+                            input_path, 
+                            output_path
+                            ]
+            
+            logger.debug('gdal_command = %s', gdal_command)
+            
+            subprocess.check_call(gdal_command)
+         
         Geophys2NetCDF.translate(self, input_path, output_path) # Perform initialisations
         
-        self.gdal_translate(self._input_path, self._output_path) # Use gdal_translate to create basic NetCDF
+        gdal_translate(self._input_path, self._output_path) # Use gdal_translate to create basic NetCDF
         
         self._input_dataset = gdal.Open(self._input_path)
         assert self._input_dataset, 'Unable to open input file %s' % self._input_path
@@ -184,7 +135,7 @@ class ERS2NetCDF(Geophys2NetCDF):
                 
         # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
         #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-        csw_record = self.get_csw_record_from_title(ERS2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
+        csw_record = self.get_csw_record_from_title(Geophys2NetCDF.NCI_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
         logger.debug('NCI csw_record = %s', csw_record)
         self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         uuid = csw_record.identifier
@@ -192,7 +143,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         
         # Get record from GA CSW
         #csw_record = self.get_csw_record_from_title(ERS2NetCDF.GA_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
-        csw_record = self.get_csw_record_by_id(ERS2NetCDF.GA_CSW, uuid)
+        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
         logger.debug('GA csw_record = %s', csw_record)
         
         self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
