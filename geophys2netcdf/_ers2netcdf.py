@@ -69,11 +69,11 @@ class ERS2NetCDF(Geophys2NetCDF):
                       ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
                       ]
     
-    def __init__(self, input_path=None, output_path=None, config=None, debug=False):
+    def __init__(self, input_path=None, output_path=None, debug=False):
         '''
         Constructor for class ERS2NetCDF
         '''
-        Geophys2NetCDF.__init__(self, config, debug) # Call inherited constructor
+        Geophys2NetCDF.__init__(self, debug) # Call inherited constructor
         self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING)
 
         if input_path:
@@ -121,6 +121,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset.variables['Band1'].long_name = band_name 
         self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
         
+        self._md5sum = self.do_md5sum()
         
     def import_metadata(self):
         '''

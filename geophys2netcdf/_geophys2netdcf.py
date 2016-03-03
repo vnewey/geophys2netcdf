@@ -37,6 +37,7 @@ import re
 import sys
 from collections import OrderedDict
 import logging
+import subprocess
 from osgeo import gdal, osr
 import numpy as np
 from owslib.csw import CatalogueServiceWeb
@@ -67,13 +68,12 @@ class Geophys2NetCDF(object):
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
 
-    def __init__(self, config=None, debug=False):
+    def __init__(self, debug=False):
         '''
         '''
         self._debug = False
         self.debug = debug # Set property
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
-        self._config_path = config or os.path.join(self._code_root, Geophys2NetCDF.DEFAULT_CONFIG_FILE)
         
         self._input_path = None
         self._output_path = None
@@ -82,19 +82,16 @@ class Geophys2NetCDF(object):
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
-        # Create master configuration dict containing both command line and config_file parameters
-        self._config_file_object = ConfigFile(self._config_path)  
-    
     def translate(self, input_path, output_path=None):
         '''
         Virtual function - performs basic initialisation for file translations
         Should be overridden for each specific format
         '''
         assert os.path.exists(input_path), 'Input file %s does not exist' % input_path
-        self._input_path = input_path
+        self._input_path = os.path.abspath(input_path)
         
         # Default to outputting .nc file of same name in current dir
-        self._output_path = output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc'
+        self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
             
         self._input_dataset = None
         self._netcdf_dataset = None
@@ -247,7 +244,21 @@ class Geophys2NetCDF(object):
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
         
-        
+    def do_md5sum(self):
+        '''
+        Function to generate MD5 checksum in file alongside output dataset
+        '''
+        md5sum_path = self._output_path + '.md5'
+        md5sum_command = ['md5sum', self._output_path]
+        md5_output = subprocess.check_output(md5sum_command)
+
+        md5file = open(md5sum_path, 'w')
+        md5file.write(md5_output)
+        md5file.close()
+
+        md5sum = md5_output[0].split(' ')[0]
+        return md5sum
+
     @property
     def debug(self):
         return self._debug
