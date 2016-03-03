@@ -67,11 +67,14 @@ class ERS2NetCDF(Geophys2NetCDF):
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
     
     METADATA_MAPPING=[ # ('netcdf_attribute', 'metadata.key'),
-                      ('identifier', 'CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                      ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
                       ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
-                      ('summary', 'CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
-#                      ('product_version', 'CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
-#                      ('date_created', 'CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                      ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
+#                      ('product_version', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
+#                      ('date_created', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                      ('metadata_link', 'GA_CSW.MD_Metadata.dataSetURI.gco:CharacterString'),
+                      ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
+                      ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
                       ]
     
     def __init__(self, input_path=None, output_path=None, config=None, debug=False):
@@ -85,18 +88,8 @@ class ERS2NetCDF(Geophys2NetCDF):
     
     def gdal_translate(self, input_path, output_path):
         '''
+        Function to use gdal_translate to perform initial format translation (format specific)
         '''
-        #=======================================================================
-        # input_shape = (input_dataset.RasterYSize, input_dataset.RasterXSize) #TODO: Check whether YX array ordering is a general thing
-        # 
-        # for band_index in range(input_dataset.RasterCount):
-        #     band = input_dataset.GetRasterBand(band_index + 1)
-        #     input_blocksize = band.GetBlockSize() # XY order
-        #     input_blocksize.reverse() # YX order - same as array shape
-        #     
-        #     block_counts = [(input_shape[index] - 1) // input_blocksize[index] + 1 for index in range(2)]
-        #=======================================================================
-            
         gdal_command = ['gdal_translate', 
                         '-of', 'netCDF',
                         '-co', 'FORMAT=NC4C', 
@@ -157,10 +150,15 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._input_driver_name = self._input_dataset.GetDriver().GetDescription()
         assert self._input_driver_name == 'ERS', 'Input file is not of type ERS'
          
-        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='w')
+        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
         
         self.import_metadata()
         self.set_netcdf_metadata_attributes()
+
+        # Perform format-specific modifications to gdal_translate generated NetCDF dataset
+        band_name = self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value')
+        self._netcdf_dataset.variables['Band1'].long_name = band_name 
+        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
         
         
     def import_metadata(self):

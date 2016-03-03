@@ -133,9 +133,9 @@ class Geophys2NetCDF(object):
             value = self.get_metadata(metadata_path)
             if value is not None:
                 logger.debug('Setting %s to %s', key, value)
-                self._netcdf_dataset.setattr(key, str(value)) #TODO: Check whether hierarchical metadata required
+                setattr(self._netcdf_dataset, key, value) #TODO: Check whether hierarchical metadata required
             else:
-                logger.debug('Metadata path %s not found', metadata_path)
+                logger.warning('Metadata path %s not found', metadata_path)
           
     @property
     def debug(self):
