@@ -37,7 +37,8 @@ import re
 import sys
 from collections import OrderedDict
 import logging
-
+from osgeo import gdal, osr
+import numpy as np
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
@@ -128,6 +129,44 @@ class Geophys2NetCDF(object):
         assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
         assert self._metadata_dict, 'No metadata acquired'
         
+        def getMinMaxExtents(samples, lines, geoTransform):
+            """
+            Calculates the min/max extents based on the geotransform and raster sizes.
+        
+            :param samples:
+                An integer representing the number of samples (columns) in an array.
+        
+            :param lines:
+                An integer representing the number of lines (rows) in an array.
+        
+            :param geoTransform:
+                A tuple containing the geotransform information returned by GDAL.
+        
+            :return:
+                A tuple containing (min_lat, max_lat, min_lon, max_lat)
+        
+            :notes:
+                Hasn't been tested for northern or western hemispheres.
+            """
+            extents = []
+            x_list  = [0, samples]
+            y_list  = [0, lines]
+        
+            for px in x_list:
+                for py in y_list:
+                    x = geoTransform[0]+(px*geoTransform[1])+(py*geoTransform[2])
+                    y = geoTransform[3]+(px*geoTransform[4])+(py*geoTransform[5])
+                    extents.append([x,y])
+        
+            extents = np.array(extents)
+            min_lat = np.min(extents[:,1])
+            max_lat = np.max(extents[:,1])
+            min_lon = np.min(extents[:,0])
+            max_lon = np.max(extents[:,0])
+        
+            return (min_lat, max_lat, min_lon, max_lon)
+
+        # Set attributes defined in self._metadata_mapping_dict
         for key in self._metadata_mapping_dict.keys():
             metadata_path = self._metadata_mapping_dict[key]
             value = self.get_metadata(metadata_path)
@@ -136,7 +175,22 @@ class Geophys2NetCDF(object):
                 setattr(self._netcdf_dataset, key, value) #TODO: Check whether hierarchical metadata required
             else:
                 logger.warning('Metadata path %s not found', metadata_path)
-          
+
+        # Set geospatial attributes
+        geotransform = self._input_dataset.GetGeoTransform()
+        attribute_dict = dict(zip(['geospatial_lat_min', 'geospatial_lat_max', 'geospatial_lon_min', 'geospatial_lon_max'],
+                                   getMinMaxExtents(self._input_dataset.RasterXSize,
+                                                    self._input_dataset.RasterYSize,
+                                                    geotransform
+                                                    )
+                                  )
+                              )
+        attribute_dict['geospatial_lon_resolution'] = geotransform[1]
+        attribute_dict['geospatial_lat_resolution'] = geotransform[5]
+
+        for key, value in attribute_dict.items():
+            setattr(self._netcdf_dataset, key, value)
+
     @property
     def debug(self):
         return self._debug
