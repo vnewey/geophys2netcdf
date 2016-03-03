@@ -77,21 +77,23 @@ class Geophys2NetCDF(object):
         
         self._input_path = None
         self._output_path = None
-        self._input_dataset = None
-        self._netcdf_dataset = None
+        self._input_dataset = None # GDAL Dataset for input
+        self._netcdf_dataset = None # NetCDF Dataset for output
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
     def translate(self, input_path, output_path=None):
         '''
         Virtual function - performs basic initialisation for file translations
-        Should be overridden for each specific format
+        Should be overridden in subclasses for each specific format but called first to perform initialisations
         '''
         assert os.path.exists(input_path), 'Input file %s does not exist' % input_path
         self._input_path = os.path.abspath(input_path)
         
         # Default to outputting .nc file of same name in current dir
         self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
+        if os.path.exists(self._output_path):
+            logger.warning('Output NetCDF file %s already exists', input_path)
             
         self._input_dataset = None
         self._netcdf_dataset = None
@@ -240,6 +242,7 @@ class Geophys2NetCDF(object):
         '''
         Function to parse an XML string into a nested dict
         '''
+        assert xml_string, 'No XML metadata string provided'
         xml_metadata = XMLMetadata()
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
@@ -248,6 +251,8 @@ class Geophys2NetCDF(object):
         '''
         Function to generate MD5 checksum in file alongside output dataset
         '''
+        assert self._output_path, 'No output path defined'
+        
         md5sum_path = self._output_path + '.md5'
         md5sum_command = ['md5sum', self._output_path]
         md5_output = subprocess.check_output(md5sum_command)
@@ -259,6 +264,22 @@ class Geophys2NetCDF(object):
         md5sum = md5_output[0].split(' ')[0]
         return md5sum
 
+    @property
+    def metadata_dict(self):
+        return self._metadata_dict
+    
+    @property
+    def metadata_sources(self):
+        return sorted(self._metadata_dict.keys())
+    
+    @property
+    def input_dataset(self):
+        return self._input_dataset
+    
+    @property
+    def netcdf_dataset(self):
+        return self._netcdf_dataset
+    
     @property
     def debug(self):
         return self._debug
