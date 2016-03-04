@@ -44,14 +44,14 @@ from _ers2netcdf import ERS2NetCDF
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-#console_handler.setLevel(logging.DEBUG)
+#console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Initial logging level for this module
+logger.setLevel(logging.DEBUG) # Initial logging level for this module
 
 class Zip2NetCDF(Geophys2NetCDF):
     '''
@@ -61,8 +61,10 @@ class Zip2NetCDF(Geophys2NetCDF):
         Override class __getattr__ method to look in enclosed Geophys2NetCDF object
         '''
         if hasattr(self, attr):
+            logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
             return super().__getattr__(self, attr)
         elif self._geophys2netcdf:
+            logger.debug("'Zip2NetCDF._geophys2netcdf' object may have attribute '%s'" % attr)
             return getattr(self._geophys2netcdf, attr)
         else:
             raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
@@ -73,6 +75,7 @@ class Zip2NetCDF(Geophys2NetCDF):
         Override class __setattr__ method to look in enclosed Geophys2NetCDF object
         '''
         if hasattr(self, attr):
+            logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
             super().__setattr__(attr, value)
         elif self._geophys2netcdf:
             setattr(self._geophys2netcdf, attr, value)

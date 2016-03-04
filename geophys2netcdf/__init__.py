@@ -34,3 +34,4 @@ Created on 29/02/2016
 '''
 from _geophys2netdcf import Geophys2NetCDF
 from _ers2netcdf import ERS2NetCDF
+from _zip2netcdf import Zip2NetCDF
