@@ -10,7 +10,7 @@ import logging
 import os
 import re
 import unicodedata
-from . import Metadata
+from _metadata import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 
@@ -65,7 +65,7 @@ class XMLMetadata(Metadata):
                 logger.debug('%sDOM Node name = %s, Node type = %s, Child nodes = %s, Attributes = %s',
                              '  ' * level, nodeName, child_node.nodeType, child_node.childNodes, child_node.attributes)
 
-                subtree_dict = {}
+                subtree_dict = tree_dict.get(nodeName) or {}
                 if child_node.childNodes: # Recursive call to check for non-text child nodes
                     self._populate_dict_from_node(child_node, subtree_dict, level + 1)
 
@@ -73,13 +73,13 @@ class XMLMetadata(Metadata):
                 if child_node.attributes:
                     logger.debug('%s  Child node attribute count = %s', '  ' * level, len(child_node.attributes))
 
-                if subtree_dict: # Not a leaf node - sub-nodes found
+                if subtree_dict and not tree_dict.get(nodeName): # Not a leaf node - sub-nodes found
                     tree_dict[nodeName] = subtree_dict
 
                 elif child_node.attributes: # Leaf node - values held in attributes
                     self._uses_attributes = True # Remember that attributes are being used for this file
 
-                    subtree_dict = {}
+                    subtree_dict = tree_dict.get(nodeName) or {}
                     tree_dict[nodeName] = subtree_dict
                     level += 1
                     for attr_index in range(len(child_node.attributes)):
@@ -90,8 +90,13 @@ class XMLMetadata(Metadata):
 
                 elif child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE: # Leaf node - value held in child text node
                     # Take value of first text child node
-                    tree_dict[nodeName] = self.unicode_to_ascii(child_node.childNodes[0].nodeValue)
-                    logger.debug('%s  Node value = %s from text child node', '  ' * level, tree_dict[nodeName])
+                    node_value = self.unicode_to_ascii(child_node.childNodes[0].nodeValue)
+                    logger.debug('%s  Node value = %s from text child node', '  ' * level, node_value)
+                    leaf_node = tree_dict.get(nodeName)
+                    if leaf_node: # Existing leaf node found - repeated xpath
+                        tree_dict[nodeName] = leaf_node + ', ' + node_value # Append new value to comma-separated list
+                    else: # No existing leaf node - new xpath
+                        tree_dict[nodeName] = node_value
                 elif not child_node.childNodes: # Empty leaf node
                     tree_dict[nodeName] = ''
 
@@ -103,6 +108,7 @@ class XMLMetadata(Metadata):
             node: xml.dom.Node object to hold result
             uses_attributes: Boolean flag indicating whether to write values to tag attributes
         """
+        #TODO: Handle delimited lists as repeated xpaths
         owner_document = owner_document or node
 
         for node_name in sorted(tree_dict.keys()):
@@ -470,8 +476,8 @@ def main():
 
     # Instantiate empty MTLMetadata object and parse test string (strip all EOLs first)
     xml_object = XMLMetadata()
-    xml_object._populate_dict_from_node(xml.dom.minidom.parseString(TESTXML.translate(None, '\n')),
-                                        xml_object.metadata_dict)
+    xml_object.read_string(TESTXML)
+    
     assert xml_object.metadata_dict, 'No metadata_dict created'
     assert xml_object.tree_to_list(), 'Unable to create list from metadata_dict'
     assert xml_object.get_metadata('EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(',')), 'Unable to find value for key L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
@@ -484,5 +490,6 @@ def main():
     xml_object.delete_metadata('RUBBERCHICKEN'.split(','))
     assert not xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found value for key RUBBERCHICKEN'
     print xml_object.tree_to_list()
+    
 if __name__ == '__main__':
     main()

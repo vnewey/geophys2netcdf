@@ -145,16 +145,19 @@ class ERSMetadata(Metadata):
                         try:
                             key, value = [element.strip() for element in line.split('=')]
                             
-                            # Change numeric types to either integer or float
-                            try:
-                                assert '.' not in value, 'Decimal point or period found'
-                                value = int(value)
-                            except:
-                                try:
-                                    value = float(value)
-                                except:
-                                    value = value.replace('"', '') # Strip quotes from string
-
+                            value = value.replace('"', '') # Strip quotes from string
+                            #===================================================
+                            # # Change numeric types to either integer or float
+                            # try:
+                            #     assert '.' not in value, 'Decimal point or period found'
+                            #     value = int(value)
+                            # except:
+                            #     try:
+                            #         value = float(value)
+                            #     except:
+                            #         value = value.replace('"', '') # Strip quotes from string
+                            #===================================================
+                            
                             logger.debug('key = %s, value = %s' % (key, value))
                             section_dict[key] = value
                         except:
