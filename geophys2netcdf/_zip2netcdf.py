@@ -38,20 +38,21 @@ import errno
 import logging
 import subprocess
 import tempfile
+from shutil import rmtree
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from _ers2netcdf import ERS2NetCDF
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
+#console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Initial logging level for this module
+logger.setLevel(logging.INFO) # Initial logging level for this module
 
 class Zip2NetCDF(Geophys2NetCDF):
     '''
@@ -63,7 +64,7 @@ class Zip2NetCDF(Geophys2NetCDF):
     #     '''
     #     if hasattr(self, attr):
     #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-    #         return super().__getattr__(self, attr)
+    #         return Geophys2NetCDF.__getattr__(self, attr)
     #     elif self._geophys2netcdf:
     #         logger.debug("'Zip2NetCDF._geophys2netcdf' object may have attribute '%s'" % attr)
     #         return getattr(self._geophys2netcdf, attr)
@@ -77,7 +78,7 @@ class Zip2NetCDF(Geophys2NetCDF):
     #     '''
     #     if hasattr(self, attr):
     #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-    #         super().__setattr__(attr, value)
+    #         Geophys2NetCDF.__setattr__(attr, value)
     #     elif self._geophys2netcdf:
     #         setattr(self._geophys2netcdf, attr, value)
     #     else:
@@ -91,7 +92,8 @@ class Zip2NetCDF(Geophys2NetCDF):
         '''
         self._geophys2netcdf = None
         self._zipdir = None
-        self._debug = debug
+        self._debug = False
+        self.debug = debug # Set property
         
         if input_path:
             self.translate(input_path, output_path)
@@ -101,33 +103,34 @@ class Zip2NetCDF(Geophys2NetCDF):
         '''
         Destructor for class Zip2NetCDF
         '''
-        if self._zipdir:
-            os.removedirs(self._zipdir)
-            
-        super().__del__(self)
+        if self._zipdir and not self._debug:
+            logger.info('Removing temporary directory %s', self._zipdir)
+            rmtree(self._zipdir)
+
 
     def translate(self, input_path, output_path=None):
         '''
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
         '''
-        assert os.path.splitext(input_path)[1].lower() == 'zip', 'Input dataset %s is not a zip file' % input_path
+        assert os.path.splitext(input_path)[1].lower() == '.zip', 'Input dataset %s is not a zip file' % input_path
 
         input_path = os.path.abspath(input_path)
-        output_path = output_path or os.path.splitext(input_path)[0] + 'nc'
+        output_path = output_path or os.path.splitext(input_path)[0] + '.nc'
         
         # Remove any existing zip directory
         if self._zipdir:
+            logger.info('Removing temporary directory %s', self._zipdir)
             os.removedirs(self._zipdir)
 
-        base_path = os.path.join(tempfile.gettempdir(), os.path.splitext(os.path.basename(input_path)[0]))
+        base_path = os.path.join(tempfile.gettempdir(), os.path.splitext(os.path.basename(input_path))[0])
         self._zipdir = base_path
         
         # Unzip file into fresh directory
         zipdir_revision = 0
         while os.path.exists(self._zipdir):
             zipdir_revision += 1
-            self._zipdir = '%_%s)' % (base_path, zipdir_revision)
+            self._zipdir = '%s_%s)' % (base_path, zipdir_revision)
         logger.debug('self._zipdir = %s', self._zipdir)
         
         try:
@@ -143,23 +146,24 @@ class Zip2NetCDF(Geophys2NetCDF):
                          ]
         
         subprocess.check_call(unzip_command)
-        
+        logger.info('%s unzipped into %s', input_path, self._zipdir)
+
         file_list = os.listdir(self._zipdir)
         extension_set = set([os.path.splitext(file_path)[1].lower() for file_path in file_list])
         logger.debug('file_list = %s', file_list)
         logger.debug('extension_set = %s', extension_set)
 
-        if set(['ers', 'isi', '']) <= extension_set:
+        if set(['.ers', '.isi', '']) <= extension_set:
             logger.info('%s contains an ERS dataset', self._zipdir)
             ers_list = [file_path for file_path in file_list if file_path.lower().endswith('.ers')]
             assert len(ers_list) == 1, 'Multiple .ers files found in %s' % self._zipdir
             
-            ers_path = ers_list[0]
+            ers_path = os.path.join(self._zipdir, ers_list[0])
             if os.path.exists(ers_path):
-                self._geophys2netcdf = ERS2NetCDF()
+                self._geophys2netcdf = ERS2NetCDF(debug=self._debug)
                 self._geophys2netcdf.translate(ers_path, output_path)
     
-        elif set(['blah']) < extension_set:# Some other extensions 
+        elif set(['.blah']) < extension_set:# Some other extensions 
             pass
             
         else:
