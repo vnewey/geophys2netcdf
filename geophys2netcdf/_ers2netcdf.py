@@ -41,7 +41,7 @@ import netCDF4
 import subprocess
 from osgeo import gdal
 
-from _geophys2netdcf import Geophys2NetCDF
+from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
 
 # Set handler for root logger to standard output

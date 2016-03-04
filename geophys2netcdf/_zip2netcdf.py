@@ -39,7 +39,7 @@ import logging
 import subprocess
 import tempfile
 
-from _geophys2netdcf import Geophys2NetCDF
+from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from _ers2netcdf import ERS2NetCDF
 
 # Set handler for root logger to standard output
@@ -56,31 +56,33 @@ logger.setLevel(logging.DEBUG) # Initial logging level for this module
 class Zip2NetCDF(Geophys2NetCDF):
     '''
     '''
-    def __getattr__(self, attr):
-        '''
-        Override class __getattr__ method to look in enclosed Geophys2NetCDF object
-        '''
-        if hasattr(self, attr):
-            logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-            return super().__getattr__(self, attr)
-        elif self._geophys2netcdf:
-            logger.debug("'Zip2NetCDF._geophys2netcdf' object may have attribute '%s'" % attr)
-            return getattr(self._geophys2netcdf, attr)
-        else:
-            raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
-        
-    
-    def __setattr__(self, attr, value):
-        '''
-        Override class __setattr__ method to look in enclosed Geophys2NetCDF object
-        '''
-        if hasattr(self, attr):
-            logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-            super().__setattr__(attr, value)
-        elif self._geophys2netcdf:
-            setattr(self._geophys2netcdf, attr, value)
-        else:
-            raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
+    #===========================================================================
+    # def __getattr__(self, attr):
+    #     '''
+    #     Override class __getattr__ method to look in enclosed Geophys2NetCDF object
+    #     '''
+    #     if hasattr(self, attr):
+    #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
+    #         return super().__getattr__(self, attr)
+    #     elif self._geophys2netcdf:
+    #         logger.debug("'Zip2NetCDF._geophys2netcdf' object may have attribute '%s'" % attr)
+    #         return getattr(self._geophys2netcdf, attr)
+    #     else:
+    #         raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
+    #     
+    # 
+    # def __setattr__(self, attr, value):
+    #     '''
+    #     Override class __setattr__ method to look in enclosed Geophys2NetCDF object
+    #     '''
+    #     if hasattr(self, attr):
+    #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
+    #         super().__setattr__(attr, value)
+    #     elif self._geophys2netcdf:
+    #         setattr(self._geophys2netcdf, attr, value)
+    #     else:
+    #         raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
+    #===========================================================================
         
     
     def __init__(self, input_path=None, output_path=None, debug=False):
@@ -89,6 +91,7 @@ class Zip2NetCDF(Geophys2NetCDF):
         '''
         self._geophys2netcdf = None
         self._zipdir = None
+        self._debug = debug
         
         if input_path:
             self.translate(input_path, output_path)
@@ -161,3 +164,36 @@ class Zip2NetCDF(Geophys2NetCDF):
             
         else:
             raise Exception('Unhandled file types in zip file %s' % input_path)      
+
+    @property
+    def metadata_dict(self):
+        return self._geophys2netcdf._metadata_dict
+    
+    @property
+    def metadata_sources(self):
+        return sorted(self._geophys2netcdf._metadata_dict.keys())
+    
+    @property
+    def input_dataset(self):
+        return self._geophys2netcdf._input_dataset
+    
+    @property
+    def netcdf_dataset(self):
+        return self._geophys2netcdf._netcdf_dataset
+    
+    @property
+    def debug(self):
+        return self._debug
+    
+    @debug.setter
+    def debug(self, debug_value):
+        if self._debug != debug_value:
+            self._debug = debug_value
+            
+            if self._debug:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.INFO)
+            
+            if self._geophys2netcdf:
+                self._geophys2netcdf.debug = self._debug

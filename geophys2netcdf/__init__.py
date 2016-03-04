@@ -32,6 +32,6 @@ Created on 29/02/2016
 
 @author: Alex Ip
 '''
-from _geophys2netdcf import Geophys2NetCDF
+from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from _ers2netcdf import ERS2NetCDF
 from _zip2netcdf import Zip2NetCDF
