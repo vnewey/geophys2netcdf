@@ -120,7 +120,7 @@ class Zip2NetCDF(Geophys2NetCDF):
         
         # Remove any existing zip directory
         if self._zipdir:
-            logger.info('Removing temporary directory %s', self._zipdir)
+            logger.info('Removing previous temporary directory %s', self._zipdir)
             os.removedirs(self._zipdir)
 
         base_path = os.path.join(tempfile.gettempdir(), os.path.splitext(os.path.basename(input_path))[0])
@@ -130,7 +130,7 @@ class Zip2NetCDF(Geophys2NetCDF):
         zipdir_revision = 0
         while os.path.exists(self._zipdir):
             zipdir_revision += 1
-            self._zipdir = '%s_%s)' % (base_path, zipdir_revision)
+            self._zipdir = '%s_%s' % (base_path, zipdir_revision)
         logger.debug('self._zipdir = %s', self._zipdir)
         
         try:
@@ -160,8 +160,8 @@ class Zip2NetCDF(Geophys2NetCDF):
             
             ers_path = os.path.join(self._zipdir, ers_list[0])
             if os.path.exists(ers_path):
-                self._geophys2netcdf = ERS2NetCDF(debug=self._debug)
-                self._geophys2netcdf.translate(ers_path, output_path)
+                logger.info('Translating %s to %s', ers_path, output_path)
+                self._geophys2netcdf = ERS2NetCDF(input_path=ers_path, output_path=output_path, debug=self._debug)
     
         elif set(['.blah']) < extension_set:# Some other extensions 
             pass

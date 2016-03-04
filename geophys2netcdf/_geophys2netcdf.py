@@ -93,7 +93,7 @@ class Geophys2NetCDF(object):
         # Default to outputting .nc file of same name in current dir
         self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
         if os.path.exists(self._output_path):
-            logger.warning('Output NetCDF file %s already exists', input_path)
+            logger.warning('Output NetCDF file %s already exists', self._output_path)
             
         self._input_dataset = None
         self._netcdf_dataset = None

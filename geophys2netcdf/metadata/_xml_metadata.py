@@ -94,7 +94,8 @@ class XMLMetadata(Metadata):
                     logger.debug('%s  Node value = %s from text child node', '  ' * level, node_value)
                     leaf_node = tree_dict.get(nodeName)
                     if leaf_node: # Existing leaf node found - repeated xpath
-                        tree_dict[nodeName] = leaf_node + ', ' + node_value # Append new value to comma-separated list
+                        if node_value:
+                            tree_dict[nodeName] = leaf_node + ', ' + node_value # Append new value to comma-separated list
                     else: # No existing leaf node - new xpath
                         tree_dict[nodeName] = node_value
                 elif not child_node.childNodes: # Empty leaf node
