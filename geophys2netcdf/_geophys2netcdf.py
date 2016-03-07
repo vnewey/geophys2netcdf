@@ -40,6 +40,7 @@ import logging
 import subprocess
 from osgeo import gdal, osr
 import numpy as np
+import netCDF4
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
 
@@ -93,19 +94,40 @@ class Geophys2NetCDF(object):
         # Default to outputting .nc file of same name in current dir
         self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
         if os.path.exists(self._output_path):
-            logger.warning('Output NetCDF file %s already exists', self._output_path)
+            logger.warning('Output NetCDF file %s already exists. Backing up to %s.bck', self._output_path, self._output_path)
+            mv_command = ['mv', 
+                            self._output_path,
+                            self._output_path + '.bck'
+                            ]
+            logger.debug('mv_command = %s', mv_command)
+            subprocess.check_call(mv_command)
             
         self._input_dataset = None
         self._netcdf_dataset = None
         self._metadata_dict = {}
     
+    def update_nc_metadata(self, output_path=None):
+        '''
+        Function to import all available metadata and set attributes in NetCDF file.
+        Should be overridden in subclasses for each specific format but called first to perform initialisations
+        '''
+        self._output_path = output_path or self._output_path
+        assert self._output_path, 'Output NetCDF path not defined'
+        
+        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+        
+        self.import_metadata()
+        self.set_netcdf_metadata_attributes()
+        
     def import_metadata(self):
         '''
         Virtual function to read metadata from all available sources and set self._metadata_dict. 
         Should be overridden for each specific format
         '''
-        assert self._input_dataset, 'No GDAL-compatible input dataset defined.'
-        self._metadata_dict['GDAL'] = self._input_dataset.GetMetadata_Dict() # Read generic GDAL metadata (if any)
+        if self._input_dataset:
+            self._metadata_dict['GDAL'] = self._input_dataset.GetMetadata_Dict() # Read generic GDAL metadata (if any)
+        else:
+            logger.warning('No GDAL-compatible input dataset defined.')
         
     def get_metadata(self, metadata_path):
         '''
@@ -120,7 +142,7 @@ class Geophys2NetCDF(object):
         subkey_list = metadata_path.split('.')
         for subkey in subkey_list:
             focus_element = focus_element.get(subkey)
-            if not focus_element: # Atrribute not found
+            if focus_element is None: # Atrribute not found
                 break
             
         return focus_element
@@ -204,6 +226,18 @@ class Geophys2NetCDF(object):
                 setattr(self._netcdf_dataset, key, value) #TODO: Check whether hierarchical metadata required
             else:
                 logger.warning('Metadata path %s not found', metadata_path)
+                
+        # Ensure only one metadata link is stored - could be multiple, comma-separated entries
+        if hasattr(self._netcdf_dataset, 'metadata_link'):
+            url_list = [url.trim() for url in getattr(self._netcdf_dataset, 'metadata_link').split(',')]
+            doi_list = [url for url in url_list if url.startswith('http://dx.doi.org/')]
+            if len(url_list) > 1: # If more than one URL in list
+                try:
+                    url = doi_list[0] # Use first (preferably only) DOI URL
+                except:
+                    url = url_list[0] # Just use first URL if no DOI found
+                setattr(self._netcdf_dataset, 'metadata_link', url)
+            
 
 
     def get_csw_record_from_title(self, csw_url, title):
@@ -250,6 +284,7 @@ class Geophys2NetCDF(object):
     def do_md5sum(self):
         '''
         Function to generate MD5 checksum in file alongside output dataset
+        Returns MD5 checksum
         '''
         assert self._output_path, 'No output path defined'
         
@@ -257,6 +292,7 @@ class Geophys2NetCDF(object):
         md5sum_command = ['md5sum', self._output_path]
         md5_output = subprocess.check_output(md5sum_command)
 
+        # Write chhecksum to file
         md5file = open(md5sum_path, 'w')
         md5file.write(md5_output)
         md5file.close()

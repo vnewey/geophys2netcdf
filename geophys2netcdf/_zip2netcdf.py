@@ -56,36 +56,8 @@ logger.setLevel(logging.INFO) # Initial logging level for this module
 
 class Zip2NetCDF(Geophys2NetCDF):
     '''
+    Class definition for Zip2NetCDF to handle datasets held in zip files
     '''
-    #===========================================================================
-    # def __getattr__(self, attr):
-    #     '''
-    #     Override class __getattr__ method to look in enclosed Geophys2NetCDF object
-    #     '''
-    #     if hasattr(self, attr):
-    #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-    #         return Geophys2NetCDF.__getattr__(self, attr)
-    #     elif self._geophys2netcdf:
-    #         logger.debug("'Zip2NetCDF._geophys2netcdf' object may have attribute '%s'" % attr)
-    #         return getattr(self._geophys2netcdf, attr)
-    #     else:
-    #         raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
-    #     
-    # 
-    # def __setattr__(self, attr, value):
-    #     '''
-    #     Override class __setattr__ method to look in enclosed Geophys2NetCDF object
-    #     '''
-    #     if hasattr(self, attr):
-    #         logger.debug("'Zip2NetCDF' object has attribute '%s'" % attr)
-    #         Geophys2NetCDF.__setattr__(attr, value)
-    #     elif self._geophys2netcdf:
-    #         setattr(self._geophys2netcdf, attr, value)
-    #     else:
-    #         raise AttributeError("'Zip2NetCDF' object has no attribute '%s'" % attr)
-    #===========================================================================
-        
-    
     def __init__(self, input_path=None, output_path=None, debug=False):
         '''
         Constructor for class Zip2NetCDF
@@ -168,6 +140,12 @@ class Zip2NetCDF(Geophys2NetCDF):
             
         else:
             raise Exception('Unhandled file types in zip file %s' % input_path)      
+        
+    def update_nc_metadata(self, output_path=None):
+        return self._geophys2netcdf.update_nc_metadata(output_path)
+
+    def import_metadata(self):
+        return self._geophys2netcdf.import_metadata()
 
     @property
     def metadata_dict(self):
