@@ -111,12 +111,16 @@ class Geophys2NetCDF(object):
         Function to import all available metadata and set attributes in NetCDF file.
         Should be overridden in subclasses for each specific format but called first to perform initialisations
         '''
-        self._output_path = output_path or self._output_path
-        assert self._output_path, 'Output NetCDF path not defined'
+        assert output_path or self._output_path, 'Output NetCDF path not defined'
         
-        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
-        
-        self.import_metadata()
+        if output_path: # New output path specified for update
+            self._output_path = output_path
+            if self._netcdf_dataset:
+                self._netcdf_dataset.close()
+            self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+            self.import_metadata()
+
+        assert self._metadata_dict, 'No metadata acquired'
         self.set_netcdf_metadata_attributes()
         
     def import_metadata(self):
@@ -136,7 +140,6 @@ class Geophys2NetCDF(object):
         Argument:
             metadata_path: Period-delineated path to required metadata element
         '''
-        assert self._metadata_dict, 'No metadata acquired'
 
         focus_element = self._metadata_dict
         subkey_list = metadata_path.split('.')
@@ -154,7 +157,7 @@ class Geophys2NetCDF(object):
         '''
         assert self._metadata_mapping_dict, 'No metadata mapping defined'
         assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
-        assert self._metadata_dict, 'No metadata acquired'
+#        assert self._metadata_dict, 'No metadata acquired'
         
         def getMinMaxExtents(samples, lines, geoTransform):
             """
@@ -194,9 +197,14 @@ class Geophys2NetCDF(object):
             return (min_lat, max_lat, min_lon, max_lon)
 
         # Set geospatial attributes
-        geotransform = self._input_dataset.GetGeoTransform()
-        min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(self._input_dataset.RasterXSize,
-                                                              self._input_dataset.RasterYSize,
+        crs = self._netcdf_dataset.variables['crs']
+        geotransform = [float(string) for string in crs.GeoTransform.strip().split(' ')]
+        # min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(self._input_dataset.RasterXSize,
+        #                                                       self._input_dataset.RasterYSize,
+        #                                                       geotransform
+        #                                                       )
+        min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(len(self._netcdf_dataset.variables['lon']),
+                                                              len(self._netcdf_dataset.variables['lat']),
                                                               geotransform
                                                               )
         
@@ -212,7 +220,8 @@ class Geophys2NetCDF(object):
                                                                                                 min_lon, max_lat,
                                                                                                 min_lon, min_lat
                                                                                                 )
-        attribute_dict['geospatial_bounds_crs'] = self._input_dataset.GetProjection()
+        #attribute_dict['geospatial_bounds_crs'] = self._input_dataset.GetProjection()
+        attribute_dict['geospatial_bounds_crs'] = crs.spatial_ref
 
         for key, value in attribute_dict.items():
             setattr(self._netcdf_dataset, key, value)
@@ -229,7 +238,7 @@ class Geophys2NetCDF(object):
                 
         # Ensure only one metadata link is stored - could be multiple, comma-separated entries
         if hasattr(self._netcdf_dataset, 'metadata_link'):
-            url_list = [url.trim() for url in getattr(self._netcdf_dataset, 'metadata_link').split(',')]
+            url_list = [url.strip() for url in (getattr(self._netcdf_dataset, 'metadata_link').split(','))]
             doi_list = [url for url in url_list if url.startswith('http://dx.doi.org/')]
             if len(url_list) > 1: # If more than one URL in list
                 try:
@@ -287,7 +296,12 @@ class Geophys2NetCDF(object):
         Returns MD5 checksum
         '''
         assert self._output_path, 'No output path defined'
+        assert self._netcdf_dataset, 'No NetCDF dataset defined'
         
+        # Close and reopen NetCDF file as read-only
+        self._netcdf_dataset.close()
+        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
+
         md5sum_path = self._output_path + '.md5'
         md5sum_command = ['md5sum', self._output_path]
         md5_output = subprocess.check_output(md5sum_command)
@@ -297,7 +311,8 @@ class Geophys2NetCDF(object):
         md5file.write(md5_output)
         md5file.close()
 
-        md5sum = md5_output[0].split(' ')[0]
+        md5sum = md5_output.split(' ')[0]
+        logger.debug('MD5 checksum %s written to %s', md5sum, md5sum_path)
         return md5sum
 
     @property

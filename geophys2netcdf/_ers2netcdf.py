@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from distlib.compat import IDENTIFIER
 
 #===============================================================================
 # Copyright (c)  2014 Geoscience Australia
@@ -114,8 +113,17 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._input_driver_name = self._input_dataset.GetDriver().GetDescription()
         assert self._input_driver_name == 'ERS', 'Input file is not of type ERS'
         
-        self.update_metadata()
-         
+        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+        
+        self.import_metadata()
+
+        # Perform format-specific modifications to gdal_translate generated NetCDF dataset
+        band_name = self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value')
+        self._netcdf_dataset.variables['Band1'].long_name = band_name 
+        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
+
+        self.update_nc_metadata()
+
     def update_nc_metadata(self, output_path=None):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
@@ -123,18 +131,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         '''
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
-        # Perform format-specific modifications to gdal_translate generated NetCDF dataset
-        band_name = self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value')
-        self._netcdf_dataset.variables['Band1'].long_name = band_name 
-        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
-        
         if not hasattr(self._netcdf_dataset, 'product_version'):
             setattr(self._netcdf_dataset, 'product_version', '1.0')
-        
-        # Close and reopen NetCDF file as read-only
-        self._netcdf_dataset.close()
-        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
-        
+         
         # Finished modifying NetCDF - calculate checksum
         self._md5sum = self.do_md5sum()
         
@@ -149,14 +148,14 @@ class ERS2NetCDF(Geophys2NetCDF):
         if self._input_path:
             for extension in ['isi', 'ers']:
                 self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict       
-                
+            
         try: # Try to use existing "identifier" attribute in NetCDF file
-            uuid = getattr(self._netcdf_dataset, 'identifier')
+            uuid = self._netcdf_dataset.identifier
             csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
         except:
             # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
             #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-            title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or getattr(self._netcdf_dataset, 'title') # Should have one or the other
+            title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or self._netcdf_dataset.title # Should have one or the other
             csw_record = self.get_csw_record_from_title(Geophys2NetCDF.NCI_CSW, title)
             uuid = csw_record.identifier
             
@@ -165,7 +164,6 @@ class ERS2NetCDF(Geophys2NetCDF):
         logger.debug('uuid = %s', uuid)
         
         # Get record from GA CSW
-        #csw_record = self.get_csw_record_from_title(ERS2NetCDF.GA_CSW, self._metadata_dict['ISI']['MetaData']['Extensions']['JetStream']['LABEL'])
         csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
         logger.debug('GA csw_record = %s', csw_record)
         

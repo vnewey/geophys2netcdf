@@ -12,4 +12,4 @@ def metadata_class(metadata_type_tag):
                           'ISI': ERSMetadata,
                           }
     
-    return metadata_class_map.get(metadata_type_tag.trim().upper())
+    return metadata_class_map.get(metadata_type_tag.strip().upper())
