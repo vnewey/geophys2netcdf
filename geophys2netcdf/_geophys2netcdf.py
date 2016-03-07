@@ -300,12 +300,13 @@ class Geophys2NetCDF(object):
         # Close and reopen NetCDF file as read-only
         self._netcdf_dataset.close()
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
+        logger.debug('NetCDF file %s reopened as read-only', self._output_path)
 
         md5sum_path = self._output_path + '.md5'
         md5sum_command = ['md5sum', self._output_path]
         md5_output = subprocess.check_output(md5sum_command)
 
-        # Write chhecksum to file
+        # Write checksum to file
         md5file = open(md5sum_path, 'w')
         md5file.write(md5_output)
         md5file.close()
