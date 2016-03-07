@@ -220,7 +220,6 @@ class Geophys2NetCDF(object):
                                                                                                 min_lon, max_lat,
                                                                                                 min_lon, min_lat
                                                                                                 )
-        #attribute_dict['geospatial_bounds_crs'] = self._input_dataset.GetProjection()
         attribute_dict['geospatial_bounds_crs'] = crs.spatial_ref
 
         for key, value in attribute_dict.items():
@@ -238,10 +237,10 @@ class Geophys2NetCDF(object):
                 
         # Ensure only one metadata link is stored - could be multiple, comma-separated entries
         if hasattr(self._netcdf_dataset, 'metadata_link'):
-            url_list = [url.strip() for url in (getattr(self._netcdf_dataset, 'metadata_link').split(','))]
+            url_list = [url.strip() for url in self._netcdf_dataset.metadata_link.split(',')]
             doi_list = [url for url in url_list if url.startswith('http://dx.doi.org/')]
             if len(url_list) > 1: # If more than one URL in list
-                try:
+                try: # Give preference to proper DOI URL
                     url = doi_list[0] # Use first (preferably only) DOI URL
                 except:
                     url = url_list[0] # Just use first URL if no DOI found
