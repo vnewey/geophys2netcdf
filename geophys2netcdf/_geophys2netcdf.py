@@ -240,17 +240,41 @@ class Geophys2NetCDF(object):
                 setattr(self._netcdf_dataset, 'metadata_link', url)
             
 
+    def read_csv(self, csv_path):
+        assert os.path.exists(csv_path), 'CSV file %s does not exist' % csv_path
+        csv_file = open(csv_path)
+        keys = None
+        record_list = []
+        for line in csv_file:
+            if not keys:
+                keys = [header.strip() for header in line.split(',')]
+            else:
+                record_list.append(dict(zip(keys, [value.strip() for value in line.split(',')])))
+        return record_list        
+            
 
     def get_uuid_from_title(self, csw_url, title):
         '''
         Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
         '''
         MAXRECORDS = 200
+
+        uuid = None
+        basename = os.path.splitext(os.path.basename(self._output_path))[0]
+        
+        try:
+            record_list = self.read_csv(os.path.join(self._code_root, 'uuid.csv'))
+            uuid_list = [record['UUID'] for record in record_list if os.path.splitext(os.path.basename(record['PATHNAME']))[0] == basename]
+            if len(uuid_list) == 1:
+                uuid = uuid_list[0]
+                logger.info('UUID %s found from CSV file', uuid)
+                return uuid
+        except:
+            pass
+        
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
-        
         search_title = title.replace('_', '%')
-        uuid = None
         
         while search_title and len(title)-len(search_title) < 10 and not uuid:
             title_query = PropertyIsEqualTo('csw:Title', '%' + search_title + '%')
@@ -265,6 +289,7 @@ class Geophys2NetCDF(object):
                     uuid_list = [identifier for identifier in csw.records.keys() if alphanumeric_title in re.sub('\W', '', csw.records[identifier].title)]
                     if len(uuid_list) == 1: # Unique match found
                         uuid = uuid_list[0]
+                        logger.info('UUID %s found from title characters', uuid)
                         break
                     else:
                         alphanumeric_title = alphanumeric_title[0:-1] # Broaden search by shortening munged_title
