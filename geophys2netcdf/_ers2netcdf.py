@@ -112,7 +112,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         self.import_metadata()
 
         # Perform format-specific modifications to gdal_translate generated NetCDF dataset
-        band_name = self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value')
+        band_name = (self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value') or
+                     self.get_metadata('GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'))
+            
         self._netcdf_dataset.variables['Band1'].long_name = band_name 
         self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
 
@@ -148,21 +150,22 @@ class ERS2NetCDF(Geophys2NetCDF):
         try: # Try to use existing "identifier" attribute in NetCDF file
             uuid = self._netcdf_dataset.identifier
         except:
-            # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
+            uuid = (self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._output_path) or
+                    self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._input_path) or
+            #May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
             #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-            uuid = self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
+                    self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title))
 
-        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
-        uuid = csw_record.identifier
-            
-        logger.debug('NCI csw_record = %s', csw_record)
-        self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+        assert uuid, 'Unable to determine UUID for %s' % self.output_path
         logger.debug('uuid = %s', uuid)
+
+#        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
+#        logger.debug('NCI csw_record = %s', csw_record)
+#        self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         
         # Get record from GA CSW
         csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
         logger.debug('GA csw_record = %s', csw_record)
-        
         self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)

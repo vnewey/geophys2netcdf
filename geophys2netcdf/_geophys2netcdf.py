@@ -253,32 +253,43 @@ class Geophys2NetCDF(object):
         return record_list        
             
 
-    def get_uuid_from_title(self, csw_url, title):
+    def get_uuid_from_csv(self, csv_path, file_path):
         '''
-        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
+        Function to return UUID from csv file from file basename
+        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
         '''
-        MAXRECORDS = 200
-
         uuid = None
-        basename = os.path.splitext(os.path.basename(self._output_path))[0]
+        basename = os.path.splitext(os.path.basename(file_path))[0]
         
         try:
-            record_list = self.read_csv(os.path.join(self._code_root, 'uuid.csv'))
+            record_list = self.read_csv(csv_path)
             uuid_list = [record['UUID'] for record in record_list if os.path.splitext(os.path.basename(record['PATHNAME']))[0] == basename]
             if len(uuid_list) == 1:
-                uuid = uuid_list[0]
+                uuid = uuid_list[0].lower()
+                if len(uuid) == 32: # hyphens missing
+                    uuid = '-'.join([uuid[uuid_section[0]: uuid_section[1]] for uuid_section in [(0, 8), (8, 12), (12, 16), (16, 20), (20, 32)]])
                 logger.info('UUID %s found from CSV file', uuid)
                 return uuid
         except:
             pass
+
+        return uuid
         
+    def get_uuid_from_title(self, csw_url, title):
+        '''
+        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
+        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+        '''
+        MAXRECORDS = 200
+
+        uuid = None
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
-        search_title = title.replace('_', '%')
         
+        search_title = title.replace('_', '%')
         while search_title and len(title)-len(search_title) < 10 and not uuid:
             title_query = PropertyIsEqualTo('csw:Title', '%' + search_title + '%')
-            csw.getrecords2(constraints=[title_query], esn='summary', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=MAXRECORDS)
+            csw.getrecords2(constraints=[title_query], esn='summary', maxrecords=MAXRECORDS)
             
             if not csw.records: # No records found
                 search_title = search_title[0:-1] # Broaden search by shortening title
@@ -293,9 +304,6 @@ class Geophys2NetCDF(object):
                         break
                     else:
                         alphanumeric_title = alphanumeric_title[0:-1] # Broaden search by shortening munged_title
-        
-        # Ensure there is exactly one record found
-        assert uuid, 'Title "%s" not found' % title
         
         return uuid
     
