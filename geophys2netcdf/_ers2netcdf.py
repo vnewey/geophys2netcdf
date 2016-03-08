@@ -159,13 +159,20 @@ class ERS2NetCDF(Geophys2NetCDF):
         assert uuid, 'Unable to determine UUID for %s' % self.output_path
         logger.debug('uuid = %s', uuid)
 
-#        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
-#        logger.debug('NCI csw_record = %s', csw_record)
-#        self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-        
         # Get record from GA CSW
-        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
-        logger.debug('GA csw_record = %s', csw_record)
-        self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+        try:
+            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
+            logger.debug('GA csw_record = %s', csw_record)
+            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+        except:
+            raise Exception('Unable to retrieve CSW record %s from %s' % (uuid, Geophys2NetCDF.GA_CSW))
+        
+        # Get record from NCI CSW (Optional)
+        try:
+            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
+            logger.debug('NCI csw_record = %s', csw_record)
+            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+        except:
+            logger.warning('Unable to retrieve CSW record %s from %s', uuid, Geophys2NetCDF.NCI_CSW)
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)
