@@ -58,6 +58,7 @@ class Zip2NetCDF(Geophys2NetCDF):
     '''
     Class definition for Zip2NetCDF to handle datasets held in zip files
     '''
+    FILE_EXTENSION = 'zip'
     def __init__(self, input_path=None, output_path=None, debug=False):
         '''
         Constructor for class Zip2NetCDF

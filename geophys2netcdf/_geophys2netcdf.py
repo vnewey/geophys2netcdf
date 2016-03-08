@@ -68,6 +68,7 @@ class Geophys2NetCDF(object):
     '''
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
+    FILE_EXTENSION = None # Unknown for base class
 
     def __init__(self, debug=False):
         '''
@@ -113,7 +114,8 @@ class Geophys2NetCDF(object):
         '''
         assert output_path or self._output_path, 'Output NetCDF path not defined'
         
-        if output_path: # New output path specified for update
+        if output_path: # New output path specified for nc metadata update
+            assert os.path.exists(output_path), 'NetCDF file %s does not exist.' % output_path
             self._output_path = output_path
             if self._netcdf_dataset:
                 self._netcdf_dataset.close()
@@ -130,8 +132,9 @@ class Geophys2NetCDF(object):
         '''
         if self._input_dataset:
             self._metadata_dict['GDAL'] = self._input_dataset.GetMetadata_Dict() # Read generic GDAL metadata (if any)
+            logger.debug('Read GDAL metadata from %s', self._input_path)
         else:
-            logger.warning('No GDAL-compatible input dataset defined.')
+            logger.debug('No GDAL-compatible input dataset defined.')
         
     def get_metadata(self, metadata_path):
         '''

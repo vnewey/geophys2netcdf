@@ -59,17 +59,18 @@ class ERS2NetCDF(Geophys2NetCDF):
     '''
     Class definition for ERS2NetCDF to handle ERS gridded datasets 
     '''
-    METADATA_MAPPING=[ # ('netcdf_attribute', 'metadata.key'),
-                      ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
-                      ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
-                      ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
-#                      ('product_version', ''), # Can't set this - assume value of "1.0" instead
-                      ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
-                      ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.transferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
-                      ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
-                      ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
-                      ('keywords', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword.gco:CharacterString'),
-                      ]
+    FILE_EXTENSION = 'ers'
+    METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata.key'),
+                        ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                        ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
+                        ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
+#                        ('product_version', ''), # Can't set this - assume value of "1.0" instead
+                        ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
+                        ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.transferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
+                        ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
+                        ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
+                        ('keywords', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword.gco:CharacterString'),
+                        ]
     
     def __init__(self, input_path=None, output_path=None, debug=False):
         '''
