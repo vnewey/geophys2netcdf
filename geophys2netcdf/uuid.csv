@@ -1,0 +1,19 @@
+TITLE,UUID,PATHNAME
+Gravity Anomaly Image of the Australian Region - 2008,A05F7892D8057506E04400144FDD4FA6,file://g/data1/rr2/National_Coverages/onshore_geodetic_Spherical_Cap_Bouguer_June_2009.nc
+Isostatic Residual Gravity Anomaly Grid of Onshore Australia - 2011,DBCC0C5981E64EEDE04400144FDD4FA6,file://g/data1/rr2/National_Coverages/IR_gravity_anomaly_Australia_V1.nc
+Total Magnetic Intensity (TMI) Colour Composite Image 2015,0D9A959AF3F1CB51E05312A3070AB5F9,file://g/data1/rr2/National_Coverages/magmap_v6_2015.nc
+Total Magnetic Intensity (TMI) Image of Australia with Variable Reduction to Pole (VRTP) greyscale,0D9A959AF3F2CB51E05312A3070AB5F9,file://g/data1/rr2/National_Coverages/magmap_v6_2015_VRTP.nc
+Unfiltered Potassium Element Concentrations Image of Australia 2015,0DAFE7B13B5B1B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_unfiltered_pctk.nc
+Unfiltered Uranium Element Concentrations Image of Australia 2015,0DAFFF5875D98071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_unfiltered_ppmu.nc
+Unfiltered Thorium Element Concentrations Image of Australia 2015,0DAFE7B13B5C1B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_unfiltered_ppmth.nc
+Unfiltered  Dose Image of Australia 2015,0DAFE7B13B5D1B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_unfiltered_dose.nc
+Filtered Potassium Element Concentrations Image of Australia 2015,0DAFE7B13B5E1B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_filtered_pctk.nc
+Filtered Uranium Element Concentrations Image of Australia 2015,0DAFFF5875DA8071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_filtered_ppmu.nc
+Filtered Thorium Element Concentrations Image of Australia 2015,0DAFE7B13B5F1B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_filtered_ppmth.nc
+Ratio Th/K Image of Australia 2015,0DAFE7B13B601B54E05310A3070A8EC9,file://g/data1/rr2/National_Coverages/radmap_v3_2015_ratio_tk.nc
+Ratio U/K Image of Australia 2015,0DAFFF5875DB8071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_ratio_uk.nc
+Ratio U/Th Image of Australia 2015,0DAFFF5875DC8071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_ratio_ut.nc
+Ratio U2/Th  Image of Australia 2015,0DAFFF5875DD8071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_ratio_u2t.nc
+Filtered Dose  Image of Australia 2015,0DAFFF5875DE8071E05310A3070A8550,file://g/data1/rr2/National_Coverages/radmap_v3_2015_filtered_dose.nc
+Gravity Anomaly image 2009 (Colour Composite Image),0DC352082F5B3A74E05312A3070A69ED,file://g/data1/rr2/National_Coverages/onshore_Bouguer_offshore_Freeair_gravity_geodetic_June_2009.nc
+Gravity Anomaly image 2009 (Colour Composite Image),0DC352082F5B3A74E05312A3070A69ED,file://g/data1/rr2/National_Coverages/onshore_geodetic_Spherical_Cap_Bouguer_June_2009.nc
