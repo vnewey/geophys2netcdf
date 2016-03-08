@@ -144,15 +144,16 @@ class ERS2NetCDF(Geophys2NetCDF):
             for extension in ['isi', 'ers']:
                 self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict       
             
+        title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or self._netcdf_dataset.title # Should have one or the other
         try: # Try to use existing "identifier" attribute in NetCDF file
             uuid = self._netcdf_dataset.identifier
-            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
         except:
             # Need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
             #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-            title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or self._netcdf_dataset.title # Should have one or the other
-            csw_record = self.get_csw_record_from_title(Geophys2NetCDF.NCI_CSW, title)
-            uuid = csw_record.identifier
+            uuid = self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
+
+        csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
+        uuid = csw_record.identifier
             
         logger.debug('NCI csw_record = %s', csw_record)
         self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)

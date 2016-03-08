@@ -241,21 +241,38 @@ class Geophys2NetCDF(object):
             
 
 
-    def get_csw_record_from_title(self, csw_url, title):
+    def get_uuid_from_title(self, csw_url, title):
         '''
         Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
         '''
+        MAXRECORDS = 200
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
         
-        title_query = PropertyIsEqualTo('csw:Title', title.replace('_', '%'))
-        csw.getrecords2(constraints=[title_query], esn='full', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=2)
+        search_title = title.replace('_', '%')
+        uuid = None
+        
+        while search_title and len(title)-len(search_title) < 10 and not uuid:
+            title_query = PropertyIsEqualTo('csw:Title', '%' + search_title + '%')
+            csw.getrecords2(constraints=[title_query], esn='summary', outputschema='http://www.isotc211.org/2005/gmd', maxrecords=MAXRECORDS)
+            
+            if not csw.records: # No records found
+                search_title = search_title[0:-1] # Broaden search by shortening title
+            else:
+                uuid_list = []
+                alphanumeric_title = re.sub('\W', '', title) # Strip all non-alphanumeric characters from title
+                while not uuid_list:
+                    uuid_list = [identifier for identifier in csw.records.keys() if alphanumeric_title in re.sub('\W', '', csw.records[identifier].title)]
+                    if len(uuid_list) == 1: # Unique match found
+                        uuid = uuid_list[0]
+                        break
+                    else:
+                        alphanumeric_title = alphanumeric_title[0:-1] # Broaden search by shortening munged_title
         
         # Ensure there is exactly one record found
-        assert len(csw.records) > 0, 'No CSW records found for title "%s"' % title
-        assert len(csw.records) == 1, 'Multiple CSW records found for title "%s"' % title
+        assert uuid, 'Title "%s" not found' % title
         
-        return csw.records.values()[0]
+        return uuid
     
     def get_csw_record_by_id(self, csw_url, identifier):
         '''
