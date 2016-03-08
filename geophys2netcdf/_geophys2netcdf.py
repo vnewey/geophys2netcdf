@@ -46,20 +46,8 @@ from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
 
 from metadata import XMLMetadata
 
-
-# Set handler for root logger to standard output
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-#console_handler.setLevel(logging.DEBUG)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-logging.root.addHandler(console_handler)
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
-
-from gdf._arguments import CommandLineArgs
-from gdf._config_file import ConfigFile
 
 class Geophys2NetCDF(object):
     '''
@@ -136,7 +124,7 @@ class Geophys2NetCDF(object):
         else:
             logger.debug('No GDAL-compatible input dataset defined.')
         
-    def get_metadata(self, metadata_path):
+    def get_metadata(self, metadata_path, key_prefix='gmd:'):
         '''
         Function to read metadata from nested dict self._metadata_dict.
         Returns None if atrribute does not exist
@@ -147,7 +135,7 @@ class Geophys2NetCDF(object):
         focus_element = self._metadata_dict
         subkey_list = metadata_path.split('.')
         for subkey in subkey_list:
-            focus_element = focus_element.get(subkey)
+            focus_element = focus_element.get(subkey) or focus_element.get(key_prefix + subkey)
             if focus_element is None: # Atrribute not found
                 break
             
@@ -217,6 +205,8 @@ class Geophys2NetCDF(object):
                               )
         attribute_dict['geospatial_lon_resolution'] = geotransform[1]
         attribute_dict['geospatial_lat_resolution'] = geotransform[5]
+        attribute_dict['geospatial_lon_units'] = self._netcdf_dataset.variables['lon'].units
+        attribute_dict['geospatial_lat_units'] = self._netcdf_dataset.variables['lat'].units
         attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (min_lon, min_lat,
                                                                                                 max_lon, min_lat,
                                                                                                 max_lon, max_lat,

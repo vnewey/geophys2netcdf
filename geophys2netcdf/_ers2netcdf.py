@@ -44,14 +44,6 @@ from osgeo import gdal
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
 
-# Set handler for root logger to standard output
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-#console_handler.setLevel(logging.DEBUG)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-logging.root.addHandler(console_handler)
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
 
@@ -63,6 +55,7 @@ class ERS2NetCDF(Geophys2NetCDF):
     METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata.key'),
                         ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
                         ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
+                        ('source', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.scope.DQ_Scope.level.MD_ScopeCode.codeListValue'),
                         ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
 #                        ('product_version', ''), # Can't set this - assume value of "1.0" instead
                         ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
@@ -123,6 +116,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset.variables['Band1'].long_name = band_name 
         self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
 
+        self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions + ', ACDD-1.3'
         self.update_nc_metadata()
 
     def update_nc_metadata(self, output_path=None):
