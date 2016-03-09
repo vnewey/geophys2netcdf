@@ -43,6 +43,7 @@ import numpy as np
 import netCDF4
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
+from datetim import datetime
 
 from metadata import XMLMetadata
 
@@ -69,6 +70,7 @@ class Geophys2NetCDF(object):
         self._output_path = None
         self._input_dataset = None # GDAL Dataset for input
         self._netcdf_dataset = None # NetCDF Dataset for output
+        self._uuid = None # File identifier
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
@@ -253,6 +255,36 @@ class Geophys2NetCDF(object):
         return record_list        
             
 
+    def get_uuid_from_netcdf(self):
+        '''
+        Function to return UUID from csv file from file basename
+        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+        '''
+        uuid = None
+        try: # Try to use existing "identifier" attribute in NetCDF file
+            uuid = self._netcdf_dataset.identifier
+            logger.debug('Read UUID %s from NetCDF file', uuid)
+        except:
+            logger.debug('Unable to read UUID from NetCDF file')
+            
+        return uuid
+        
+    def get_uuid_from_txt(self, txt_path):
+        '''
+        Function to return UUID from csv file from file basename
+        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+        '''
+        uuid = None
+        
+        try:
+            txt_file = open(txt_path, 'r')
+            uuid, _dataset_path, _datetime_string = txt_file.readline().split('\t')
+            txt_file.close()
+        except:
+            logger.debug('Unable to read UUID from text file %s', txt_path)
+            
+        return uuid
+        
     def get_uuid_from_csv(self, csv_path, file_path):
         '''
         Function to return UUID from csv file from file basename
@@ -331,7 +363,15 @@ class Geophys2NetCDF(object):
         xml_metadata = XMLMetadata()
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
-        
+    
+    def write_uuid_txt(self): 
+        '''
+        '''
+        txt_path = self._output_path + '.uuid'
+        txt_file = open(txt_path, 'w')
+        txt_file.write('%s\t%s\t%s' % (self._uuid, self._output_path, datetime.utcnow().isoformat()))
+        txt_file.close()
+           
     def do_md5sum(self):
         '''
         Function to generate MD5 checksum in file alongside output dataset
@@ -373,6 +413,10 @@ class Geophys2NetCDF(object):
     @property
     def netcdf_dataset(self):
         return self._netcdf_dataset
+    
+    @property
+    def uuid(self):
+        return self._uuid
     
     @property
     def debug(self):

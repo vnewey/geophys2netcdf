@@ -157,6 +157,10 @@ class Zip2NetCDF(Geophys2NetCDF):
         return self._geophys2netcdf._netcdf_dataset
     
     @property
+    def uuid(self):
+        return self._geophys2netcdf._uuid
+    
+    @property
     def debug(self):
         return self._debug
     

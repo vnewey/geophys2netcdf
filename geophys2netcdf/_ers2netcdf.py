@@ -130,6 +130,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         
         if not hasattr(self._netcdf_dataset, 'product_version'):
             setattr(self._netcdf_dataset, 'product_version', '1.0')
+            
+        self.write_uuid_txt()
          
         # Finished modifying NetCDF - calculate checksum
         self._md5sum = self.do_md5sum()
@@ -147,32 +149,34 @@ class ERS2NetCDF(Geophys2NetCDF):
                 self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict       
             
         title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or self._netcdf_dataset.title # Should have one or the other
-        try: # Try to use existing "identifier" attribute in NetCDF file
-            uuid = self._netcdf_dataset.identifier
-        except:
-            uuid = (self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._output_path) or
-                    self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._input_path) or
-            #May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
-            #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-                    self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title))
+        logger.debug('title = %s', title)
+        
+        self._uuid = (self.get_uuid_from_netcdf() or
+                self.get_uuid_from_txt(self._output_path + '.uuid') or
+                self.get_uuid_from_txt(self._input_path + '.uuid') or
+                self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._output_path) or
+                self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._input_path) or
+                #May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
+                #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
+                self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title))
 
-        assert uuid, 'Unable to determine UUID for %s' % self.output_path
-        logger.debug('uuid = %s', uuid)
+        assert self._uuid, 'Unable to determine UUID for %s' % self.output_path
+        logger.debug('self._uuid = %s', self._uuid)
 
         # Get record from GA CSW
         try:
-            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, uuid)
+            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
             logger.debug('GA csw_record = %s', csw_record)
             self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         except:
-            raise Exception('Unable to retrieve CSW record %s from %s' % (uuid, Geophys2NetCDF.GA_CSW))
+            raise Exception('Unable to retrieve CSW record %s from %s' % (self._uuid, Geophys2NetCDF.GA_CSW))
         
         # Get record from NCI CSW (Optional)
         try:
-            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, uuid)
+            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
             logger.debug('NCI csw_record = %s', csw_record)
             self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         except:
-            logger.warning('Unable to retrieve CSW record %s from %s', uuid, Geophys2NetCDF.NCI_CSW)
+            logger.warning('Unable to retrieve CSW record %s from %s', self._uuid, Geophys2NetCDF.NCI_CSW)
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)
