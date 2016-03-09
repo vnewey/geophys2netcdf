@@ -366,11 +366,17 @@ class Geophys2NetCDF(object):
     
     def write_uuid_txt(self): 
         '''
+        Function to write UUID, output_path and current timestamp to <output_path>.uuid
         '''
+        assert self._uuid, 'UUID not set'
+        assert self._output_path, 'output_path not set'
+        
         txt_path = self._output_path + '.uuid'
         txt_file = open(txt_path, 'w')
-        txt_file.write('%s\t%s\t%s' % (self._uuid, self._output_path, datetime.utcnow().isoformat()))
+        output_text = '%s\t%s\t%s' % (self._uuid, self._output_path, datetime.utcnow().isoformat())
+        txt_file.write(output_text)
         txt_file.close()
+        logger.debug('"%s" written to file %s', output_text, txt_path)
            
     def do_md5sum(self):
         '''

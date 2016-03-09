@@ -131,6 +131,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         if not hasattr(self._netcdf_dataset, 'product_version'):
             setattr(self._netcdf_dataset, 'product_version', '1.0')
             
+        # Write details to UUID file
         self.write_uuid_txt()
          
         # Finished modifying NetCDF - calculate checksum
