@@ -43,7 +43,7 @@ import numpy as np
 import netCDF4
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
-from datetim import datetime
+from datetime import datetime
 
 from metadata import XMLMetadata
 
@@ -373,7 +373,7 @@ class Geophys2NetCDF(object):
         
         txt_path = self._output_path + '.uuid'
         txt_file = open(txt_path, 'w')
-        output_text = '%s\t%s\t%s' % (self._uuid, self._output_path, datetime.utcnow().isoformat())
+        output_text = '%s\t%s\t%s' % (self._uuid, self._output_path, datetime.now().isoformat())
         txt_file.write(output_text)
         txt_file.close()
         logger.debug('"%s" written to file %s', output_text, txt_path)
