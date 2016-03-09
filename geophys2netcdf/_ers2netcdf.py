@@ -149,7 +149,14 @@ class ERS2NetCDF(Geophys2NetCDF):
             for extension in ['isi', 'ers']:
                 self._metadata_dict[extension.upper()] = ERSMetadata(os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict       
             
-        title = self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or self._netcdf_dataset.title # Should have one or the other
+        try:
+            #TODO: Make this more robust
+            title = (self.get_metadata('ISI.MetaData.Extensions.JetStream.LABEL') or
+                     os.path.basename(self.get_metadata('ISI.MetaData.Name')) or
+                     self._netcdf_dataset.title
+                     )
+        except:
+            title = None
         logger.debug('title = %s', title)
         
         self._uuid = (self.get_uuid_from_netcdf() or
