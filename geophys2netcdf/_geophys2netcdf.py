@@ -85,13 +85,17 @@ class Geophys2NetCDF(object):
         # Default to outputting .nc file of same name in current dir
         self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
         if os.path.exists(self._output_path):
-            logger.warning('Output NetCDF file %s already exists. Backing up to %s.bck', self._output_path, self._output_path)
-            mv_command = ['mv', 
-                            self._output_path,
-                            self._output_path + '.bck'
-                            ]
-            logger.debug('mv_command = %s', mv_command)
-            subprocess.check_call(mv_command)
+            logger.warning('Output NetCDF file %s already exists.', self._output_path)
+            if os.path.exists(self._output_path + '.bck'):
+                logger.warning('Keeping existing backup file %s.bck', self._output_path)
+            else:
+                logger.warning('Backing up existing NetCDF file to %s.bck', self._output_path)
+                mv_command = ['mv', 
+                                self._output_path,
+                                self._output_path + '.bck'
+                                ]
+                logger.debug('mv_command = %s', mv_command)
+                subprocess.check_call(mv_command)
             
         self._input_dataset = None
         self._netcdf_dataset = None
