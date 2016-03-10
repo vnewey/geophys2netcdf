@@ -135,6 +135,12 @@ class ERS2NetCDF(Geophys2NetCDF):
          
         # Finished modifying NetCDF - calculate checksum
         self._md5sum = self.do_md5sum()
+
+        # Set permissions to group writeable, world readable - ignore errors
+        chmod_command = ['chmod', 'g+rwX,o+rX', self._output_path + '*']
+        logger.debug('gdal_command = %s', chmod_command)
+        if subprocess.call(chmod_command):
+            logger.warning('WARNING: Command "%s" failed.', ' '.join(chmod_command))
         
     def import_metadata(self):
         '''
