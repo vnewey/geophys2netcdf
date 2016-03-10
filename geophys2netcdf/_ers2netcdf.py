@@ -34,7 +34,6 @@ Created on 29/02/2016
 '''
 import os
 import re
-import sys
 from collections import OrderedDict
 import logging
 import netCDF4
@@ -177,7 +176,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             logger.debug('GA csw_record = %s', csw_record)
             self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         except:
-            raise Exception('Unable to retrieve CSW record %s from %s' % (self._uuid, Geophys2NetCDF.GA_CSW))
+            raise Exception('ERROR: Unable to retrieve CSW record %s from %s' % (self._uuid, Geophys2NetCDF.GA_CSW))
         
         # Get record from NCI CSW (Optional)
         try:
@@ -185,6 +184,6 @@ class ERS2NetCDF(Geophys2NetCDF):
             logger.debug('NCI csw_record = %s', csw_record)
             self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
         except:
-            logger.warning('Unable to retrieve CSW record %s from %s', self._uuid, Geophys2NetCDF.NCI_CSW)
+            logger.warning('WARNING: Unable to retrieve CSW record %s from %s', self._uuid, Geophys2NetCDF.NCI_CSW)
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)

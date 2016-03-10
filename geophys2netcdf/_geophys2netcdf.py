@@ -85,11 +85,11 @@ class Geophys2NetCDF(object):
         # Default to outputting .nc file of same name in current dir
         self._output_path = os.path.abspath(output_path or os.path.splitext(os.path.basename(input_path))[0] + '.nc')
         if os.path.exists(self._output_path):
-            logger.warning('Output NetCDF file %s already exists.', self._output_path)
+            logger.warning('WARNING: Output NetCDF file %s already exists.', self._output_path)
             if os.path.exists(self._output_path + '.bck'):
-                logger.warning('Keeping existing backup file %s.bck', self._output_path)
+                logger.warning('WARNING: Keeping existing backup file %s.bck', self._output_path)
             else:
-                logger.warning('Backing up existing NetCDF file to %s.bck', self._output_path)
+                logger.warning('WARNING: Backing up existing NetCDF file to %s.bck', self._output_path)
                 mv_command = ['mv', 
                                 self._output_path,
                                 self._output_path + '.bck'
@@ -130,7 +130,7 @@ class Geophys2NetCDF(object):
         else:
             logger.debug('No GDAL-compatible input dataset defined.')
         
-    def get_metadata(self, metadata_path, key_prefix='gmd:'):
+    def get_metadata(self, metadata_path, default_namespace='gmd:'):
         '''
         Function to read metadata from nested dict self._metadata_dict.
         Returns None if atrribute does not exist
@@ -141,7 +141,7 @@ class Geophys2NetCDF(object):
         focus_element = self._metadata_dict
         subkey_list = metadata_path.split('.')
         for subkey in subkey_list:
-            focus_element = focus_element.get(subkey) or focus_element.get(key_prefix + subkey)
+            focus_element = focus_element.get(subkey) or focus_element.get(default_namespace + subkey)
             if focus_element is None: # Atrribute not found
                 break
             
@@ -232,7 +232,7 @@ class Geophys2NetCDF(object):
                 logger.debug('Setting %s to %s', key, value)
                 setattr(self._netcdf_dataset, key, value) #TODO: Check whether hierarchical metadata required
             else:
-                logger.warning('Metadata path %s not found', metadata_path)
+                logger.warning('WARNING: Metadata path %s not found', metadata_path)
                 
         # Ensure only one metadata link is stored - could be multiple, comma-separated entries
         if hasattr(self._netcdf_dataset, 'metadata_link'):
