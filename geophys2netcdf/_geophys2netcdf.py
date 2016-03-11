@@ -136,6 +136,7 @@ class Geophys2NetCDF(object):
         Returns None if atrribute does not exist
         Argument:
             metadata_path: Period-delineated path to required metadata element
+            default_namespace: string defining possible default namespace prefix - needed for early versions of pyproj
         '''
 
         focus_element = self._metadata_dict
@@ -380,7 +381,7 @@ class Geophys2NetCDF(object):
         output_text = '%s\t%s\t%s' % (self._uuid, self._output_path, datetime.now().isoformat())
         txt_file.write(output_text)
         txt_file.close()
-        logger.debug('"%s" written to file %s', output_text, txt_path)
+        logger.info('UUID %s written to file %s', self._uuid, txt_path)
            
     def do_md5sum(self):
         '''
@@ -405,7 +406,7 @@ class Geophys2NetCDF(object):
         md5file.close()
 
         md5sum = md5_output.split(' ')[0]
-        logger.debug('MD5 checksum %s written to %s', md5sum, md5sum_path)
+        logger.info('MD5 checksum %s written to %s', md5sum, md5sum_path)
         return md5sum
 
     @property

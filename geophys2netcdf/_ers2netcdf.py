@@ -39,6 +39,8 @@ import logging
 import netCDF4
 import subprocess
 from osgeo import gdal
+from datetime import datetime
+from dateutil import tz
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
@@ -58,11 +60,30 @@ class ERS2NetCDF(Geophys2NetCDF):
                         ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
 #                        ('product_version', ''), # Can't set this - assume value of "1.0" instead
                         ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
+#                        ('date_modified', 'ERS.DatasetHeader.LastUpdated'), # Use ISO format
                         ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.transferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
                         ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
                         ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
                         ('keywords', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword.gco:CharacterString'),
+                        ('keywords_vocabulary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.thesaurusName.CI_Citation.title.gco:CharacterString'),
+                        ('license', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.resourceConstraints.MD_LegalConstraints.otherConstraints.gco:CharacterString'),
                         ]
+    
+    def read_ers_datetime_string(self, ers_datetime_string):
+        '''
+        Helper function to convert an ERS datetime string into a Python datetime object
+        e.g: 'Tue Feb 28 05:16:57 GMT 2012'
+        '''
+        try:
+            ers_datetime = datetime.strptime(ers_datetime_string.replace('GMT','UTC'), '%a %b %d %H:%M:%S %Z %Y')
+            #TODO: Find out why 'UTC' is not parsed to a timezone and remove the following hack
+            if 'GMT' in ers_datetime_string:
+                ers_datetime_string = ers_datetime_string.replace(tzinfo=tz.tzutc())
+        except:
+            logger.warning('WARNING: Unable to parse "%s" into datetime', ers_datetime_string)
+            ers_datetime = None
+            
+        return ers_datetime
     
     def __init__(self, input_path=None, output_path=None, debug=False):
         '''
@@ -114,8 +135,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         band_name = (self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value') or
                      self.get_metadata('GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'))
             
-        self._netcdf_dataset.variables['Band1'].long_name = band_name 
-        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name)) 
+        self._netcdf_dataset.variables['Band1'].long_name = band_name
+        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name[0:16])) #TODO: Do something more elegant than string truncation for short name
 
         self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions + ', ACDD-1.3'
         self.update_nc_metadata()
@@ -127,9 +148,15 @@ class ERS2NetCDF(Geophys2NetCDF):
         '''
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
-        if not hasattr(self._netcdf_dataset, 'product_version'):
-            setattr(self._netcdf_dataset, 'product_version', '1.0')
+        date_modified = self.get_metadata('ERS.DatasetHeader.LastUpdated')
+        if date_modified:
+            self._netcdf_dataset.date_modified = date_modified.isoformat()
             
+            if not hasattr(self._netcdf_dataset, 'product_version'):
+                self._netcdf_dataset.product_version = date_modified.isoformat()
+            
+        logger.info('Finished writing output file %s', self._output_path)
+        
         # Write details to UUID file
         self.write_uuid_txt()
          
@@ -141,7 +168,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         logger.debug('gdal_command = %s', chmod_command)
         if subprocess.call(chmod_command):
             logger.warning('WARNING: Command "%s" failed.', ' '.join(chmod_command))
-        
+            
     def import_metadata(self):
         '''
         Function to read metadata from all available sources and set self._metadata_dict. 
