@@ -94,10 +94,9 @@ class ERS2NetCDF(Geophys2NetCDF):
             return None
 
         try:
-            ers_datetime = datetime.strptime(ers_datetime_string.replace('GMT','UTC'), '%a %b %d %H:%M:%S %Z %Y')
-            #TODO: Find out why 'UTC' is not parsed to a timezone and remove the following hack
-            if 'GMT' in ers_datetime_string:
-                ers_datetime = ers_datetime.replace(tzinfo=tz.tzutc())
+            ers_datetime = datetime.strptime(ers_datetime_string, '%a %b %d %H:%M:%S %Z %Y')
+            #TODO: Find out why %Z is not parsed to a timezone and remove the following hack
+            ers_datetime = ers_datetime.replace(tzinfo=tz.gettz(ers_datetime_string.split(' ')[4])) # This should always work if strptime didn't fail
         except ValueError, e:
             logger.warning('WARNING: Unable to parse "%s" into ERS datetime (%s)', ers_datetime_string, e.message)
             ers_datetime = None
