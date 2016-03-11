@@ -41,6 +41,7 @@ import subprocess
 from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
+import dateutil.parser
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
@@ -69,18 +70,36 @@ class ERS2NetCDF(Geophys2NetCDF):
                         ('license', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.resourceConstraints.MD_LegalConstraints.otherConstraints.gco:CharacterString'),
                         ]
     
+    def read_iso_datetime_string(self, iso_datetime_string):
+        '''
+        Helper function to convert an ISO datetime string into a Python datetime object
+        '''
+        if not iso_datetime_string:
+            return None
+
+        try:
+            iso_datetime = dateutil.parser.parse(iso_datetime_string)
+        except ValueError, e:
+            logger.warning('WARNING: Unable to parse "%s" into ISO datetime (%s)', iso_datetime_string, e.message)
+            iso_datetime = None
+            
+        return iso_datetime
+
     def read_ers_datetime_string(self, ers_datetime_string):
         '''
         Helper function to convert an ERS datetime string into a Python datetime object
         e.g: 'Tue Feb 28 05:16:57 GMT 2012'
         '''
+        if not ers_datetime_string:
+            return None
+
         try:
             ers_datetime = datetime.strptime(ers_datetime_string.replace('GMT','UTC'), '%a %b %d %H:%M:%S %Z %Y')
             #TODO: Find out why 'UTC' is not parsed to a timezone and remove the following hack
             if 'GMT' in ers_datetime_string:
-                ers_datetime_string = ers_datetime_string.replace(tzinfo=tz.tzutc())
-        except:
-            logger.warning('WARNING: Unable to parse "%s" into datetime', ers_datetime_string)
+                ers_datetime = ers_datetime.replace(tzinfo=tz.tzutc())
+        except ValueError, e:
+            logger.warning('WARNING: Unable to parse "%s" into ERS datetime (%s)', ers_datetime_string, e.message)
             ers_datetime = None
             
         return ers_datetime
@@ -148,12 +167,21 @@ class ERS2NetCDF(Geophys2NetCDF):
         '''
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
-        date_modified = self.get_metadata('ERS.DatasetHeader.LastUpdated')
+        # Look for date_modified value in source file then in NetCDF file
+        date_modified = self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated'))
+        if not date_modified:
+            try:
+                date_modified = self.read_iso_datetime_string(self._netcdf_dataset.date_modified)
+            except Exception, e:
+                pass
+
         if date_modified:
             self._netcdf_dataset.date_modified = date_modified.isoformat()
             
             if not hasattr(self._netcdf_dataset, 'product_version'):
                 self._netcdf_dataset.product_version = date_modified.isoformat()
+        else:
+            logger.warning('WARNING" Unable to determine date_modified attribute')
             
         logger.info('Finished writing output file %s', self._output_path)
         
