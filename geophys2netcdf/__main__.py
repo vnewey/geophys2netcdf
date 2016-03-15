@@ -35,11 +35,19 @@ Created on 08/03/2016
 import sys
 import os
 
-from geophys2netcdf import Geophys2NetCDF, ERS2NetCDF, Zip2NetCDF
+from geophys2netcdf import ERS2NetCDF, Zip2NetCDF
 
 def main():
     assert len(sys.argv) >= 2, 'Must provide input file path and optional output file path'
     input_path = os.path.abspath(sys.argv[1])
+
+    # If NetCDF path given, then do update_nc_metadata
+    if os.path.splitext(input_path)[1] == '.nc':
+        g2n_object = ERS2NetCDF()
+        g2n_object.update_nc_metadata(input_path)
+        return
+
+    # Default output path is next to input path
     if len(sys.argv) == 3:
         output_path = os.path.abspath(sys.argv[2])
     else:
@@ -49,8 +57,9 @@ def main():
     for subclass in [ERS2NetCDF, Zip2NetCDF]:
         if os.path.splitext(input_path)[1] == '.' + subclass.FILE_EXTENSION:
             print 'Input file is of type %s' % subclass.FILE_EXTENSION
-            g2n_object = subclass(input_path, output_path)
-
+            g2n_object = subclass(input_path, output_path) # Perform translation
+            break
+        
     assert g2n_object, 'Unrecognised input file extension'
 
 main()
