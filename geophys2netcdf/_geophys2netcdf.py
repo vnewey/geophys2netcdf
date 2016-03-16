@@ -58,6 +58,7 @@ class Geophys2NetCDF(object):
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
     FILE_EXTENSION = None # Unknown for base class
+    DEFAULT_CHUNK_SIZE = 128
 
     def __init__(self, debug=False):
         '''

@@ -42,6 +42,7 @@ from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
 import dateutil.parser
+import tempfile
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
@@ -118,22 +119,32 @@ class ERS2NetCDF(Geophys2NetCDF):
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
         '''
-        def gdal_translate(input_path, output_path):
+        def gdal_translate(input_path, output_path, chunk_size=None):
             '''
             Function to use gdal_translate to perform initial format translation (format specific)
             '''
+            chunk_size = chunk_size or Geophys2NetCDF.DEFAULT_CHUNK_SIZE
+            temp_path = os.path.join(tempfile.gettempdir(), os.path.basename(output_path))
             gdal_command = ['gdal_translate', 
                             '-of', 'netCDF',
                             '-co', 'FORMAT=NC4C', 
                             '-co', 'COMPRESS=DEFLATE', 
                             '-co', 'WRITE_BOTTOMUP=YES', 
                             input_path, 
-                            output_path
+                            temp_path
                             ]
             
             logger.debug('gdal_command = %s', gdal_command)
             
             subprocess.check_call(gdal_command)
+            
+            ''' NOTE:
+            this makes a copy of the file with chunking enabled on the lat/lon axis
+            this is hard coded and will not work if the axis are not called lat lon
+            please customise where required'''
+            subprocess.check_call(['nccopy', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
+            if not self._debug:
+                os.remove(temp_path)
          
         Geophys2NetCDF.translate(self, input_path, output_path) # Perform initialisations
         
@@ -153,8 +164,17 @@ class ERS2NetCDF(Geophys2NetCDF):
         band_name = (self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value') or
                      self.get_metadata('GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'))
             
-        self._netcdf_dataset.variables['Band1'].long_name = band_name
+        variable = self._netcdf_dataset.variables['Band1']
+        variable.long_name = band_name
         self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name[0:16])) #TODO: Do something more elegant than string truncation for short name
+
+        #=======================================================================
+        # # Apply hack to try to fix unrecognised CRS read from ERS
+        # if self._netcdf_dataset.variables['crs'].spatial_ref == 'GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]':
+        #     spatial_ref = osr.SpatialReference()
+        #     spatial_ref.ImportFromEPSG(4283)
+        #     self._netcdf_dataset.variables['crs'].spatial_ref = spatial_ref.ExportToWkt()
+        #=======================================================================
 
         self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions + ', ACDD-1.3'
         self.update_nc_metadata()
