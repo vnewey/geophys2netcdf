@@ -146,7 +146,7 @@ class ERS2NetCDF(Geophys2NetCDF):
 
         # Look for date_modified value in source file then in NetCDF file
         date_modified = (self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated')) or
-                         self.read_iso_datetime_string(self._netcdf_dataset.date_modified) if hasattr(self._netcdf_dataset, 'date_modified') else None)
+                         (self.read_iso_datetime_string(self._netcdf_dataset.date_modified) if hasattr(self._netcdf_dataset, 'date_modified') else None))
 
         if date_modified:
             self._netcdf_dataset.date_modified = date_modified.isoformat()
@@ -154,7 +154,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             if not hasattr(self._netcdf_dataset, 'product_version'):
                 self._netcdf_dataset.product_version = date_modified.isoformat()
         else:
-            logger.warning('WARNING" Unable to determine date_modified attribute')
+            logger.warning('WARNING: Unable to determine date_modified attribute')
             
         # Put something sensible in history attribute
         if self._input_path:
