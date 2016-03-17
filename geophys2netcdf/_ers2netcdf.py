@@ -158,13 +158,11 @@ class ERS2NetCDF(Geophys2NetCDF):
             
         # Put something sensible in history attribute
         if self._input_path:
-            logger.info('self._netcdf_dataset.history = %s', self._netcdf_dataset.history)
             history_string = '%s Translated from %s using %s' % (self.get_iso_utcnow(), os.path.basename(self._input_path), __name__ + '.py')
             if hasattr(self._netcdf_dataset, 'history') and self._netcdf_dataset.history and (self._netcdf_dataset.history.lower() != 'unknown'):
                 history_string = self._netcdf_dataset.history + '\n' + history_string
 
             self._netcdf_dataset.history = history_string
-            logger.info('self._netcdf_dataset.history = %s', self._netcdf_dataset.history)
             
         logger.info('Finished writing output file %s', self._output_path)
         
