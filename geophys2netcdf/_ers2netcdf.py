@@ -155,6 +155,8 @@ class ERS2NetCDF(Geophys2NetCDF):
                 self._netcdf_dataset.product_version = date_modified.isoformat()
         else:
             logger.warning('WARNING: Unable to determine date_modified attribute')
+            if not hasattr(self._netcdf_dataset, 'product_version'):
+                self._netcdf_dataset.product_version = '1.0' # Set required attribute
             
         # Put something sensible in history attribute
         if self._input_path:
