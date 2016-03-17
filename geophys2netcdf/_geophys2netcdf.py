@@ -434,9 +434,10 @@ class Geophys2NetCDF(object):
         txt_file = open(txt_path, 'w')
         output_text = '\t'.join([self._uuid, 
                                  self._output_path, 
-                                 datetime.now().isoformat(), 
+                                 self.get_iso_utcnow(), 
                                  self._md5sum])
-        txt_file.write(output_text)
+        
+        txt_file.write(output_text + '\n')
         txt_file.close()
         logger.info('UUID %s written to file %s', self._uuid, txt_path)
            
