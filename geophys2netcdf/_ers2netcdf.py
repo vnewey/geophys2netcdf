@@ -133,7 +133,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         #=======================================================================
 
         self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions + ', ACDD-1.3'
-        self.update_nc_metadata()
+        self.update_nc_metadata() # Will close output file for writing and write checksum and uuid files
+        logger.info('Finished translating %s to %s', self._input_path, self._output_path)
 
     def update_nc_metadata(self, output_path=None):
         '''
