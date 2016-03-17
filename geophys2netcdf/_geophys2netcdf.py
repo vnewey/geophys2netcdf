@@ -34,16 +34,18 @@ Created on 29/02/2016
 '''
 import os
 import re
-import sys
 from collections import OrderedDict
 import logging
 import subprocess
-from osgeo import gdal, osr
+#from osgeo import gdal, osr
 import numpy as np
 import netCDF4
 from owslib.csw import CatalogueServiceWeb
-from owslib.fes import PropertyIsEqualTo, PropertyIsLike, BBox
+from owslib.fes import PropertyIsEqualTo #, PropertyIsLike, BBox
 from datetime import datetime
+import tempfile
+import dateutil.parser
+from dateutil import tz
 
 from metadata import XMLMetadata
 
@@ -72,6 +74,7 @@ class Geophys2NetCDF(object):
         self._input_dataset = None # GDAL Dataset for input
         self._netcdf_dataset = None # NetCDF Dataset for output
         self._uuid = None # File identifier
+        self._md5sum = None # MD5 Checksum
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
@@ -102,6 +105,55 @@ class Geophys2NetCDF(object):
         self._netcdf_dataset = None
         self._metadata_dict = {}
     
+    def read_iso_datetime_string(self, iso_datetime_string):
+        '''
+        Helper function to convert an ISO datetime string into a Python datetime object
+        '''
+        if not iso_datetime_string:
+            return None
+
+        try:
+            iso_datetime = dateutil.parser.parse(iso_datetime_string)
+        except ValueError, e:
+            logger.warning('WARNING: Unable to parse "%s" into ISO datetime (%s)', iso_datetime_string, e.message)
+            iso_datetime = None
+            
+        return iso_datetime
+    
+    def get_iso_utcnow(self, utc_datetime=None):
+        '''
+        Helper function to return an ISO string representing a UTC date/time. Defaults to current datetime.
+        '''
+        return (utc_datetime or datetime.utcnow()).replace(tzinfo=tz.gettz('UTC')).isoformat()
+
+    def gdal_translate(self, input_path, output_path, chunk_size=None):
+        '''
+        Function to use gdal_translate to perform initial format translation (format specific)
+        '''
+        chunk_size = chunk_size or Geophys2NetCDF.DEFAULT_CHUNK_SIZE
+        temp_path = os.path.join(tempfile.gettempdir(), os.path.basename(output_path))
+        gdal_command = ['gdal_translate', 
+                        '-of', 'netCDF',
+                        '-co', 'FORMAT=NC4C', 
+                        '-co', 'COMPRESS=DEFLATE', 
+                        '-co', 'WRITE_BOTTOMUP=YES', 
+                        input_path, 
+                        temp_path
+                        ]
+        
+        logger.debug('gdal_command = %s', ' '.join(gdal_command))
+        
+        try:
+            subprocess.check_call(gdal_command)
+            logger.debug('%s translated to temporary, un-chunked NetCDF file %s', input_path, temp_path)
+            
+            subprocess.check_call(['nccopy', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
+            logger.info('%s translated to chunked NetCDF file %s', input_path, output_path)
+        finally:
+            if not self._debug:
+                os.remove(temp_path)
+                logger.debug('Removed temporary, un-chunked NetCDF file %s', temp_path)
+         
     def update_nc_metadata(self, output_path=None):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
@@ -284,7 +336,7 @@ class Geophys2NetCDF(object):
         
         try:
             txt_file = open(txt_path, 'r')
-            uuid, _dataset_path, _datetime_string = txt_file.readline().split('\t')
+            uuid = txt_file.readline().split('\t')[0]
             txt_file.close()
         except:
             logger.debug('Unable to read UUID from text file %s', txt_path)
@@ -309,7 +361,7 @@ class Geophys2NetCDF(object):
                 logger.info('UUID %s found from CSV file', uuid)
                 return uuid
         except:
-            pass
+            logger.debug('Unable to read unique UUID for %s from CSV file', basename, csv_path)
 
         return uuid
         
@@ -376,15 +428,19 @@ class Geophys2NetCDF(object):
         '''
         assert self._uuid, 'UUID not set'
         assert self._output_path, 'output_path not set'
+        assert self._md5sum, 'md5sum not set'
         
         txt_path = self._output_path + '.uuid'
         txt_file = open(txt_path, 'w')
-        output_text = '%s\t%s\t%s' % (self._uuid, self._output_path, datetime.now().isoformat())
+        output_text = '\t'.join([self._uuid, 
+                                 self._output_path, 
+                                 datetime.now().isoformat(), 
+                                 self._md5sum])
         txt_file.write(output_text)
         txt_file.close()
         logger.info('UUID %s written to file %s', self._uuid, txt_path)
            
-    def do_md5sum(self):
+    def get_md5sum(self):
         '''
         Function to generate MD5 checksum in file alongside output dataset
         Returns MD5 checksum
@@ -406,9 +462,9 @@ class Geophys2NetCDF(object):
         md5file.write(md5_output)
         md5file.close()
 
-        md5sum = md5_output.split(' ')[0]
-        logger.info('MD5 checksum %s written to %s', md5sum, md5sum_path)
-        return md5sum
+        self._md5sum = md5_output.split(' ')[0]
+        logger.info('MD5 checksum %s written to %s', self._md5sum, md5sum_path)
+        return self._md5sum
 
     @property
     def metadata_dict(self):
@@ -429,6 +485,10 @@ class Geophys2NetCDF(object):
     @property
     def uuid(self):
         return self._uuid
+    
+    @property
+    def md5sum(self):
+        return self._md5sum
     
     @property
     def debug(self):

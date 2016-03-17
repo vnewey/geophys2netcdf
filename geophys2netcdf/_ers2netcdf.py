@@ -41,8 +41,6 @@ import subprocess
 from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
-import dateutil.parser
-import tempfile
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
@@ -71,21 +69,6 @@ class ERS2NetCDF(Geophys2NetCDF):
                         ('license', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.resourceConstraints.MD_LegalConstraints.otherConstraints.gco:CharacterString'),
                         ]
     
-    def read_iso_datetime_string(self, iso_datetime_string):
-        '''
-        Helper function to convert an ISO datetime string into a Python datetime object
-        '''
-        if not iso_datetime_string:
-            return None
-
-        try:
-            iso_datetime = dateutil.parser.parse(iso_datetime_string)
-        except ValueError, e:
-            logger.warning('WARNING: Unable to parse "%s" into ISO datetime (%s)', iso_datetime_string, e.message)
-            iso_datetime = None
-            
-        return iso_datetime
-
     def read_ers_datetime_string(self, ers_datetime_string):
         '''
         Helper function to convert an ERS datetime string into a Python datetime object
@@ -119,36 +102,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
         '''
-        def gdal_translate(input_path, output_path, chunk_size=None):
-            '''
-            Function to use gdal_translate to perform initial format translation (format specific)
-            '''
-            chunk_size = chunk_size or Geophys2NetCDF.DEFAULT_CHUNK_SIZE
-            temp_path = os.path.join(tempfile.gettempdir(), os.path.basename(output_path))
-            gdal_command = ['gdal_translate', 
-                            '-of', 'netCDF',
-                            '-co', 'FORMAT=NC4C', 
-                            '-co', 'COMPRESS=DEFLATE', 
-                            '-co', 'WRITE_BOTTOMUP=YES', 
-                            input_path, 
-                            temp_path
-                            ]
-            
-            logger.debug('gdal_command = %s', gdal_command)
-            
-            subprocess.check_call(gdal_command)
-            
-            ''' NOTE:
-            this makes a copy of the file with chunking enabled on the lat/lon axis
-            this is hard coded and will not work if the axis are not called lat lon
-            please customise where required'''
-            subprocess.check_call(['nccopy', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
-            if not self._debug:
-                os.remove(temp_path)
-         
-        Geophys2NetCDF.translate(self, input_path, output_path) # Perform initialisations
+        Geophys2NetCDF.translate(self, input_path, output_path) # Perform initialisations using base class method
         
-        gdal_translate(self._input_path, self._output_path) # Use gdal_translate to create basic NetCDF
+        self.gdal_translate(self._input_path, self._output_path) # Use gdal_translate to create basic NetCDF
         
         self._input_dataset = gdal.Open(self._input_path)
         assert self._input_dataset, 'Unable to open input file %s' % self._input_path
@@ -187,12 +143,8 @@ class ERS2NetCDF(Geophys2NetCDF):
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
         # Look for date_modified value in source file then in NetCDF file
-        date_modified = self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated'))
-        if not date_modified:
-            try:
-                date_modified = self.read_iso_datetime_string(self._netcdf_dataset.date_modified)
-            except Exception, e:
-                pass
+        date_modified = (self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated')) or
+                         self.read_iso_datetime_string(self._netcdf_dataset.date_modified))
 
         if date_modified:
             self._netcdf_dataset.date_modified = date_modified.isoformat()
@@ -202,14 +154,21 @@ class ERS2NetCDF(Geophys2NetCDF):
         else:
             logger.warning('WARNING" Unable to determine date_modified attribute')
             
+        # Put something sensible in history attribute
+        history_string = '%s Translated from %s using %s' % (self.get_iso_utcnow(), os.path.basename(self._input_path), __name__)
+        if not hasattr(self._netcdf_dataset, 'history') or not self._netcdf_dataset.history or self._netcdf_dataset.history.lower() == 'unknown':
+            self._netcdf_dataset.history = history_string
+        else: # Valid history attribute exists
+            self._netcdf_dataset.history = self._netcdf_dataset.history + '\n' + history_string
+            
         logger.info('Finished writing output file %s', self._output_path)
         
+        # Finished modifying NetCDF - calculate checksum
+        self.get_md5sum()
+
         # Write details to UUID file
         self.write_uuid_txt()
          
-        # Finished modifying NetCDF - calculate checksum
-        self._md5sum = self.do_md5sum()
-
         # Set permissions to group writeable, world readable - ignore errors
         chmod_command = ['chmod', 'g+rwX,o+rX', self._output_path + '*']
         logger.debug('gdal_command = %s', chmod_command)
@@ -247,7 +206,7 @@ class ERS2NetCDF(Geophys2NetCDF):
                 #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
                 self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title))
 
-        assert self._uuid, 'Unable to determine UUID for %s' % self.output_path
+        assert self._uuid, 'Unable to determine unique UUID for %s' % self.output_path
         logger.debug('self._uuid = %s', self._uuid)
 
         # Get record from GA CSW

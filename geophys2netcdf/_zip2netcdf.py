@@ -33,7 +33,6 @@ Created on 29/02/2016
 @author: Alex Ip
 '''
 import os
-import sys
 import errno
 import logging
 import subprocess
