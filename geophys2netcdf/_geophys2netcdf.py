@@ -144,8 +144,8 @@ class Geophys2NetCDF(object):
         logger.debug('gdal_command = %s', ' '.join(gdal_command))
         
         try:
-            subprocess.check_call(gdal_command)
             logger.info('Translating %s to temporary, un-chunked NetCDF file %s', input_path, temp_path)
+            subprocess.check_call(gdal_command)
             
             logger.info('Translating temporary file %s to chunked NetCDF file %s', temp_path, output_path)
             subprocess.check_call(['nccopy', '-u', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
