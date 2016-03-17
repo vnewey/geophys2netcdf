@@ -60,7 +60,7 @@ class Geophys2NetCDF(object):
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
     FILE_EXTENSION = None # Unknown for base class
-    DEFAULT_CHUNK_SIZE = 128
+    DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
 
     def __init__(self, debug=False):
         '''
@@ -145,10 +145,10 @@ class Geophys2NetCDF(object):
         
         try:
             subprocess.check_call(gdal_command)
-            logger.info('%s translated to temporary, un-chunked NetCDF file %s', input_path, temp_path)
+            logger.info('Translating %s to temporary, un-chunked NetCDF file %s', input_path, temp_path)
             
-            subprocess.check_call(['nccopy', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
-            logger.info('Temporary file %s translated to chunked NetCDF file %s', temp_path, output_path)
+            logger.info('Translating temporary file %s to chunked NetCDF file %s', temp_path, output_path)
+            subprocess.check_call(['nccopy', '-u', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
         finally:
             if not self._debug:
                 os.remove(temp_path)
