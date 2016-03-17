@@ -142,9 +142,11 @@ class ERS2NetCDF(Geophys2NetCDF):
         '''
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
+        self._netcdf_dataset.sync()
+
         # Look for date_modified value in source file then in NetCDF file
         date_modified = (self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated')) or
-                         self.read_iso_datetime_string(self._netcdf_dataset.date_modified))
+                         self.read_iso_datetime_string(self._netcdf_dataset.date_modified) if hasattr(self._netcdf_dataset, 'date_modified') else None)
 
         if date_modified:
             self._netcdf_dataset.date_modified = date_modified.isoformat()
@@ -155,11 +157,14 @@ class ERS2NetCDF(Geophys2NetCDF):
             logger.warning('WARNING" Unable to determine date_modified attribute')
             
         # Put something sensible in history attribute
-        history_string = '%s Translated from %s using %s' % (self.get_iso_utcnow(), os.path.basename(self._input_path), __name__)
-        if not hasattr(self._netcdf_dataset, 'history') or not self._netcdf_dataset.history or self._netcdf_dataset.history.lower() == 'unknown':
+        if self._input_path:
+            logger.info('self._netcdf_dataset.history = %s', self._netcdf_dataset.history)
+            history_string = '%s Translated from %s using %s' % (self.get_iso_utcnow(), os.path.basename(self._input_path), __name__ + '.py')
+            if hasattr(self._netcdf_dataset, 'history') and self._netcdf_dataset.history and (self._netcdf_dataset.history.lower() != 'unknown'):
+                history_string = self._netcdf_dataset.history + '\n' + history_string
+
             self._netcdf_dataset.history = history_string
-        else: # Valid history attribute exists
-            self._netcdf_dataset.history = self._netcdf_dataset.history + '\n' + history_string
+            logger.info('self._netcdf_dataset.history = %s', self._netcdf_dataset.history)
             
         logger.info('Finished writing output file %s', self._output_path)
         

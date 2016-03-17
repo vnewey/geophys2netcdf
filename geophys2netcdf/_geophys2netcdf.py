@@ -449,6 +449,7 @@ class Geophys2NetCDF(object):
         assert self._netcdf_dataset, 'No NetCDF dataset defined'
         
         # Close and reopen NetCDF file as read-only
+        self._netcdf_dataset.sync()
         self._netcdf_dataset.close()
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
         logger.debug('NetCDF file %s reopened as read-only', self._output_path)
