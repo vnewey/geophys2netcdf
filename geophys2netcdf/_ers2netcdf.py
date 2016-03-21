@@ -169,8 +169,14 @@ class ERS2NetCDF(Geophys2NetCDF):
             
         logger.info('Finished writing output file %s', self._output_path)
         
+        # Close and reopen NetCDF file as read-only
+        self._netcdf_dataset.sync()
+        self._netcdf_dataset.close()
+        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
+        logger.debug('NetCDF file %s reopened as read-only', self._output_path)
+
         # Finished modifying NetCDF - calculate checksum
-        self.get_md5sum()
+        self.get_md5sums()
 
         # Write details to UUID file
         self.write_uuid_txt()
