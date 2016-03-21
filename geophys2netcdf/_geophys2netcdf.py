@@ -132,7 +132,7 @@ class Geophys2NetCDF(object):
         Helper function to return the UTC modification time for a specified file
         '''
         assert file_path and os.path.exists(file_path), 'Invalid file path "%s"' % file_path
-        return datetime.datetime.fromtimestamp(os.path.getmtime(file_path), pytz.utc)
+        return datetime.fromtimestamp(os.path.getmtime(file_path), pytz.utc)
 
     def gdal_translate(self, input_path, output_path, chunk_size=None):
         '''
@@ -441,12 +441,12 @@ class Geophys2NetCDF(object):
         txt_file = open(txt_path, 'w')
         
         for file_path in sorted(self._md5sum.keys()):
-            output_text = '\t'.join([self._uuid, 
+            output_line = '\t'.join([self._uuid, 
                                      file_path, 
                                      self.get_utc_mtime(file_path).isoformat(), 
-                                     self._md5sum[file_path]])
+                                     self._md5sum[file_path]]) + '\n'
         
-            txt_file.writeln(output_text)
+            txt_file.write(output_line)
             logger.info('UUID %s written to file %s', self._uuid, txt_path)
             
         txt_file.close()
@@ -462,7 +462,7 @@ class Geophys2NetCDF(object):
         assert md5_output_path or self._output_path, 'No output path defined'
         md5_output_path = md5_output_path or self._output_path + '.md5'
         assert path_list or self._netcdf_dataset, 'No NetCDF dataset defined'
-        path_list = path_list or [self._netcdf_dataset]
+        path_list = path_list or [self._output_path]
         
         self._md5sum = {}
         md5file = open(md5_output_path, 'w')
@@ -471,8 +471,8 @@ class Geophys2NetCDF(object):
             md5_output = subprocess.check_output(['md5sum', abs_path])
             # Write checksum to file
             md5file.write(md5_output)
-            logger.info('MD5 checksum %s written to %s', self._md5sum, md5_output_path)
             self._md5sum[abs_path] = md5_output.split(' ')[0]
+            logger.info('MD5 checksum %s written to %s', self._md5sum, md5_output_path)
 
         md5file.close()
 
