@@ -69,18 +69,21 @@ class THREDDSCatalog(object):
     '''
     Class definition for THREDDSCatalog
     '''
-    DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
+    # DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
+    DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
     
-    def __init__(self, thredds_catalog_url=None, verbose=False):
+    def __init__(self, thredds_catalog_url=None, yaml_path=None, verbose=False):
         '''
         Constructor for class THREDDSCatalog
         Launches a crawler to examine every THREDDS catalog page underneath the nominated thredds_catalog_url
         '''
+        assert (yaml_path and not thredds_catalog_url) or (thredds_catalog_url and not yaml_path), 'yaml_path or thredds_catalog_url should be specified, but not both.'
         self.verbose = verbose
-        
-        thredds_catalog_url = thredds_catalog_url or self.DEFAULT_THREDDS_CATALOGUE_URL
-        
-        self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)}
+        if yaml_path:
+            self.load(yaml_path)
+        else:
+            thredds_catalog_url = thredds_catalog_url or self.DEFAULT_THREDDS_CATALOGUE_URL
+            self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)}
 
     
     def get_thredds_dict(self, thredds_catalog_url):
@@ -181,6 +184,12 @@ class THREDDSCatalog(object):
         yaml.dump(self.thredds_catalog_dict, yaml_file)
         yaml_file.close()
         logger.info('THREDDS catalogue dumped to file %s', yaml_path)
+    
+    def load(self, yaml_path):
+        yaml_file = open(yaml_path, 'r')
+        self.thredds_catalog_dict = yaml.load(yaml_file)
+        yaml_file.close()
+        logger.info('THREDDS catalogue loaded from file %s', yaml_path)
     
     def endpoint_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
         '''
