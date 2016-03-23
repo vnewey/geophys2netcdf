@@ -52,7 +52,7 @@ import logging
 import yaml
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.INFO) # Logging level for this module
 
 # Ignore failed import of URL modules
 try:
@@ -71,7 +71,10 @@ class THREDDSCatalog(object):
     '''
     DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
     
-    def __init__(self, thredds_catalog_url=None, debug=False):
+    def __init__(self, thredds_catalog_url=None):
+        '''
+        Constructor for class THREDDSCatalog
+        '''
         thredds_catalog_url = thredds_catalog_url or self.DEFAULT_THREDDS_CATALOGUE_URL
         
         self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)}
@@ -79,7 +82,7 @@ class THREDDSCatalog(object):
     
     def get_thredds_dict(self, thredds_catalog_url):
         '''
-        get_thredds_dict - function to parse specified THREDDS catalogue URL and return a nested dict
+        get_thredds_dict - recursive function to parse specified THREDDS catalogue URL and return a nested dict
         Parameter: thredds_catalog_url - string specifying URL of THREDDS catalog
         '''
         def get_absolute_url(href):
