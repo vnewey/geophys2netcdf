@@ -71,10 +71,13 @@ class THREDDSCatalog(object):
     '''
     DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
     
-    def __init__(self, thredds_catalog_url=None):
+    def __init__(self, thredds_catalog_url=None, verbose=False):
         '''
         Constructor for class THREDDSCatalog
+        Launches a crawler to examine every THREDDS catalog page underneath the nominated thredds_catalog_url
         '''
+        self.verbose = verbose
+        
         thredds_catalog_url = thredds_catalog_url or self.DEFAULT_THREDDS_CATALOGUE_URL
         
         self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)}
@@ -94,8 +97,10 @@ class THREDDSCatalog(object):
                 
         thredds_catalog_dict = {} 
         
+        if self.verbose:
+            logger.info('Opening %s', thredds_catalog_url)
         data = urllib.urlopen(thredds_catalog_url).read()
-        logger.debug('%s data = %s', thredds_catalog_url, data)
+        logger.debug('data = %s', data)
     
         tree = lxml.html.fromstring(data)
         
