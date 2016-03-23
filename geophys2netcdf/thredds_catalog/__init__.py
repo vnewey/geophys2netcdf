@@ -111,12 +111,10 @@ class THREDDSCatalog(object):
         if title_text == 'Catalog Services': # This is a landing page for a file
             # Iterate through all service endpoints for file
             for ol in tree.iterfind('.//ol'):
-#                logger.debug('ol = %s', ol)
                 for li in ol.iterfind('.//li'):
-#                    logger.debug('li = %s', li)
                     text = [e.strip() for e in li.xpath('.//text()') if len(e.strip()) > 0]
-#                    logger.debug('text = %s', text)
-                    if not text: # No li text found
+
+                    if len(text) == 0: # No li text found
                         continue
                     
                     endpoint_type = text[0].replace(':', '')
@@ -125,12 +123,12 @@ class THREDDSCatalog(object):
         #=======================================================================
         #             # Not sure why a isn't found
         #             a = li.find('.//a')
-        #             if not a:
+        #             if a is None:
         #                 logger.debug('a not found')
         #                 continue
         # 
         #             href = a.get('href')
-        #             if not href:
+        #             if href is None:
         #                 logger.debug('href not found')
         #                 continue
         #             
@@ -144,21 +142,15 @@ class THREDDSCatalog(object):
         else: # Catalog page for virtual subdirectory
     
             for table in tree.iterfind('.//table'):
-                first_row = True
+#                first_row = True
                 for row in table.iterfind('.//tr'):
                     a = row.find('.//a')
-                    if not a:
+                    if a is None:
                         continue
         
                     href = a.get('href')
                     logger.debug('href = %s', href)
-                    if not href:
-                        continue
-                    
-                    
-                    # Discard first row (parent directory or license folder)
-                    if first_row:
-                        first_row = False
+                    if href is None:
                         continue
                     
                     url = get_absolute_url(href)
@@ -189,4 +181,24 @@ class THREDDSCatalog(object):
         yaml.dump(self.thredds_catalog_dict, yaml_file)
         yaml_file.close()
         logger.info('THREDDS catalogue dumped to file %s', yaml_path)
+    
+    def endpoint_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
+        '''
+        Function to return a list of endpoints contained in the leaf nodes of self.thredds_catalog_dict
+        Arguments:
+            type_filter: regular expression string matching one or more of ['HTTPServer', 'NetcdfSubset', OPENDAP', 'WCS, 'WMS']
+            url_filter: regular expression string to restrict URLs returned: e.g. '.*\.nc$' to return all NetCDF endpoints
+        '''
+        result_list = []
+        catalog_dict = catalog_dict or self.thredds_catalog_dict
         
+        for key in sorted(catalog_dict.keys()):
+            value = catalog_dict[key]
+            
+            if type(value) == dict:
+                result_list += self.endpoint_list(type_filter, url_filter, catalog_dict[key])
+            else: # Leaf node
+                if (re.search(type_filter, key) and re.search(url_filter, value)):
+                    result_list.append(value)
+                    
+        return result_list    
