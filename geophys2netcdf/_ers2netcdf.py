@@ -214,7 +214,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         logger.debug('title = %s', title)
         
         self._uuid = (self.get_uuid_from_netcdf() or
-                self.get_uuid_from_json(os.path.join(os.path.dirname(self._output_path, '.metadata.json'))) or
+                self.get_uuid_from_json(os.path.join(os.path.dirname(self._output_path), '.metadata.json')) or
                 #===============================================================
                 # self.get_uuid_from_txt(self._output_path + '.uuid') or
                 # self.get_uuid_from_txt(self._input_path + '.uuid') or
