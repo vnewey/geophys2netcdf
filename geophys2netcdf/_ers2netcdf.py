@@ -174,12 +174,16 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset.close()
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
         logger.debug('NetCDF file %s reopened as read-only', self._output_path)
+        
+        self.write_json_metadata()
 
-        # Finished modifying NetCDF - calculate checksum
-        self.get_md5sums()
-
-        # Write details to UUID file
-        self.write_uuid_txt()
+#===============================================================================
+#         # Finished modifying NetCDF - calculate checksum
+#         self.get_md5sums()
+# 
+#         # Write details to UUID file
+#         self.write_uuid_txt()
+#===============================================================================
          
         # Set permissions to group writeable, world readable - ignore errors
         chmod_command = ['chmod', 'g+rwX,o+rX', self._output_path + '*']

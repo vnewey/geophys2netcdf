@@ -47,6 +47,8 @@ import tempfile
 import dateutil.parser
 from dateutil import tz
 import pytz
+from glob import glob
+import json
 
 from metadata import XMLMetadata
 
@@ -75,7 +77,7 @@ class Geophys2NetCDF(object):
         self._input_dataset = None # GDAL Dataset for input
         self._netcdf_dataset = None # NetCDF Dataset for output
         self._uuid = None # File identifier - must be unique to dataset
-        self._md5sum = None # MD5 Checksum dict
+#        self._md5sum = None # MD5 Checksum dict
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
@@ -430,53 +432,90 @@ class Geophys2NetCDF(object):
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
     
-    def write_uuid_txt(self): 
+    def write_json_metadata(self, dataset_folder=None): 
         '''
-        Function to write UUID, file_path and current timestamp to <output_path>.uuid
+        Function to write UUID, file_paths and current timestamp to .metadata.json
         '''
         assert self._uuid, 'UUID not set'
-        assert self._md5sum, 'md5sum not set'
+        EXCLUDED_EXTENSIONS = ['.md5', '.uuid', '.json', '.tmp']
         
-        txt_path = self._output_path + '.uuid'
-        txt_file = open(txt_path, 'w')
+        dataset_folder = dataset_folder or os.path.dirname(self._output_path)
+        assert dataset_folder, 'dataset_folder not defined.'
+        dataset_folder = os.path.abspath(dataset_folder)
         
-        for file_path in sorted(self._md5sum.keys()):
-            output_line = '\t'.join([self._uuid, 
-                                     file_path, 
-                                     self.get_utc_mtime(file_path).isoformat(), 
-                                     self._md5sum[file_path]]) + '\n'
+        json_output_path = os.path.join(dataset_folder, '.metadata.json')
         
-            txt_file.write(output_line)
-            logger.info('UUID %s written to file %s', self._uuid, txt_path)
-            
-        txt_file.close()
-           
-    def get_md5sums(self, md5_output_path=None, path_list=None):
-        '''
-        Function to generate MD5 checksums in file alongside output dataset
-        Returns dict containing MD5 checksum for each path
-        Arguments:
-            md5_output_path: string specifying file to which to write checksum(s). Defaults to self._output_path + '.md5'
-            path_list: List of file paths for which checksums should be calculated. Defaults to [self._netcdf_dataset]
-        '''
-        assert md5_output_path or self._output_path, 'No output path defined'
-        md5_output_path = md5_output_path or self._output_path + '.md5'
-        assert path_list or self._netcdf_dataset, 'No NetCDF dataset defined'
-        path_list = path_list or [self._output_path]
+        file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*')) 
+                     if os.path.splitext(file_path)[1] not in EXCLUDED_EXTENSIONS
+                     and os.path.isfile(file_path)]
         
-        self._md5sum = {}
-        md5file = open(md5_output_path, 'w')
+        md5_output = subprocess.check_output(['md5sum'] + file_list)
+        md5_dict = {re.search('^(\w+)\s+(.+)$', line).groups()[1]: re.search('^(\w+)\s+(.+)$', line).groups()[0] for line in md5_output.split('\n') if line.strip()}
         
-        for abs_path in [os.path.abspath(file_path) for file_path in path_list]:
-            md5_output = subprocess.check_output(['md5sum', abs_path])
-            # Write checksum to file
-            md5file.write(md5_output)
-            self._md5sum[abs_path] = md5_output.split(' ')[0]
-            logger.info('MD5 checksum %s written to %s', self._md5sum, md5_output_path)
-
-        md5file.close()
-
-        return self._md5sum
+        metadata_dict = {'uuid': self._uuid,
+                         'time': self.get_iso_utcnow(),
+                         'folder_path': dataset_folder,
+                         'files': [{'file': os.path.basename(filename),
+                                    'md5': md5_dict[filename],
+                                    'mtime': self.get_utc_mtime(filename).isoformat()
+                                    }
+                                    for filename in sorted(md5_dict.keys())
+                                   ]
+                         }
+        
+        json_output_file = open(json_output_path, 'w')
+        json.dump(metadata_dict, json_output_file, indent=4)
+        json_output_file.close()
+        
+#===============================================================================
+#     def write_uuid_txt(self): 
+#         '''
+#         Function to write UUID, file_path and current timestamp to <output_path>.uuid
+#         '''
+#         assert self._uuid, 'UUID not set'
+#         assert self._md5sum, 'md5sum not set'
+#         
+#         txt_path = self._output_path + '.uuid'
+#         txt_file = open(txt_path, 'w')
+#         
+#         for file_path in sorted(self._md5sum.keys()):
+#             output_line = '\t'.join([self._uuid, 
+#                                      file_path, 
+#                                      self.get_utc_mtime(file_path).isoformat(), 
+#                                      self._md5sum[file_path]]) + '\n'
+#         
+#             txt_file.write(output_line)
+#             logger.info('UUID %s written to file %s', self._uuid, txt_path)
+#             
+#         txt_file.close()
+#            
+#     def get_md5sums(self, md5_output_path=None, path_list=None):
+#         '''
+#         Function to generate MD5 checksums in file alongside output dataset
+#         Returns dict containing MD5 checksum for each path
+#         Arguments:
+#             md5_output_path: string specifying file to which to write checksum(s). Defaults to self._output_path + '.md5'
+#             path_list: List of file paths for which checksums should be calculated. Defaults to [self._netcdf_dataset]
+#         '''
+#         assert md5_output_path or self._output_path, 'No output path defined'
+#         md5_output_path = md5_output_path or self._output_path + '.md5'
+#         assert path_list or self._netcdf_dataset, 'No NetCDF dataset defined'
+#         path_list = path_list or [self._output_path]
+#         
+#         self._md5sum = {}
+#         md5file = open(md5_output_path, 'w')
+#         
+#         for abs_path in [os.path.abspath(file_path) for file_path in path_list]:
+#             md5_output = subprocess.check_output(['md5sum', abs_path])
+#             # Write checksum to file
+#             md5file.write(md5_output)
+#             self._md5sum[abs_path] = md5_output.split(' ')[0]
+#             logger.info('MD5 checksum %s written to %s', self._md5sum, md5_output_path)
+# 
+#         md5file.close()
+# 
+#         return self._md5sum
+#===============================================================================
 
     @property
     def metadata_dict(self):
@@ -498,9 +537,11 @@ class Geophys2NetCDF(object):
     def uuid(self):
         return self._uuid
     
-    @property
-    def md5sum(self):
-        return self._md5sum
+    #===========================================================================
+    # @property
+    # def md5sum(self):
+    #     return self._md5sum
+    #===========================================================================
     
     @property
     def debug(self):
