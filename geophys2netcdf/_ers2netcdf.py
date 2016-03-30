@@ -124,14 +124,6 @@ class ERS2NetCDF(Geophys2NetCDF):
         variable.long_name = band_name
         self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name[0:16])) #TODO: Do something more elegant than string truncation for short name
 
-        #=======================================================================
-        # # Apply hack to try to fix unrecognised CRS read from ERS
-        # if self._netcdf_dataset.variables['crs'].spatial_ref == 'GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]':
-        #     spatial_ref = osr.SpatialReference()
-        #     spatial_ref.ImportFromEPSG(4283)
-        #     self._netcdf_dataset.variables['crs'].spatial_ref = spatial_ref.ExportToWkt()
-        #=======================================================================
-
         self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions + ', ACDD-1.3'
         self.update_nc_metadata() # Will close output file for writing and write checksum and uuid files
         logger.info('Finished translating %s to %s', self._input_path, self._output_path)
@@ -177,19 +169,11 @@ class ERS2NetCDF(Geophys2NetCDF):
         
         self.write_json_metadata()
 
-#===============================================================================
-#         # Finished modifying NetCDF - calculate checksum
-#         self.get_md5sums()
-# 
-#         # Write details to UUID file
-#         self.write_uuid_txt()
-#===============================================================================
-         
         # Set permissions to group writeable, world readable - ignore errors
-        chmod_command = ['chmod', 'g+rwX,o+rX', self._output_path + '*']
+        chmod_command = ['chmod', '-R', 'g+rwX,o+rX', os.path.join(os.path.dirname(self._output_path), '*')]
         logger.debug('gdal_command = %s', chmod_command)
         if subprocess.call(chmod_command):
-            logger.warning('WARNING: Command "%s" failed.', ' '.join(chmod_command))
+            logger.warning('WARNING: Command "%s" returned non-zero status.', ' '.join(chmod_command))
             
     def import_metadata(self):
         '''
@@ -213,21 +197,8 @@ class ERS2NetCDF(Geophys2NetCDF):
             title = None
         logger.debug('title = %s', title)
         
-        self._uuid = (self.get_uuid_from_netcdf() or
-                self.get_uuid_from_json(os.path.join(os.path.dirname(self._output_path), '.metadata.json')) or
-                #===============================================================
-                # self.get_uuid_from_txt(self._output_path + '.uuid') or
-                # self.get_uuid_from_txt(self._input_path + '.uuid') or
-                #===============================================================
-                self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._output_path) or
-                self.get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._input_path) or
-                #May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
-                #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
-                self.get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title))
-
-        assert self._uuid, 'Unable to determine unique UUID for %s' % self.output_path
-        logger.debug('self._uuid = %s', self._uuid)
-
+        self.get_uuid(title)
+        
         # Get record from GA CSW
         try:
             csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)

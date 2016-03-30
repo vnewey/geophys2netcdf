@@ -77,7 +77,6 @@ class Geophys2NetCDF(object):
         self._input_dataset = None # GDAL Dataset for input
         self._netcdf_dataset = None # NetCDF Dataset for output
         self._uuid = None # File identifier - must be unique to dataset
-#        self._md5sum = None # MD5 Checksum dict
         self._metadata_dict = {}
         self._metadata_mapping_dict = OrderedDict()
         
@@ -323,108 +322,116 @@ class Geophys2NetCDF(object):
         return record_list        
             
 
-    def get_uuid_from_netcdf(self):
+    def get_uuid(self, title=None):
         '''
         Function to return UUID from csv file from file basename
         Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
         '''
-        uuid = None
-        try: # Try to use existing "identifier" attribute in NetCDF file
-            uuid = self._netcdf_dataset.identifier
-            logger.debug('Read UUID %s from NetCDF file', uuid)
-        except:
-            logger.debug('Unable to read UUID from NetCDF file')
+        self._uuid = None
+        
+        def get_uuid_from_netcdf(self):
+            '''
+            Function to return UUID from csv file from file basename
+            Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+            '''
+            uuid = None
+            try: # Try to use existing "identifier" attribute in NetCDF file
+                uuid = self._netcdf_dataset.identifier
+                logger.debug('Read UUID %s from NetCDF file', uuid)
+            except:
+                logger.debug('Unable to read UUID from NetCDF file')
+                
+            return uuid
             
-        return uuid
-        
-    #===========================================================================
-    # def get_uuid_from_txt(self, txt_path):
-    #     '''
-    #     Function to return UUID from csv file from file basename
-    #     Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
-    #     '''
-    #     uuid = None
-    #     
-    #     try:
-    #         txt_file = open(txt_path, 'r')
-    #         uuid = txt_file.readline().split('\t')[0]
-    #         txt_file.close()
-    #     except:
-    #         logger.debug('Unable to read UUID from text file %s', txt_path)
-    #         
-    #     return uuid
-    #===========================================================================
-        
-    def get_uuid_from_json(self, json_path):
-        '''
-        Function to return UUID from JSON file
-        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
-        '''
-        uuid = None
-        
-        try:
-            json_file = open(json_path, 'r')
-            uuid = json.load(json_file)['uuid']
-            json_file.close()
-        except:
-            logger.debug('Unable to read UUID from JSON file %s', json_path)
+        def get_uuid_from_json(json_path):
+            '''
+            Function to return UUID from JSON file
+            Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+            '''
+            uuid = None
             
-        return uuid
-        
-    def get_uuid_from_csv(self, csv_path, file_path):
-        '''
-        Function to return UUID from csv file from file basename
-        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
-        '''
-        uuid = None
-        basename = os.path.splitext(os.path.basename(file_path))[0]
-        
-        try:
-            record_list = self.read_csv(csv_path)
-            uuid_list = [record['UUID'] for record in record_list if os.path.splitext(os.path.basename(record['PATHNAME']))[0] == basename]
-            if len(uuid_list) == 1:
-                uuid = uuid_list[0].lower()
-                if len(uuid) == 32: # hyphens missing
-                    uuid = '-'.join([uuid[uuid_section[0]: uuid_section[1]] for uuid_section in [(0, 8), (8, 12), (12, 16), (16, 20), (20, 32)]])
-                logger.info('UUID %s found from CSV file', uuid)
-                return uuid
-        except:
-            logger.debug('Unable to read unique UUID for %s from CSV file', basename, csv_path)
-
-        return uuid
-        
-    def get_uuid_from_title(self, csw_url, title):
-        '''
-        Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
-        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
-        '''
-        MAXRECORDS = 200
-
-        uuid = None
-        csw = CatalogueServiceWeb(csw_url)
-        assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
-        
-        search_title = title.replace('_', '%')
-        while search_title and len(title)-len(search_title) < 10 and not uuid:
-            title_query = PropertyIsEqualTo('csw:Title', '%' + search_title + '%')
-            csw.getrecords2(constraints=[title_query], esn='summary', maxrecords=MAXRECORDS)
+            try:
+                json_file = open(json_path, 'r')
+                uuid = json.load(json_file)['uuid']
+                json_file.close()
+            except:
+                logger.debug('Unable to read UUID from JSON file %s', json_path)
+                
+            return uuid
             
-            if not csw.records: # No records found
-                search_title = search_title[0:-1] # Broaden search by shortening title
-            else:
-                uuid_list = []
-                alphanumeric_title = re.sub('\W', '', title) # Strip all non-alphanumeric characters from title
-                while not uuid_list:
-                    uuid_list = [identifier for identifier in csw.records.keys() if alphanumeric_title in re.sub('\W', '', csw.records[identifier].title)]
-                    if len(uuid_list) == 1: # Unique match found
-                        uuid = uuid_list[0]
-                        logger.info('UUID %s found from title characters', uuid)
-                        break
-                    else:
-                        alphanumeric_title = alphanumeric_title[0:-1] # Broaden search by shortening munged_title
-        
-        return uuid
+        def get_uuid_from_csv(csv_path, file_path):
+            '''
+            Function to return UUID from csv file from file basename
+            Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+            '''
+            uuid = None
+            basename = os.path.splitext(os.path.basename(file_path))[0]
+            
+            try:
+                record_list = self.read_csv(csv_path)
+                uuid_list = [record['UUID'] for record in record_list if os.path.splitext(os.path.basename(record['PATHNAME']))[0] == basename]
+                if len(uuid_list) == 1:
+                    uuid = uuid_list[0].lower()
+                    if len(uuid) == 32: # hyphens missing
+                        uuid = '-'.join([uuid[uuid_section[0]: uuid_section[1]] for uuid_section in [(0, 8), (8, 12), (12, 16), (16, 20), (20, 32)]])
+                    logger.info('UUID %s found from CSV file', uuid)
+                    return uuid
+            except:
+                logger.debug('Unable to read unique UUID for %s from CSV file', basename, csv_path)
     
+            return uuid
+            
+        def get_uuid_from_title(csw_url, title):
+            '''
+            Function to return OWSLib CSW record record from specified CSW URL using title as the search criterion
+            Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+            '''
+            MAXRECORDS = 200
+    
+            uuid = None
+            csw = CatalogueServiceWeb(csw_url)
+            assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url  
+            
+            search_title = title.replace('_', '%')
+            while search_title and len(title)-len(search_title) < 10 and not uuid:
+                title_query = PropertyIsEqualTo('csw:Title', '%' + search_title + '%')
+                csw.getrecords2(constraints=[title_query], esn='summary', maxrecords=MAXRECORDS)
+                
+                if not csw.records: # No records found
+                    search_title = search_title[0:-1] # Broaden search by shortening title
+                else:
+                    uuid_list = []
+                    alphanumeric_title = re.sub('\W', '', title) # Strip all non-alphanumeric characters from title
+                    while not uuid_list:
+                        uuid_list = [identifier for identifier in csw.records.keys() if alphanumeric_title in re.sub('\W', '', csw.records[identifier].title)]
+                        if len(uuid_list) == 1: # Unique match found
+                            uuid = uuid_list[0]
+                            logger.info('UUID %s found from title characters', uuid)
+                            break
+                        else:
+                            alphanumeric_title = alphanumeric_title[0:-1] # Broaden search by shortening munged_title
+            
+            return uuid
+    
+        self._uuid = (get_uuid_from_netcdf() or
+                      get_uuid_from_json(os.path.join(os.path.dirname(self._output_path), '.metadata.json'))
+                      )
+                                         
+        if not self._uuid and self._output_path:
+            get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._output_path)
+            
+        if not self._uuid and self._input_path:
+            get_uuid_from_csv(os.path.join(self._code_root, 'uuid.csv'), self._input_path)
+
+        #May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
+        #TODO: Remove this hack when GA's CSW is updated to v3.X or greater
+        if not self._uuid and title:
+            get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
+            
+        assert self._uuid, 'Unable to determine unique UUID for %s' % self.output_path
+        logger.debug('self._uuid = %s', self._uuid)
+        return self._uuid
+
     def get_csw_record_by_id(self, csw_url, identifier):
         '''
         Function to return OWSLib CSW record record from specified CSW URL using UUID as the search criterion
@@ -486,56 +493,6 @@ class Geophys2NetCDF(object):
         json_output_file.close()
         logger.info('Finished writing metadata file %s', json_output_path)
         
-#===============================================================================
-#     def write_uuid_txt(self): 
-#         '''
-#         Function to write UUID, file_path and current timestamp to <output_path>.uuid
-#         '''
-#         assert self._uuid, 'UUID not set'
-#         assert self._md5sum, 'md5sum not set'
-#         
-#         txt_path = self._output_path + '.uuid'
-#         txt_file = open(txt_path, 'w')
-#         
-#         for file_path in sorted(self._md5sum.keys()):
-#             output_line = '\t'.join([self._uuid, 
-#                                      file_path, 
-#                                      self.get_utc_mtime(file_path).isoformat(), 
-#                                      self._md5sum[file_path]]) + '\n'
-#         
-#             txt_file.write(output_line)
-#             logger.info('UUID %s written to file %s', self._uuid, txt_path)
-#             
-#         txt_file.close()
-#            
-#     def get_md5sums(self, md5_output_path=None, path_list=None):
-#         '''
-#         Function to generate MD5 checksums in file alongside output dataset
-#         Returns dict containing MD5 checksum for each path
-#         Arguments:
-#             md5_output_path: string specifying file to which to write checksum(s). Defaults to self._output_path + '.md5'
-#             path_list: List of file paths for which checksums should be calculated. Defaults to [self._netcdf_dataset]
-#         '''
-#         assert md5_output_path or self._output_path, 'No output path defined'
-#         md5_output_path = md5_output_path or self._output_path + '.md5'
-#         assert path_list or self._netcdf_dataset, 'No NetCDF dataset defined'
-#         path_list = path_list or [self._output_path]
-#         
-#         self._md5sum = {}
-#         md5file = open(md5_output_path, 'w')
-#         
-#         for abs_path in [os.path.abspath(file_path) for file_path in path_list]:
-#             md5_output = subprocess.check_output(['md5sum', abs_path])
-#             # Write checksum to file
-#             md5file.write(md5_output)
-#             self._md5sum[abs_path] = md5_output.split(' ')[0]
-#             logger.info('MD5 checksum %s written to %s', self._md5sum, md5_output_path)
-# 
-#         md5file.close()
-# 
-#         return self._md5sum
-#===============================================================================
-
     @property
     def metadata_dict(self):
         return self._metadata_dict
@@ -555,12 +512,6 @@ class Geophys2NetCDF(object):
     @property
     def uuid(self):
         return self._uuid
-    
-    #===========================================================================
-    # @property
-    # def md5sum(self):
-    #     return self._md5sum
-    #===========================================================================
     
     @property
     def debug(self):
