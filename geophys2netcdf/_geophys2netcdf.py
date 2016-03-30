@@ -353,6 +353,22 @@ class Geophys2NetCDF(object):
             
         return uuid
         
+    def get_uuid_from_json(self, json_path):
+        '''
+        Function to return UUID from JSON file
+        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+        '''
+        uuid = None
+        
+        try:
+            json_file = open(json_path, 'r')
+            uuid = json.load(json_file)['uuid']
+            json_file.close()
+        except:
+            logger.debug('Unable to read UUID from JSON file %s', json_path)
+            
+        return uuid
+        
     def get_uuid_from_csv(self, csv_path, file_path):
         '''
         Function to return UUID from csv file from file basename
@@ -437,7 +453,7 @@ class Geophys2NetCDF(object):
         Function to write UUID, file_paths and current timestamp to .metadata.json
         '''
         assert self._uuid, 'UUID not set'
-        EXCLUDED_EXTENSIONS = ['.md5', '.uuid', '.json', '.tmp']
+        EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
         
         dataset_folder = dataset_folder or os.path.dirname(self._output_path)
         assert dataset_folder, 'dataset_folder not defined.'
@@ -466,6 +482,7 @@ class Geophys2NetCDF(object):
         json_output_file = open(json_output_path, 'w')
         json.dump(metadata_dict, json_output_file, indent=4)
         json_output_file.close()
+        logger.info('Finished writing metadata file %s', json_output_path)
         
 #===============================================================================
 #     def write_uuid_txt(self): 
