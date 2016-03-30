@@ -337,21 +337,23 @@ class Geophys2NetCDF(object):
             
         return uuid
         
-    def get_uuid_from_txt(self, txt_path):
-        '''
-        Function to return UUID from csv file from file basename
-        Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
-        '''
-        uuid = None
-        
-        try:
-            txt_file = open(txt_path, 'r')
-            uuid = txt_file.readline().split('\t')[0]
-            txt_file.close()
-        except:
-            logger.debug('Unable to read UUID from text file %s', txt_path)
-            
-        return uuid
+    #===========================================================================
+    # def get_uuid_from_txt(self, txt_path):
+    #     '''
+    #     Function to return UUID from csv file from file basename
+    #     Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
+    #     '''
+    #     uuid = None
+    #     
+    #     try:
+    #         txt_file = open(txt_path, 'r')
+    #         uuid = txt_file.readline().split('\t')[0]
+    #         txt_file.close()
+    #     except:
+    #         logger.debug('Unable to read UUID from text file %s', txt_path)
+    #         
+    #     return uuid
+    #===========================================================================
         
     def get_uuid_from_json(self, json_path):
         '''
