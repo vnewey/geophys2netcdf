@@ -329,7 +329,7 @@ class Geophys2NetCDF(object):
         '''
         self._uuid = None
         
-        def get_uuid_from_netcdf(self):
+        def get_uuid_from_netcdf():
             '''
             Function to return UUID from csv file from file basename
             Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
@@ -343,11 +343,12 @@ class Geophys2NetCDF(object):
                 
             return uuid
             
-        def get_uuid_from_json(json_path):
+        def get_uuid_from_json(json_path=None):
             '''
             Function to return UUID from JSON file
             Sample UUID: 221dcfd8-03d7-5083-e053-10a3070a64e3
             '''
+            json_path = json_path or os.path.join(os.path.dirname(self._output_path), '.metadata.json')
             uuid = None
             
             try:
