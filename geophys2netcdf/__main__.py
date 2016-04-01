@@ -42,7 +42,7 @@ def main():
     input_path = os.path.abspath(sys.argv[1])
 
     # If NetCDF path given, then do update_nc_metadata
-    if os.path.splitext(input_path)[1] == '.nc':
+    if len(sys.argv) == 2 and os.path.splitext(input_path)[1] == '.nc':
         g2n_object = ERS2NetCDF()
         g2n_object.update_nc_metadata(input_path)
         return
