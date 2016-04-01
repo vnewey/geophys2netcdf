@@ -519,7 +519,7 @@ class Geophys2NetCDF(object):
         json_metadata_file.close()
         
         if metadata_dict['folder_path'] != dataset_folder:
-            report_list.apppend('Dataset folder Changed from %s to %s'% (metadata_dict['folder_path'], dataset_folder))
+            report_list.append('Dataset folder Changed from %s to %s'% (metadata_dict['folder_path'], dataset_folder))
         
         file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*')) 
                      if os.path.splitext(file_path)[1] not in Geophys2NetCDF.EXCLUDED_EXTENSIONS
@@ -541,17 +541,17 @@ class Geophys2NetCDF(object):
             if not calculated_md5sum:
                 new_filenames = [new_filename for new_filename, new_md5sum in calculated_md5_dict.items() if new_md5sum == saved_md5sum]
                 if new_filenames: 
-                    report_list.apppend('File %s has been renamed to %s' % (saved_filename, new_filenames[0]))
+                    report_list.append('File %s has been renamed to %s' % (saved_filename, new_filenames[0]))
                 else:
-                    report_list.apppend('File %s does not exist' % saved_filename)
+                    report_list.append('File %s does not exist' % saved_filename)
             else: 
                 if saved_md5sum != calculated_md5sum:
-                    report_list.apppend('MD5 Checksum for file %s has changed from %s to %s' % (saved_filename, saved_md5sum, calculated_md5sum))
+                    report_list.append('MD5 Checksum for file %s has changed from %s to %s' % (saved_filename, saved_md5sum, calculated_md5sum))
             
         if report_list:
-            raise Exception(report_list.join('\n'))
+            raise Exception('\n'.join(report_list))
         else:
-            logger.info('No problems found for %s', dataset_folder)
+            logger.info('File paths and checksums verified OK in %s', dataset_folder)
         
         
     @property
