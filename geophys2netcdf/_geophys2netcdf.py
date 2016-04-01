@@ -64,6 +64,7 @@ class Geophys2NetCDF(object):
     GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
     FILE_EXTENSION = None # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
+    EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
 
     def __init__(self, debug=False):
         '''
@@ -458,12 +459,12 @@ class Geophys2NetCDF(object):
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
     
+        
     def write_json_metadata(self, dataset_folder=None): 
         '''
         Function to write UUID, file_paths and current timestamp to .metadata.json
         '''
         assert self._uuid, 'UUID not set'
-        EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
         
         dataset_folder = dataset_folder or os.path.dirname(self._output_path)
         assert dataset_folder, 'dataset_folder not defined.'
@@ -472,7 +473,7 @@ class Geophys2NetCDF(object):
         json_output_path = os.path.join(dataset_folder, '.metadata.json')
         
         file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*')) 
-                     if os.path.splitext(file_path)[1] not in EXCLUDED_EXTENSIONS
+                     if os.path.splitext(file_path)[1] not in Geophys2NetCDF.EXCLUDED_EXTENSIONS
                      and os.path.isfile(file_path)]
         
         md5_output = subprocess.check_output(['md5sum'] + file_list)
@@ -496,6 +497,62 @@ class Geophys2NetCDF(object):
         json.dump(metadata_dict, json_output_file, indent=4)
         json_output_file.close()
         logger.info('Finished writing metadata file %s', json_output_path)
+        
+    def check_json_metadata(self, output_path=None): 
+        '''
+        Function to check UUID, file_paths MD5 checksums from .metadata.json
+        '''
+        output_path = output_path or self._output_path
+        assert output_path, 'No output path defined'
+        
+        dataset_folder = os.path.dirname(output_path)
+        
+        report_list = []
+        
+        dataset_folder = dataset_folder or os.path.dirname(self._output_path)
+        assert dataset_folder, 'dataset_folder not defined.'
+        dataset_folder = os.path.abspath(dataset_folder)
+        
+        json_metadata_path = os.path.join(dataset_folder, '.metadata.json')
+        json_metadata_file = open(json_metadata_path, 'r')
+        metadata_dict = json.load(json_metadata_file)
+        json_metadata_file.close()
+        
+        if metadata_dict['folder_path'] != dataset_folder:
+            report_list.apppend('Dataset folder Changed from %s to %s'% (metadata_dict['folder_path'], dataset_folder))
+        
+        file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*')) 
+                     if os.path.splitext(file_path)[1] not in Geophys2NetCDF.EXCLUDED_EXTENSIONS
+                     and os.path.isfile(file_path)]
+        
+        md5_output = subprocess.check_output(['md5sum'] + file_list)
+        calculated_md5_dict = {os.path.basename(re.search('^(\w+)\s+(.+)$', line).groups()[1]): 
+                               re.search('^(\w+)\s+(.+)$', line).groups()[0] 
+                               for line in md5_output.split('\n') if line.strip()
+                               }
+        
+        saved_md5_dict = {file_dict['file']:
+                         file_dict['md5']
+                         for file_dict in metadata_dict['files']
+                         }
+        
+        for saved_filename, saved_md5sum in saved_md5_dict.items():
+            calculated_md5sum = calculated_md5_dict.get(saved_filename) 
+            if not calculated_md5sum:
+                new_filenames = [new_filename for new_filename, new_md5sum in calculated_md5_dict.items() if new_md5sum == saved_md5sum]
+                if new_filenames: 
+                    report_list.apppend('File %s has been renamed to %s' % (saved_filename, new_filenames[0]))
+                else:
+                    report_list.apppend('File %s does not exist' % saved_filename)
+            else: 
+                if saved_md5sum != calculated_md5sum:
+                    report_list.apppend('MD5 Checksum for file %s has changed from %s to %s' % (saved_filename, saved_md5sum, calculated_md5sum))
+            
+        if report_list:
+            raise Exception(report_list.join('\n'))
+        else:
+            logger.info('No problems found for %s', dataset_folder)
+        
         
     @property
     def metadata_dict(self):
