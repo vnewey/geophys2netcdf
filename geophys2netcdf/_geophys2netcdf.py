@@ -476,7 +476,10 @@ class Geophys2NetCDF(object):
                      and os.path.isfile(file_path)]
         
         md5_output = subprocess.check_output(['md5sum'] + file_list)
-        md5_dict = {re.search('^(\w+)\s+(.+)$', line).groups()[1]: re.search('^(\w+)\s+(.+)$', line).groups()[0] for line in md5_output.split('\n') if line.strip()}
+        md5_dict = {re.search('^(\w+)\s+(.+)$', line).groups()[1]: 
+                    re.search('^(\w+)\s+(.+)$', line).groups()[0] 
+                    for line in md5_output.split('\n') if line.strip()
+                    }
         
         metadata_dict = {'uuid': self._uuid,
                          'time': self.get_iso_utcnow(),
