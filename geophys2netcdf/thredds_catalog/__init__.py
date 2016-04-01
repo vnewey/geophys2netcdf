@@ -58,12 +58,12 @@ logger.setLevel(logging.INFO) # Logging level for this module
 try:
     import urllib
 except:
-    logger.warning('WARNING: Unable to import urllib. Any OPeNDAP function calls will fail.')
+    logger.warning('WARNING: Unable to import urllib. Any HTML function calls will fail.')
 
 try:
     import lxml.html
 except:
-    logger.warning('WARNING: Unable to import lxml.html. Any OPeNDAP function calls will fail.')
+    logger.warning('WARNING: Unable to import lxml.html. Any HTML function calls will fail.')
 
 class THREDDSCatalog(object):
     '''
