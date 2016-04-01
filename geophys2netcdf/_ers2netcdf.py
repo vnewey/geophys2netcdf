@@ -41,6 +41,7 @@ import subprocess
 from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
+from glob import glob
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
@@ -170,7 +171,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         self.write_json_metadata()
 
         # Set permissions to group writeable, world readable - ignore errors
-        chmod_command = ['chmod', '-R', 'g+rwX,o+rX', os.path.join(os.path.dirname(self._output_path), '*')]
+        chmod_command = ['chmod', '-R', 'g+rwX,o+rX', glob(os.path.join(os.path.dirname(self._output_path), '*'))]
         logger.debug('gdal_command = %s', chmod_command)
         if subprocess.call(chmod_command):
             logger.warning('WARNING: Command "%s" returned non-zero status.', ' '.join(chmod_command))
