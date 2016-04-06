@@ -7,6 +7,7 @@ import sys
 import netCDF4
 import subprocess
 import re
+from cfunits import Units
 from geophys2netcdf import ERS2NetCDF
 
 
@@ -14,7 +15,7 @@ def main():
     assert len(sys.argv) == 4, 'Usage: %s <root_dir> <file_template> <units>' % sys.argv[0]
     root_dir = sys.argv[1]
     file_template = sys.argv[2]
-    units = sys.argv[3]
+    units = Units(sys.argv[3]).units # This will fail for invalid units
     
     nc_path_list = [filename for filename in subprocess.check_output(['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
     
