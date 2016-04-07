@@ -31,19 +31,21 @@ def main():
         # Find variable name
         old_variable_name = [key for key in nc_dataset.variables.keys() if key not in ['crs', 'lat', 'lon']][0]
     
-        variable = nc_dataset.variables[old_variable_name]
+        if new_variable_name != old_variable_name:
+            nc_dataset.renameVariable(old_variable_name, re.sub('\W', '_', new_variable_name))
+            print '%s.variables["%s"] renamed to %s' % (nc_path, old_variable_name, new_variable_name)
         
-        if long_variable_name:
+        variable = nc_dataset.variables[new_variable_name]
+
+        if long_variable_name and (variable.long_name != long_variable_name):
             variable.long_name = long_variable_name
-            
-        nc_dataset.renameVariable(old_variable_name, re.sub('\W', '_', new_variable_name)) #TODO: Do something more elegant than string truncation for short name
-    
+            print '%s.variables["%s"].long_name changed to %s' % (nc_path, new_variable_name, long_variable_name)
+
         # Retrospective fixup
         nc_dataset.Conventions = nc_dataset.Conventions.replace('CF-1.5', 'CF-1.6').replace(', ', ',')
     
         nc_dataset.close()
         
-        print '%s.variables["%s"] renamed to %s (long_name = %s' % (nc_path, old_variable_name, new_variable_name)
     
         g2n_object = ERS2NetCDF()
         g2n_object.update_nc_metadata(nc_path)
