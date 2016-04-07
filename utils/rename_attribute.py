@@ -1,5 +1,5 @@
 '''
-Created on Apr 6, 2016
+Created on Apr 7, 2016
 
 @author: Alex Ip, Geoscience Australia
 '''
@@ -7,15 +7,15 @@ import sys
 import netCDF4
 import subprocess
 import re
-from cfunits import Units
 from geophys2netcdf import ERS2NetCDF
 
 
 def main():
-    assert len(sys.argv) == 4, 'Usage: %s <root_dir> <file_template> <units>' % sys.argv[0]
+    assert len(sys.argv) == 5, 'Usage: %s <root_dir> <file_template> <old_attribute_name> <new_attribute_name>' % sys.argv[0]
     root_dir = sys.argv[1]
     file_template = sys.argv[2]
-    units = Units(sys.argv[3]).units # This will fail for invalid units
+    old_attribute_name = sys.argv[3]
+    new_attribute_name = sys.argv[4]
     
     nc_path_list = [filename for filename in subprocess.check_output(['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
     
@@ -23,19 +23,18 @@ def main():
         print 'Setting units in %s' % nc_path
         
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
-    
-        # Find variable name
-        variable_name = [key for key in nc_dataset.variables.keys() if key not in ['crs', 'lat', 'lon']][0]
-    
-        variable = nc_dataset.variables[variable_name]
-        variable.units = units
-    
-        # Retrospective fixup
-        nc_dataset.Conventions = nc_dataset.Conventions.replace('CF-1.5', 'CF-1.6')
+       
+        try:
+            # Rename attribute
+            value = getattr(nc_dataset, old_attribute_name)
+            setattr(nc_dataset, new_attribute_name, value)
+            delattr(nc_dataset, old_attribute_name)
+            print '%s.%s renamed to %s. (Value = %s)' % (nc_path, old_attribute_name, new_attribute_name, value)
+        except Exception, e:
+            print 'Unable to rename attribute %s to %s: %s' % (old_attribute_name, new_attribute_name, e.message)
     
         nc_dataset.close()
         
-        print '%s.variables["%s"].units = %s' % (nc_path, variable_name, units)
     
         g2n_object = ERS2NetCDF()
         g2n_object.update_nc_metadata(nc_path)
