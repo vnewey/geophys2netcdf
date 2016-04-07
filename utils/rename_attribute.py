@@ -33,6 +33,9 @@ def main():
         except Exception, e:
             print 'Unable to rename attribute %s to %s: %s' % (old_attribute_name, new_attribute_name, e.message)
     
+        # Retrospective fixup
+        nc_dataset.Conventions = nc_dataset.Conventions.replace('CF-1.5', 'CF-1.6').replace(', ', ',')
+
         nc_dataset.close()
         
     
