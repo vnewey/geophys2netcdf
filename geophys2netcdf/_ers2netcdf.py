@@ -55,7 +55,7 @@ class ERS2NetCDF(Geophys2NetCDF):
     '''
     FILE_EXTENSION = 'ers'
     METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata.key'),
-                        ('identifier', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
+                        ('id', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
                         ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
                         ('source', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.scope.DQ_Scope.level.MD_ScopeCode.codeListValue'),
                         ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
