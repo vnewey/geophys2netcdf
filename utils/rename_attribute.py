@@ -20,7 +20,7 @@ def main():
     nc_path_list = [filename for filename in subprocess.check_output(['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
     
     for nc_path in nc_path_list:
-        print 'Setting units in %s' % nc_path
+        print 'Renaming attribute in %s' % nc_path
         
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
        
