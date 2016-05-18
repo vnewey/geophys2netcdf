@@ -61,7 +61,8 @@ class Geophys2NetCDF(object):
     Base class for geophysics conversions
     '''
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
-    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw'
+#    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw' # Old GeoCat CSW
+    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New eCat CSW
     FILE_EXTENSION = None # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
