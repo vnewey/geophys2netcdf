@@ -205,15 +205,15 @@ class ERS2NetCDF(Geophys2NetCDF):
             csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
             logger.debug('GA csw_record = %s', csw_record)
             self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-        except:
-            raise Exception('ERROR: Unable to retrieve CSW record %s from %s' % (self._uuid, Geophys2NetCDF.GA_CSW))
+        except Exception, e:
+            raise Exception('ERROR: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.GA_CSW, e.message))
         
         # Get record from NCI CSW (Optional)
         try:
             csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
             logger.debug('NCI csw_record = %s', csw_record)
             self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-        except:
-            logger.warning('WARNING: Unable to retrieve CSW record %s from %s', self._uuid, Geophys2NetCDF.NCI_CSW)
+        except Exception, e:
+            logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
         
         logger.debug('self._metadata_dict = %s', self._metadata_dict)
