@@ -62,7 +62,7 @@ class ERS2NetCDF(Geophys2NetCDF):
 #                        ('product_version', ''), # Can't set this - assume value of "1.0" instead
                         ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
 #                        ('date_modified', 'ERS.DatasetHeader.LastUpdated'), # Use ISO format
-                        ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.transferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
+                        ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.distributionFormat.MD_Format.formatDistributor.MD_Distributor.distributorTransferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
                         ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
                         ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
                         ('keywords', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword.gco:CharacterString'),
