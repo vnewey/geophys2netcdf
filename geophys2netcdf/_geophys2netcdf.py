@@ -49,11 +49,12 @@ from dateutil import tz
 import pytz
 from glob import glob
 import json
+import urllib
 
 from metadata import XMLMetadata
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Initial logging level for this module
+logger.setLevel(logging.DEBUG) # Initial logging level for this module
 
 class Geophys2NetCDF(object):
     '''
@@ -300,17 +301,26 @@ class Geophys2NetCDF(object):
             else:
                 logger.warning('WARNING: Metadata path %s not found', metadata_path)
                 
-        # Ensure only one metadata link is stored - could be multiple, comma-separated entries
-        if hasattr(self._netcdf_dataset, 'metadata_link'):
-            url_list = [url.strip() for url in self._netcdf_dataset.metadata_link.split(',')]
+        # Ensure only one DOI is stored - could be multiple, comma-separated entries
+        if hasattr(self._netcdf_dataset, 'doi'):
+            url_list = [url.strip() for url in self._netcdf_dataset.doi.split(',')]
             doi_list = [url for url in url_list if url.startswith('http://dx.doi.org/')]
             if len(url_list) > 1: # If more than one URL in list
                 try: # Give preference to proper DOI URL
                     url = doi_list[0] # Use first (preferably only) DOI URL
                 except:
                     url = url_list[0] # Just use first URL if no DOI found
-                setattr(self._netcdf_dataset, 'metadata_link', url)
-            
+                url = url.replace('&amp;', '&')                
+                self._netcdf_dataset.doi = url
+        
+        # Set metadata_link to NCI metadata URL
+        self._netcdf_dataset.metadata_link = 'https://pid.nci.org.au/dataset/%s' % self.uuid
+        
+        # Remove old id fields - remove this later
+        if hasattr(self._netcdf_dataset, 'id'):
+            del self._netcdf_dataset.id
+        if hasattr(self._netcdf_dataset, 'ga_uuid'):
+            del self._netcdf_dataset.ga_uuid
 
     def read_csv(self, csv_path):
         assert os.path.exists(csv_path), 'CSV file %s does not exist' % csv_path
@@ -443,13 +453,17 @@ class Geophys2NetCDF(object):
         csw = CatalogueServiceWeb(csw_url)
         assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url   
         
-        csw.getrecordbyid(id=[identifier], esn='full', outputschema='http://www.isotc211.org/2005/gmd')
+        csw.getrecordbyid(id=[identifier], esn='full', outputschema='own')
         
         # Ensure there is exactly one record found
         assert len(csw.records) > 0, 'No CSW records found for ID "%s"' % identifier
         assert len(csw.records) == 1, 'Multiple CSW records found for ID "%s"' % identifier
         
         return csw.records.values()[0]
+    
+    def get_csw_xml_by_id(self, csw_url, identifier):
+        url = '%s?outputFormat=application%%2Fxml&service=CSW&outputSchema=own&request=GetRecordById&version=2.0.2&elementsetname=full&id=%s' % (csw_url, identifier)
+        return urllib.urlopen(url).read()
 
 
     def get_metadata_dict_from_xml(self, xml_string):
@@ -554,7 +568,7 @@ class Geophys2NetCDF(object):
             raise Exception('\n'.join(report_list))
         else:
             logger.info('File paths and checksums verified OK in %s', dataset_folder)
-        
+    
         
     @property
     def metadata_dict(self):

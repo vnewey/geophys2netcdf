@@ -47,7 +47,7 @@ from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from metadata import ERSMetadata
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Initial logging level for this module
+logger.setLevel(logging.DEBUG) # Initial logging level for this module
 
 class ERS2NetCDF(Geophys2NetCDF):
     '''
@@ -55,19 +55,19 @@ class ERS2NetCDF(Geophys2NetCDF):
     '''
     FILE_EXTENSION = 'ers'
     METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata.key'),
-                        ('id', 'GA_CSW.MD_Metadata.fileIdentifier.gco:CharacterString'),
-                        ('title', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'),
-                        ('source', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.scope.DQ_Scope.level.MD_ScopeCode.codeListValue'),
-                        ('summary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.gco:CharacterString'),
-#                        ('product_version', ''), # Can't set this - assume value of "1.0" instead
-                        ('date_created', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.date.CI_Date.date.gco:Date'),
-#                        ('date_modified', 'ERS.DatasetHeader.LastUpdated'), # Use ISO format
-                        ('metadata_link', 'GA_CSW.MD_Metadata.distributionInfo.MD_Distribution.distributionFormat.MD_Format.formatDistributor.MD_Distributor.distributorTransferOptions.MD_DigitalTransferOptions.onLine.CI_OnlineResource.linkage.URL'), # Only DOI used
-                        ('history', 'GA_CSW.MD_Metadata.dataQualityInfo.DQ_DataQuality.lineage.LI_Lineage.statement.gco:CharacterString'),
-                        ('institution', 'GA_CSW.MD_Metadata.contact.CI_ResponsibleParty.organisationName.gco:CharacterString'),
-                        ('keywords', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword.gco:CharacterString'),
-                        ('keywords_vocabulary', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.thesaurusName.CI_Citation.title.gco:CharacterString'),
-                        ('license', 'GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.resourceConstraints.MD_LegalConstraints.otherConstraints.gco:CharacterString'),
+                        ('uuid', 'GA_CSW.mdb:MD_Metadata.mdb:metadataIdentifier.mcc:MD_Identifier.mcc:code.gco:CharacterString'),
+                        ('title', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:citation.cit:CI_Citation.cit:title.gco:CharacterString'),
+                        ('source', 'GA_CSW.mdb:MD_Metadata.mdb:metadataScope.mdb:MD_MetadataScope.mdb:name.gco:CharacterString'),
+                        ('summary', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:abstract.gco:CharacterString'),
+                        ('product_version', 'GA_CSW.mdb:MD_Metadata.mdb:metadataProfile.cit:CI_Citation.cit:edition.gco:CharacterString'),
+                        ('date_created', 'GA_CSW.mdb:MD_Metadata.mdb:dateInfo.cit:CI_Date.cit:date.gco:DateTime'), # Need to work out which date
+                        ('date_modified', 'GA_CSW.mdb:MD_Metadata.mdb:dateInfo.cit:CI_Date.cit:date.gco:DateTime'), # Need to work out which date
+                        ('doi', 'GA_CSW.mdb:MD_Metadata.mdb:distributionInfo.mrd:MD_Distribution.mrd:distributionFormat.mrd:MD_Format.mrd:formatDistributor.mrd:MD_Distributor.mrd:distributorTransferOptions.mrd:MD_DigitalTransferOptions.mrd:onLine.cit:CI_OnlineResource.cit:linkage.gco:CharacterString'), # Only DOI used
+                        ('history', 'GA_CSW.mdb:MD_Metadata.mdb:resourceLineage.mrl:LI_Lineage.mrl:statement.gco:CharacterString'),
+                        ('institution', 'GA_CSW.mdb:MD_Metadata.mdb:contact.cit:CI_Responsibility.cit:party.cit:CI_Organisation.cit:name.gco:CharacterString'),
+                        ('keywords', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:descriptiveKeywords.mri:MD_Keywords.mri:keyword.gco:CharacterString'),
+                        ('keywords_vocabulary', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:descriptiveKeywords.mri:MD_Keywords.mri:thesaurusName.cit:CI_Citation.cit:title.gco:CharacterString'),
+                        ('license', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:resourceConstraints.mco:MD_LegalConstraints.mco:otherConstraints.gco:CharacterString'),
                         ]
     
     def read_ers_datetime_string(self, ers_datetime_string):
@@ -137,28 +137,17 @@ class ERS2NetCDF(Geophys2NetCDF):
         Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
         
         self._netcdf_dataset.sync()
-
-        # Look for date_modified value in source file then in NetCDF file
-        date_modified = (self.read_ers_datetime_string(self.get_metadata('ERS.DatasetHeader.LastUpdated')) or
-                         (self.read_iso_datetime_string(self._netcdf_dataset.date_modified) if hasattr(self._netcdf_dataset, 'date_modified') else None))
-
-        if date_modified:
-            self._netcdf_dataset.date_modified = date_modified.isoformat()
-            
-            if not hasattr(self._netcdf_dataset, 'product_version'):
-                self._netcdf_dataset.product_version = date_modified.isoformat()
+        
+        if hasattr(self._netcdf_dataset, 'date_modified'):
+            date_list = [self.read_iso_datetime_string(date_string) for date_string in self._netcdf_dataset.date_modified.split(', ')]
+            self._netcdf_dataset.date_created = min(date_list).isoformat()
+            self._netcdf_dataset.date_modified = max(date_list).isoformat()
         else:
             logger.warning('WARNING: Unable to determine date_modified attribute')
             if not hasattr(self._netcdf_dataset, 'product_version'):
                 self._netcdf_dataset.product_version = '1.0' # Set required attribute
             
-        # Put something sensible in history attribute
-        if self._input_path:
-            history_string = '%s Translated from %s using %s' % (self.get_iso_utcnow(), os.path.basename(self._input_path), __name__ + '.py')
-            if hasattr(self._netcdf_dataset, 'history') and self._netcdf_dataset.history and (self._netcdf_dataset.history.lower() != 'unknown'):
-                history_string = self._netcdf_dataset.history + '\n' + history_string
 
-            self._netcdf_dataset.history = history_string
             
         logger.info('Finished writing output file %s', self._output_path)
         
@@ -202,17 +191,19 @@ class ERS2NetCDF(Geophys2NetCDF):
         
         # Get record from GA CSW
         try:
-            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
-            logger.debug('GA csw_record = %s', csw_record)
-            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+            #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
+            #logger.debug('GA csw_record = %s', csw_record)
+            #self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.GA_CSW, self._uuid))['csw:GetRecordByIdResponse']
         except Exception, e:
             raise Exception('ERROR: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.GA_CSW, e.message))
         
         # Get record from NCI CSW (Optional)
         try:
-            csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
-            logger.debug('NCI csw_record = %s', csw_record)
-            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+            #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
+            #logger.debug('NCI csw_record = %s', csw_record)
+            #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.NCI_CSW, self._uuid))['csw:GetRecordByIdResponse']
         except Exception, e:
             logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
         
