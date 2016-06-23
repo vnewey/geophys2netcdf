@@ -316,7 +316,7 @@ class Geophys2NetCDF(object):
         # Set metadata_link to NCI metadata URL
         self._netcdf_dataset.metadata_link = 'https://pid.nci.org.au/dataset/%s' % self.uuid
         
-        self._netcdf_dataset.Conventions = 'CF-1.6; ACDD-1.3'
+        self._netcdf_dataset.Conventions = 'CF-1.6,ACDD-1.3'
         
         # Remove old fields - remove this later
         if hasattr(self._netcdf_dataset, 'id'):
