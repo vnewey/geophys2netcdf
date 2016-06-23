@@ -316,11 +316,15 @@ class Geophys2NetCDF(object):
         # Set metadata_link to NCI metadata URL
         self._netcdf_dataset.metadata_link = 'https://pid.nci.org.au/dataset/%s' % self.uuid
         
-        # Remove old id fields - remove this later
+        self._netcdf_dataset.Conventions = 'CF-1.6; ACDD-1.3'
+        
+        # Remove old fields - remove this later
         if hasattr(self._netcdf_dataset, 'id'):
             del self._netcdf_dataset.id
         if hasattr(self._netcdf_dataset, 'ga_uuid'):
             del self._netcdf_dataset.ga_uuid
+        if hasattr(self._netcdf_dataset, 'keywords_vocabulary'):
+            del self._netcdf_dataset.keywords_vocabulary
 
     def read_csv(self, csv_path):
         assert os.path.exists(csv_path), 'CSV file %s does not exist' % csv_path
