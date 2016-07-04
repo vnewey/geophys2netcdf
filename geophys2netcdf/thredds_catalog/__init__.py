@@ -47,8 +47,6 @@ import tempfile
 import dateutil.parser
 from dateutil import tz
 import pytz
-import re
-import logging
 import yaml
 
 logger = logging.getLogger(__name__)
