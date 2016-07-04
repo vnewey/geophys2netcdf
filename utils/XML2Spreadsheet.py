@@ -27,7 +27,8 @@ identifier_list=['dbcc0c59-81e6-4eed-e044-00144fdd4fa6',
 xpath_list = [ # ('netcdf_attribute', 'metadata.key'),
                         ('title', 'mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:citation/cit:CI_Citation/cit:title/gco:CharacterString'),
                         ('uuid', 'mdb:MD_Metadata/mdb:metadataIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString'),
-                        ('parent_uuid', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gcx:FileName'),
+                        ('parent_uuid', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gcx:FileName/TEXT'),
+                        ('parent_id_type', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:description/gco:CharacterString'),
                         ('abstract', 'mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:abstract/gco:CharacterString'),
                         ('lineage_statement', 'mdb:MD_Metadata/mdb:resourceLineage/mrl:LI_Lineage/mrl:statement/gco:CharacterString'),
                         ('source_description', 'mdb:MD_Metadata/mdb:resourceLineage/mrl:LI_Lineage/mrl:source/mrl:LI_Source/mrl:description/gco:CharacterString'),
@@ -57,14 +58,13 @@ field_list = ['title',
 
 csv_path = '/home/547/axi547/national_coverage_metadata.csv'
 
-GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
+#GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
+GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
 
 def main():
     def get_xml_by_id(geonetwork_url, identifier):
         xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, identifier)
         return urllib.urlopen(xml_url).read()
-
-    xml_root_dir = '/home/547/axi547/national_coverage_metadata' # sys.argv[1]
 
     spreadsheet_dict = {}
     for identifier in identifier_list:
@@ -82,13 +82,13 @@ def main():
         for xpath_tuple in xpath_list:
             record_dict[xpath_tuple[0]] = xml_metadata.get_metadata(xpath_tuple[1].split('/'))
         
-        s = re.search('uuid=([^&]*)', record_dict['parent_uuid']['src'])
-        record_dict['parent_uuid'] = s.groups()[0]
+        parent_id_dict = dict(zip(record_dict['parent_id_type'].split(', '), record_dict['parent_uuid'].split(', ')))
+        record_dict['parent_uuid'] = parent_id_dict.get('UUID')
         
-        record_dict['distribution_urls'] = record_dict['distribution_urls'].split(',')
-        record_dict['distribution_protocols'] = record_dict['distribution_protocols'].split(',')
-        record_dict['distribution_names'] = record_dict['distribution_names'].split(',')
-        record_dict['distribution_descriptions'] = record_dict['distribution_descriptions'].split(',')
+        record_dict['distribution_urls'] = record_dict['distribution_urls'].split(', ')
+        record_dict['distribution_protocols'] = record_dict['distribution_protocols'].split(', ')
+        record_dict['distribution_names'] = record_dict['distribution_names'].split(', ')
+        record_dict['distribution_descriptions'] = record_dict['distribution_descriptions'].split(', ')
         
         distributions = []
         record_dict['distributions'] = distributions
