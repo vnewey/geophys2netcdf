@@ -5,6 +5,7 @@
 Author: Alex Ip (alex.ip@ga.gov.au)
 Written: 5/7/2016
 """
+#TODO: Check potential issues with unicode vs str
 
 import logging
 import os
@@ -77,7 +78,7 @@ class NetCDFMetadata(Metadata):
         '''Write metadata to an open NetCDF Dataset object
         '''
         for key, value in self._metadata_dict.items():
-            if type(value) == str:
+            if type(value) in [str, unicode]:
                 setattr(nc, key, value) # Set global attribute
             elif type(value) == dict:
                 try:
