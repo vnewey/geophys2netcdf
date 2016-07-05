@@ -1,8 +1,5 @@
-import sys
 import re
-import subprocess
 import urllib
-import lxml.html
 from geophys2netcdf.metadata import XMLMetadata
 
 identifier_list=['dbcc0c59-81e6-4eed-e044-00144fdd4fa6',
@@ -56,10 +53,11 @@ field_list = ['title',
  'bounds_south',
  'bounds_north']
 
-csv_path = '/home/547/axi547/national_coverage_metadata.csv'
+csv_path = '/home/547/axi547/national_coverage_metadata.csv' # Path for NCI
+#csv_path = '/home/user/national_coverage_metadata.csv' # Path for local VM
 
-#GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
-GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # Externally visible GeoNetwork
+#GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng' # Internally visible GeoNetwork via port tunneling
 
 def main():
     def get_xml_by_id(geonetwork_url, identifier):
