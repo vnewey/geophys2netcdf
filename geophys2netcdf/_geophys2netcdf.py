@@ -51,7 +51,7 @@ from glob import glob
 import json
 import urllib
 
-from metadata import XMLMetadata
+from metadata import XMLMetadata, NetCDFMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # Initial logging level for this module
@@ -195,6 +195,12 @@ class Geophys2NetCDF(object):
             logger.debug('Read GDAL metadata from %s', self._input_path)
         else:
             logger.debug('No GDAL-compatible input dataset defined.')
+        
+        if self._netcdf_dataset:
+            self._metadata_dict['NetCDF'] = NetCDFMetadata(self._netcdf_dataset).metadata_dict # Read generic GDAL metadata (if any)
+            logger.debug('Read NetCDF metadata from %s', self._output_path)
+        else:
+            logger.debug('No NetCDF-compatible output dataset defined.')
         
     def get_metadata(self, metadata_path, default_namespace='gmd:'):
         '''
