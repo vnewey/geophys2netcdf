@@ -85,6 +85,7 @@ def main():
         parent_id_dict = dict(zip(record_dict['parent_id_type'].split(', '), record_dict['parent_uuid'].split(', ')))
         record_dict['parent_uuid'] = parent_id_dict.get('UUID')
         
+        # Convert comma separated strings into lists
         record_dict['distribution_urls'] = record_dict['distribution_urls'].split(', ')
         record_dict['distribution_protocols'] = record_dict['distribution_protocols'].split(', ')
         record_dict['distribution_names'] = record_dict['distribution_names'].split(', ')
@@ -92,7 +93,8 @@ def main():
         
         distributions = []
         record_dict['distributions'] = distributions
-        for dist_index in range(len(record_dict['distribution_urls'])):
+        for dist_name in sorted(record_dict['distribution_names']):
+            dist_index = record_dict['distribution_names'].index(dist_name)
             if re.search('dx\.doi\.org', record_dict['distribution_urls'][dist_index]):
                 record_dict['doi'] = record_dict['distribution_urls'][dist_index]
                 
