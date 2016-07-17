@@ -189,9 +189,9 @@ class THREDDSCatalog(object):
         yaml_file.close()
         logger.info('THREDDS catalogue loaded from file %s', yaml_path)
     
-    def endpoint_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
+    def endpoint_tuple_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
         '''
-        Function to return a list of endpoints contained in the leaf nodes of self.thredds_catalog_dict
+        Function to return a list of (protocol, endpoint) tuples contained in the leaf nodes of self.thredds_catalog_dict
         Arguments:
             type_filter: regular expression string matching one or more of ['HTTPServer', 'NetcdfSubset', OPENDAP', 'WCS, 'WMS']
             url_filter: regular expression string to restrict URLs returned: e.g. '.*\.nc$' to return all NetCDF endpoints
@@ -203,9 +203,19 @@ class THREDDSCatalog(object):
             value = catalog_dict[key]
             
             if type(value) == dict:
-                result_list += self.endpoint_list(type_filter, url_filter, catalog_dict[key])
+                result_list += self.endpoint_tuple_list(type_filter, url_filter, catalog_dict[key])
             else: # Leaf node
                 if (re.search(type_filter, key) and re.search(url_filter, value)):
-                    result_list.append(value)
+                    result_list.append((key, value))
                     
         return result_list    
+  
+    def endpoint_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
+        '''
+        Function to return a list of endpoints contained in the leaf nodes of self.thredds_catalog_dict
+        Arguments:
+            type_filter: regular expression string matching one or more of ['HTTPServer', 'NetcdfSubset', OPENDAP', 'WCS, 'WMS']
+            url_filter: regular expression string to restrict URLs returned: e.g. '.*\.nc$' to return all NetCDF endpoints
+        '''
+        return [endpoint for _protocol, endpoint in self.endpoint_tuple_list(type_filter=type_filter, url_filter=url_filter, catalog_dict=catalog_dict)]  
+    
