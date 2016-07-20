@@ -219,3 +219,32 @@ class THREDDSCatalog(object):
         '''
         return [endpoint for _protocol, endpoint in self.endpoint_tuple_list(type_filter=type_filter, url_filter=url_filter, catalog_dict=catalog_dict)]  
     
+    def find_urls(self, file_path):
+        '''
+        Function to return list of (protocol, url) tuples for a given filename
+        Returns empty list for failed match
+        '''
+        # Narrow down search to tuples matching basename
+        basename = os.path.basename(file_path)
+        base_list = self.endpoint_tuple_list(type_filter='.*', url_filter=basename)
+        if base_list:
+            logger.debug('%d initial URLs found for basename %s', len(base_list), basename)
+        else: # Nothing found
+            logger.debug('No URLs found for basename %s' % basename)
+            return base_list
+    
+        # Find URL matches for longest possible sub-path
+        find_path = os.path.abspath(file_path)
+        find_list = []
+        while find_path and not find_list:
+            logger.debug('Searching for %s in URL list' % find_path)
+            find_list = [(protocol, url) for protocol, url in base_list if url.find(find_path)]
+            if find_list: # Match(es) found
+                logger.debug('%d URLs found for %s' % len(find_list), find_path)
+                return find_list # Search complete
+            elif '/' in find_path: # More leading directories to strip
+                find_path = re.sub('^[^/]*/', '', find_path) # Strip leading directory from find_path
+            else: # Nothing found for basename - should never happen
+                logger.debug('No URLs found for %s' % find_path)
+                return find_list
+    
