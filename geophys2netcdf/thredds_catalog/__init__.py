@@ -221,8 +221,8 @@ class THREDDSCatalog(object):
     
     def find_urls(self, file_path):
         '''
-        Function to return list of (protocol, url) tuples for a given filename
-        Returns empty list for failed match
+        Function to return dict of {protocol: url, protocol: url,...} for a given filename
+        Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
         N.B: Only *nix supported
         '''
         # Narrow down search to tuples matching basename
@@ -232,7 +232,7 @@ class THREDDSCatalog(object):
             logger.debug('%d possible URLs initially found for basename %s', len(base_list), basename)
         else: # Nothing found
             logger.debug('No possible URLs found for basename %s', basename)
-            return base_list
+            return {}
     
         # Find URL matches for longest possible sub-path
         find_path = os.path.abspath(file_path)
@@ -240,12 +240,21 @@ class THREDDSCatalog(object):
         while find_path and not find_list:
             logger.debug('Searching for %s in URL list' % find_path)
             find_list = [(protocol, url) for protocol, url in base_list if url.find(find_path)]
-            if find_list: # Match(es) found
+            if find_list: # Matches found for maximum-length sub-path
                 logger.debug('%d URLs found for %s', len(find_list), find_path)
-                return find_list # Search complete
+                break # Search complete
             elif '/' in find_path: # More leading directories to strip
                 find_path = re.sub('^[^/]*/', '', find_path) # Strip leading directory from find_path
             else: # Nothing found for basename - should never happen
                 logger.debug('No URLs found for %s', find_path)
-                return find_list
+                return {}
     
+        # Convert list of tuples to dict - remove duplicate protocols
+        result_dict = {}
+        for protocol, url in find_list:
+            existing_url = result_dict.get(protocol)
+            # Keep the shorter of the two URLs when duplicate protocols found
+            if existing_url is None or (len(url) < len(existing_url)): 
+                result_dict[protocol] = url
+                
+        return result_dict
