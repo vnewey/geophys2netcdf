@@ -219,10 +219,10 @@ class THREDDSCatalog(object):
         '''
         return [endpoint for _protocol, endpoint in self.endpoint_tuple_list(type_filter=type_filter, url_filter=url_filter, catalog_dict=catalog_dict)]  
     
-    def find_urls(self, file_path):
+    def find_url_list(self, file_path):
         '''
-        Function to return dict of {protocol: url, protocol: url,...} for a given filename
-        Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
+        Function to return list of (<protocol>, <url>) tuples for a given filename
+        Returns empty list for failed match.
         N.B: Only *nix supported
         '''
         # Narrow down search to tuples matching basename
@@ -232,7 +232,7 @@ class THREDDSCatalog(object):
             logger.debug('%d possible URLs initially found for basename %s', len(base_list), basename)
         else: # Nothing found
             logger.debug('No possible URLs found for basename %s', basename)
-            return {}
+            return []
     
         # Find URL matches for longest possible sub-path
         find_path = os.path.abspath(file_path)
@@ -242,16 +242,21 @@ class THREDDSCatalog(object):
             find_list = [(protocol, url) for protocol, url in base_list if url.find(find_path)]
             if find_list: # Matches found for maximum-length sub-path
                 logger.debug('%d URLs found for %s', len(find_list), find_path)
-                break # Search complete
+                return find_list # Search complete
             elif '/' in find_path: # More leading directories to strip
                 find_path = re.sub('^[^/]*/', '', find_path) # Strip leading directory from find_path
             else: # Nothing found for basename - should never happen
                 logger.debug('No URLs found for %s', find_path)
-                return {}
+                return []
     
+    def find_url_dict(self, file_path):
+        '''
+        Function to return dict of {<protocol>: <url>, <protocol>: <url>,...} for a given filename
+        Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
+        '''
         # Convert list of tuples to dict - remove duplicate protocols
         result_dict = {}
-        for protocol, url in find_list:
+        for protocol, url in self.find_url_list(file_path):
             existing_url = result_dict.get(protocol)
             # Keep the shorter of the two URLs when duplicate protocols found
             if existing_url is None or (len(url) < len(existing_url)): 
