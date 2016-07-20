@@ -230,7 +230,7 @@ class THREDDSCatalog(object):
         if base_list:
             logger.debug('%d initial URLs found for basename %s', len(base_list), basename)
         else: # Nothing found
-            logger.debug('No URLs found for basename %s' % basename)
+            logger.debug('No URLs found for basename %s', basename)
             return base_list
     
         # Find URL matches for longest possible sub-path
@@ -240,11 +240,11 @@ class THREDDSCatalog(object):
             logger.debug('Searching for %s in URL list' % find_path)
             find_list = [(protocol, url) for protocol, url in base_list if url.find(find_path)]
             if find_list: # Match(es) found
-                logger.debug('%d URLs found for %s' % len(find_list), find_path)
+                logger.debug('%d URLs found for %s', len(find_list), find_path)
                 return find_list # Search complete
             elif '/' in find_path: # More leading directories to strip
                 find_path = re.sub('^[^/]*/', '', find_path) # Strip leading directory from find_path
             else: # Nothing found for basename - should never happen
-                logger.debug('No URLs found for %s' % find_path)
+                logger.debug('No URLs found for %s', find_path)
                 return find_list
     
