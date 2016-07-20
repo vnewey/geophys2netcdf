@@ -223,14 +223,15 @@ class THREDDSCatalog(object):
         '''
         Function to return list of (protocol, url) tuples for a given filename
         Returns empty list for failed match
+        N.B: Only *nix supported
         '''
         # Narrow down search to tuples matching basename
         basename = os.path.basename(file_path)
         base_list = self.endpoint_tuple_list(type_filter='.*', url_filter=basename)
         if base_list:
-            logger.debug('%d initial URLs found for basename %s', len(base_list), basename)
+            logger.debug('%d possible URLs initially found for basename %s', len(base_list), basename)
         else: # Nothing found
-            logger.debug('No URLs found for basename %s', basename)
+            logger.debug('No possible URLs found for basename %s', basename)
             return base_list
     
         # Find URL matches for longest possible sub-path
