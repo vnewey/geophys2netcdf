@@ -187,14 +187,15 @@ class ERS2NetCDF(Geophys2NetCDF):
             title = None
         logger.debug('title = %s', title)
         
-        self.get_uuid(title)
+        if not self._uuid:
+            self.get_uuid(title)
         
         # Get record from GA CSW
         try:
             #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
             #logger.debug('GA csw_record = %s', csw_record)
             #self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.GA_CSW, self._uuid))['csw:GetRecordByIdResponse']
+            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.GA_CSW, self._uuid)) #['csw:GetRecordByIdResponse']
         except Exception, e:
             raise Exception('ERROR: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.GA_CSW, e.message))
         
@@ -203,7 +204,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
             #logger.debug('NCI csw_record = %s', csw_record)
             #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.NCI_CSW, self._uuid))['csw:GetRecordByIdResponse']
+            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)) #['csw:GetRecordByIdResponse']
         except Exception, e:
             logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
         

@@ -63,8 +63,9 @@ class Geophys2NetCDF(object):
     '''
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
 #    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw' # Old GeoCat CSW
-    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New externally-visible eCat CSW
+#    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New externally-visible eCat CSW
 #    GA_CSW = 'http://intranet.ga.gov.au/geonetwork/srv/eng/csw' # New internally-visible eCat CSW
+    GA_CSW = 'http://localhost:8081/geonetwork/srv/eng/csw' # Port forwarded GA internal CSW
     FILE_EXTENSION = None # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
@@ -437,8 +438,9 @@ class Geophys2NetCDF(object):
             
             return uuid
     
-        self._uuid = (get_uuid_from_netcdf() or
-                      get_uuid_from_json(os.path.join(os.path.dirname(self._output_path), '.metadata.json'))
+        self._uuid = (
+                      get_uuid_from_json(os.path.join(os.path.dirname(self._output_path), '.metadata.json')) or
+                      get_uuid_from_netcdf()
                       )
                                          
         if not self._uuid and self._output_path:
@@ -472,8 +474,11 @@ class Geophys2NetCDF(object):
         return csw.records.values()[0]
     
     def get_csw_xml_by_id(self, csw_url, identifier):
-        url = '%s?outputFormat=application%%2Fxml&service=CSW&outputSchema=own&request=GetRecordById&version=2.0.2&elementsetname=full&id=%s' % (csw_url, identifier)
-        return urllib.urlopen(url).read()
+        #url = '%s?outputFormat=application%%2Fxml&service=CSW&outputSchema=own&request=GetRecordById&version=2.0.2&elementsetname=full&id=%s' % (csw_url, identifier)
+        #return urllib.urlopen(url).read()
+        xml_url = re.sub('/csw$', '/xml.metadata.get?uuid=%s' % identifier, csw_url)
+        logger.debug('URL = %s', xml_url)
+        return urllib.urlopen(xml_url).read()
 
 
     def get_metadata_dict_from_xml(self, xml_string):
