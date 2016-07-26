@@ -213,7 +213,7 @@ class Geophys2NetCDF(object):
         '''
 
         focus_element = self._metadata_dict
-        subkey_list = metadata_path.split('.')
+        subkey_list = metadata_path.split('/')
         for subkey in subkey_list:
             focus_element = focus_element.get(subkey) or focus_element.get(default_namespace + subkey)
             if focus_element is None: # Atrribute not found

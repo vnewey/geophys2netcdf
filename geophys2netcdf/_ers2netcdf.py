@@ -54,20 +54,23 @@ class ERS2NetCDF(Geophys2NetCDF):
     Class definition for ERS2NetCDF to handle ERS gridded datasets 
     '''
     FILE_EXTENSION = 'ers'
-    METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata.key'),
-                        ('uuid', 'GA_CSW.mdb:MD_Metadata.mdb:metadataIdentifier.mcc:MD_Identifier.mcc:code.gco:CharacterString'),
-                        ('title', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:citation.cit:CI_Citation.cit:title.gco:CharacterString'),
-                        ('source', 'GA_CSW.mdb:MD_Metadata.mdb:resourceLineage.mrl:LI_Lineage.mrl:source.mrl:LI_Source.mrl:description.gco:CharacterString'),
-                        ('summary', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:abstract.gco:CharacterString'),
-                        ('product_version', 'GA_CSW.mdb:MD_Metadata.mdb:metadataProfile.cit:CI_Citation.cit:edition.gco:CharacterString'),
-                        ('date_created', 'GA_CSW.mdb:MD_Metadata.mdb:dateInfo.cit:CI_Date.cit:date.gco:DateTime'), # Need to work out which date
-                        ('date_modified', 'GA_CSW.mdb:MD_Metadata.mdb:dateInfo.cit:CI_Date.cit:date.gco:DateTime'), # Need to work out which date
-                        ('doi', 'GA_CSW.mdb:MD_Metadata.mdb:distributionInfo.mrd:MD_Distribution.mrd:distributionFormat.mrd:MD_Format.mrd:formatDistributor.mrd:MD_Distributor.mrd:distributorTransferOptions.mrd:MD_DigitalTransferOptions.mrd:onLine.cit:CI_OnlineResource.cit:linkage.gco:CharacterString'), # Only DOI used
-                        ('history', 'GA_CSW.mdb:MD_Metadata.mdb:resourceLineage.mrl:LI_Lineage.mrl:statement.gco:CharacterString'),
-                        ('institution', 'GA_CSW.mdb:MD_Metadata.mdb:contact.cit:CI_Responsibility.cit:party.cit:CI_Organisation.cit:name.gco:CharacterString'),
-                        ('keywords', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:descriptiveKeywords.mri:MD_Keywords.mri:keyword.gco:CharacterString'),
-#                        ('keywords_vocabulary', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:descriptiveKeywords.mri:MD_Keywords.mri:thesaurusName.cit:CI_Citation.cit:title.gco:CharacterString'),
-                        ('license', 'GA_CSW.mdb:MD_Metadata.mdb:identificationInfo.mri:MD_DataIdentification.mri:resourceConstraints.mco:MD_LegalConstraints.mco:otherConstraints.gco:CharacterString'),
+    
+    # List of (key: value) pairs defining a search list for metadata elements ordered by search priority.
+    METADATA_MAPPING = [ # ('netcdf_attribute', 'metadata/key'),
+                        ('uuid', 'GA_CSW/mdb:MD_Metadata/mdb:metadataIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString'),
+                        ('title', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:citation/cit:CI_Citation/cit:title/gco:CharacterString'),
+                        ('source', 'GA_CSW/mdb:MD_Metadata/mdb:resourceLineage/mrl:LI_Lineage/mrl:source/mrl:LI_Source/mrl:description/gco:CharacterString'),
+                        ('summary', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:abstract/gco:CharacterString'),
+                        ('product_version', 'GA_CSW/mdb:MD_Metadata/mdb:metadataProfile/cit:CI_Citation/cit:edition/gco:CharacterString'),
+                        ('date_created', 'GA_CSW/mdb:MD_Metadata/mdb:dateInfo/cit:CI_Date/cit:date/gco:DateTime'), # Need to work out which date
+                        ('date_modified', 'GA_CSW/mdb:MD_Metadata/mdb:dateInfo/cit:CI_Date/cit:date/gco:DateTime'), # Need to work out which date
+                        ('doi', 'GA_CSW/mdb:MD_Metadata/mdb:distributionInfo/mrd:MD_Distribution/mrd:distributionFormat/mrd:MD_Format/mrd:formatDistributor/mrd:MD_Distributor/mrd:distributorTransferOptions/mrd:MD_DigitalTransferOptions/mrd:onLine/cit:CI_OnlineResource/cit:linkage/gco:CharacterString'), # Only DOI used
+                        ('doi', 'GA_CSW/mdb:MD_Metadata/mdb:distributionInfo/mrd:MD_Distribution/mrd:transferOptions/mrd:MD_DigitalTransferOptions/mrd:onLine/cit:CI_OnlineResource/cit:linkage/gco:CharacterString'), # Alternate location - Only DOI used
+                        ('history', 'GA_CSW/mdb:MD_Metadata/mdb:resourceLineage/mrl:LI_Lineage/mrl:statement/gco:CharacterString'),
+                        ('institution', 'GA_CSW/mdb:MD_Metadata/mdb:contact/cit:CI_Responsibility/cit:party/cit:CI_Organisation/cit:name/gco:CharacterString'),
+                        ('keywords', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:descriptiveKeywords/mri:MD_Keywords/mri:keyword/gco:CharacterString'),
+#                        ('keywords_vocabulary', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:descriptiveKeywords/mri:MD_Keywords/mri:thesaurusName/cit:CI_Citation/cit:title/gco:CharacterString'),
+                        ('license', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:resourceConstraints/mco:MD_LegalConstraints/mco:otherConstraints/gco:CharacterString'),
                         ]
     
     def read_ers_datetime_string(self, ers_datetime_string):
