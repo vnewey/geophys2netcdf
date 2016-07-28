@@ -29,6 +29,7 @@ for field_list in [line.strip().split(',') for line in csv_file]:
         and (not re.search('^/g/data1/rr2/gravity/National', nc_path)) # Exclude all datasets in /g/data1/rr2/gravity/National
         and (os.path.splitext(os.path.basename(nc_path))[0] == os.path.basename(os.path.dirname(nc_path))) # Only work with datasets in their own directory
         ):
+        print 'Setting metadata in file %s' % nc_path
         try:
             update_nc_metadata(nc_path, uuid)
         except Exception, e:
