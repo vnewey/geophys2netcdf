@@ -270,7 +270,7 @@ class THREDDSCatalog(object):
         Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
         '''
         basename = os.path.basename(file_path)
-        result_list = []
+        base_list = []
         catalog_dict = catalog_dict or self.thredds_catalog_dict
         
         for key in sorted(catalog_dict.keys()):
@@ -278,9 +278,21 @@ class THREDDSCatalog(object):
             
             if type(value) == dict:
                 if re.search(basename + '$', key) and (set(distribution_types) <= set(value.keys())):
-                    result_list.append(key)
+                    base_list.append(key)
                 else:
-                    result_list += self.find_catalogs(file_path, distribution_types, value)
+                    base_list += self.find_catalogs(file_path, distribution_types, value)
                     
-        return result_list    
-        
+        # Find URL matches for longest possible sub-path
+        find_path = os.path.abspath(file_path)
+        find_list = []
+        while find_path and not find_list:
+            logger.debug('Searching for %s in URL list' % find_path)
+            find_list = [catalog_url for catalog_url in base_list if re.search(find_path + '$', catalog_url)]
+            if find_list: # Matches found for maximum-length sub-path
+                logger.debug('%d URLs found for %s', len(find_list), find_path)
+                return find_list # Search complete
+            elif '/' in find_path: # More leading directories to strip
+                find_path = re.sub('^[^/]*/', '', find_path) # Strip leading directory from find_path
+            else: # Nothing found for basename - should never happen
+                logger.debug('No URLs found for %s', find_path)
+                return []
