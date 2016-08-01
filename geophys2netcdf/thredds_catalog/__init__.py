@@ -264,7 +264,7 @@ class THREDDSCatalog(object):
                 
         return result_dict
     
-    def find_catalogues(self, file_path, distribution_types=['NetcdfSubset'], catalog_dict=None):
+    def find_catalogs(self, file_path, distribution_types=['NetcdfSubset'], catalog_dict=None):
         '''
         Recursive function to return list of catalog URLS containing specified distribution type(s) for specified file_path
         Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
@@ -280,7 +280,7 @@ class THREDDSCatalog(object):
                 if re.search(basename + '$', key) and (set(distribution_types) <= set(value.keys())):
                     result_list.append(key)
                 else:
-                    result_list += self.find_catalogues(file_path, distribution_types, value)
+                    result_list += self.find_catalogs(file_path, distribution_types, value)
                     
         return result_list    
         
