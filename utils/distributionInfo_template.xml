@@ -849,7 +849,7 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%DOI_URL%</gco:CharacterString>
+                        <gco:CharacterString>%DOI%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
