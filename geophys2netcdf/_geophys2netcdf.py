@@ -63,9 +63,9 @@ class Geophys2NetCDF(object):
     '''
     NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
 #    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw' # Old GeoCat CSW
-    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New externally-visible eCat CSW
+#    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New externally-visible eCat CSW
 #    GA_CSW = 'http://intranet.ga.gov.au/geonetwork/srv/eng/csw' # New internally-visible eCat CSW
-#    GA_CSW = 'http://localhost:8081/geonetwork/srv/eng/csw' # Port forwarded GA internal CSW
+    GA_CSW = 'http://localhost:8081/geonetwork/srv/eng/csw' # Port forwarded GA internal CSW
     FILE_EXTENSION = None # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
@@ -225,9 +225,9 @@ class Geophys2NetCDF(object):
     
     def set_netcdf_metadata_attributes(self): 
         '''
-        Function to set all NetCDF metadata attributes using self._metadata_mapping_dict to map from NetCDF attribute name to 
+        Function to set all NetCDF metadata attributes using self.METADATA_MAPPING to map from NetCDF attribute name to 
         '''
-        assert self._metadata_mapping_dict, 'No metadata mapping defined'
+        assert self.METADATA_MAPPING, 'No metadata mapping defined'
         assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
 #        assert self._metadata_dict, 'No metadata acquired'
         

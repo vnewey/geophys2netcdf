@@ -22,11 +22,11 @@ for field_list in [line.strip().split(',') for line in csv_file]:
     nc_path = re.sub('^"(.*)"$', lambda x: x.group(1), field_list[0]) + '.nc'
     uuid = re.sub('^"(.*)"$', lambda x: x.group(1), field_list[1])
 
-    # print 'Checking %s %s' % (nc_path, uuid)
+    print 'Checking %s %s' % (nc_path, uuid)
 
     if (os.path.isfile(nc_path) and uuid
-        and re.search('^/g/data1/rr2/gravity/', nc_path) # Include all datasets in /g/data1/rr2/gravity/
-        and (not re.search('^/g/data1/rr2/gravity/National', nc_path)) # Exclude all datasets in /g/data1/rr2/gravity/National
+        #and re.search('^/g/data1/rr2/gravity/', nc_path) # Include all datasets in /g/data1/rr2/gravity/
+        #and (not re.search('^/g/data1/rr2/gravity/National', nc_path)) # Exclude all datasets in /g/data1/rr2/gravity/National
         and (os.path.splitext(os.path.basename(nc_path))[0] == os.path.basename(os.path.dirname(nc_path))) # Only work with datasets in their own directory
         ):
         print 'Setting metadata in file %s' % nc_path
