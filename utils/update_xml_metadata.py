@@ -78,6 +78,8 @@ class XMLUpdater(object):
             print 'URL = %s' % xml_url
             return urllib.urlopen(xml_url).read()
         
+        nc_path = os.path.abspath(nc_path)
+        
         # Read required values from NetCDF file
         nc_dataset = netCDF4.Dataset(nc_path)
         uuid = nc_dataset.uuid
@@ -85,9 +87,6 @@ class XMLUpdater(object):
         nc_dataset.close()
         
         print 'Processing Dataset %s with UUID %s' % (nc_path, uuid)
-        
-        basename = os.path.splitext(os.path.basename(nc_path))[0]
-        #thredds_subdir = re.sub('^' + self.THREDDS_ROOT_DIR, '', nc_path)
         
         nc_distribution_dict = self.thredds_catalog.find_url_dict(nc_path)
         zip_distribution_dict = self.thredds_catalog.find_url_dict(os.path.splitext(nc_path)[0] + '.zip')
@@ -119,9 +118,10 @@ class XMLUpdater(object):
         distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(expand_namespace('mdb:distributionInfo'))
         
         try:
-            xml_tree = etree.fromstring(get_xml_by_id(self.GA_GEONETWORK, uuid))
+            xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
+            xml_tree = etree.fromstring(xml_text)
         except Exception, e:
-    #        print xml_text
+            print xml_text
             raise e
         
         metadata_tree = xml_tree.find(expand_namespace('mdb:MD_Metadata'))
