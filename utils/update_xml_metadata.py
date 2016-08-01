@@ -88,13 +88,19 @@ class XMLUpdater(object):
         print 'Processing Dataset %s with UUID %s' % (nc_path, uuid)
         
         nc_distribution_dict = self.thredds_catalog.find_url_dict(nc_path)
-        zip_distribution_dict = self.thredds_catalog.find_url_dict(os.path.splitext(nc_path)[0] + '.zip')
+        assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % nc_path
+
+        zip_path = os.path.splitext(nc_path)[0] + '.zip'
+        zip_distribution_dict = self.thredds_catalog.find_url_dict(zip_path)
+        assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % zip_path
+        
+        thredds_catalog_list = self.thredds_catalog.find_catalogs(nc_path)
+        assert thredds_catalog_list, 'No THREDDS catalogue found for %s' % nc_path
         
         template_dict = {
                          'UUID': uuid,
                          'DOI': doi,
-                         'THREDDS_CATALOG_URL': self.thredds_catalog.find_catalogs(nc_path)[-1],
-                         'THREDDS_CATALOG_URL': self.thredds_catalog.find_catalogs(nc_path)[-1],
+                         'THREDDS_CATALOG_URL': thredds_catalog_list[-1],
                          'NC_HTTP_URL': nc_distribution_dict['HTTPServer'],
                          'NCSS_URL': nc_distribution_dict['NetcdfSubset'],
                          'OPENDAP_URL': nc_distribution_dict['OPENDAP'],
@@ -102,7 +108,7 @@ class XMLUpdater(object):
                          'WMS_URL': nc_distribution_dict['WMS'],
                          'ZIP_HTTP_URL': zip_distribution_dict['HTTPServer'],
                          }
-        print template_dict
+#        print template_dict
     
         # Read XML template file
         distributionInfo_template_file = open('distributionInfo_template.xml')
@@ -112,7 +118,7 @@ class XMLUpdater(object):
         for key in sorted(template_dict.keys()):
             distributionInfo_template_text = re.sub('%%%s%%' % key, template_dict[key], distributionInfo_template_text)   
                 
-        print distributionInfo_template_text
+#        print distributionInfo_template_text
         
         distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(expand_namespace('mdb:distributionInfo'))
         
