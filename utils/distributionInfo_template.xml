@@ -854,10 +854,10 @@
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>Digital Object Identifier</gco:CharacterString>
+                        <gco:CharacterString>Digital Object Identifier for dataset %UUID%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>Digital Object Identifier</gco:CharacterString>
+                        <gco:CharacterString>Digital Object Identifier for dataset %UUID%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
