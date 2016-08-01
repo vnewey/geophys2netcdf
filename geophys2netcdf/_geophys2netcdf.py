@@ -69,6 +69,8 @@ class Geophys2NetCDF(object):
     FILE_EXTENSION = None # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128 # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
+    
+    METADATA_MAPPING = None # Needs to be defined in subclasses
 
     def __init__(self, debug=False):
         '''
@@ -83,7 +85,6 @@ class Geophys2NetCDF(object):
         self._netcdf_dataset = None # NetCDF Dataset for output
         self._uuid = None # File identifier - must be unique to dataset
         self._metadata_dict = {}
-        self._metadata_mapping_dict = OrderedDict()
         
     def translate(self, input_path, output_path=None):
         '''
@@ -298,9 +299,9 @@ class Geophys2NetCDF(object):
         for key, value in attribute_dict.items():
             setattr(self._netcdf_dataset, key, value)
 
-        # Set attributes defined in self._metadata_mapping_dict
-        for key in self._metadata_mapping_dict.keys():
-            metadata_path = self._metadata_mapping_dict[key]
+        # Set attributes defined in self.METADATA_MAPPING
+        # Scan list in reverse to give priority to earlier entries
+        for key, metadata_path in reversed(self.METADATA_MAPPING):
             value = self.get_metadata(metadata_path)
             if value is not None:
                 logger.debug('Setting %s to %s', key, value)

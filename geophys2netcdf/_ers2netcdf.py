@@ -96,7 +96,6 @@ class ERS2NetCDF(Geophys2NetCDF):
         Constructor for class ERS2NetCDF
         '''
         Geophys2NetCDF.__init__(self, debug) # Call inherited constructor
-        self._metadata_mapping_dict = OrderedDict(ERS2NetCDF.METADATA_MAPPING)
 
         if input_path:
             self.translate(input_path, output_path)
