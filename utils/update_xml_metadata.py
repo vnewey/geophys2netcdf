@@ -18,8 +18,7 @@ class XMLUpdater(object):
     GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
     
-    THREDDS_CATALOG_URL = 'http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.xml'
-    #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+    THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
     print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
     
     def __init__(self):
