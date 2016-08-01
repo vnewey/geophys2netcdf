@@ -14,7 +14,7 @@ from geophys2netcdf import THREDDSCatalog
 class XMLUpdater(object):
 
     # XML_DIR = '/home/547/axi547/national_coverage_metadata'
-    XML_DIR = ''
+    XML_DIR = './'
     GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
     
@@ -25,7 +25,7 @@ class XMLUpdater(object):
     def __init__(self):
     
         def get_thredds_catalog(thredds_catalog_url):
-            yaml_path = re.sub('\W', '_', os.path.splitext(re.sub('^http://dap.*\.nci\.org\.au/thredds/', '', thredds_catalog_url))[0]) + '.yaml'
+            yaml_path = os.path.abspath(re.sub('\W', '_', os.path.splitext(re.sub('^http://dap.*\.nci\.org\.au/thredds/', '', thredds_catalog_url))[0]) + '.yaml')
             print 'yaml_path = %s' % yaml_path
             
             if os.path.isfile(yaml_path):
@@ -132,7 +132,7 @@ class XMLUpdater(object):
         else:
             metadata_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
         
-        xml_path = os.path.join(self.XML_DIR, '%s.xml' % uuid)
+        xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
         
         xml_file.write(etree.tostring(xml_tree, pretty_print=True))
@@ -144,7 +144,10 @@ def main():
     xml_updater = XMLUpdater()
     
     for nc_path in sys.argv[1:]:
-        xml_updater.update_xml(nc_path)
+        try:
+            xml_updater.update_xml(nc_path)
+        except Exception, e:
+            print 'XML update failed for %s:\n%s' % (nc_path, e.message)
         
 
 if __name__ == '__main__':
