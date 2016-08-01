@@ -44,7 +44,8 @@ class XMLUpdater(object):
     def update_xml(self, nc_path):
         
         def expand_namespace(tag):
-            nsmap = {'mrd': 'http://standards.iso.org/iso/19115/-3/mrd/1.0',
+            nsmap = {'mdb': 'http://standards.iso.org/iso/19115/-3/mdb/1.0',
+                     'mrd': 'http://standards.iso.org/iso/19115/-3/mrd/1.0',
                      'cit': 'http://standards.iso.org/iso/19115/-3/cit/1.0',
                      'gco': 'http://standards.iso.org/iso/19115/-3/gco/1.0',
                     }
@@ -113,8 +114,9 @@ class XMLUpdater(object):
         for key in sorted(template_dict.keys()):
             distributionInfo_template_text = re.sub('%%%s%%' % key, template_dict[key], distributionInfo_template_text)   
                 
-        distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text)
-        distributionInfo_template_tree = distributionInfo_template_tree.find(expand_namespace('mdb:distributionInfo'))
+        print distributionInfo_template_text
+        
+        distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(expand_namespace('mdb:distributionInfo'))
         
         try:
             xml_tree = etree.fromstring(get_xml_by_id(self.GA_GEONETWORK, uuid))
@@ -125,9 +127,11 @@ class XMLUpdater(object):
         metadata_tree = xml_tree.find(expand_namespace('mdb:MD_Metadata'))
         distributionInfo_tree = metadata_tree.find(expand_namespace('mdb:distributionInfo'))
         
-        # TODO: Pretty much everything
+        if distributionInfo_tree is None:
+            metadata_tree.append(distributionInfo_template_tree)
+        else:
+            metadata_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
         
-                            
         xml_path = os.path.join(self.XML_DIR, '%s.xml' % uuid)
         xml_file = open(xml_path, 'w')
         
