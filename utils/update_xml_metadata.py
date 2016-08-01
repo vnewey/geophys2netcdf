@@ -81,8 +81,15 @@ class XMLUpdater(object):
         
         # Read required values from NetCDF file
         nc_dataset = netCDF4.Dataset(nc_path)
-        uuid = nc_dataset.uuid
-        doi = nc_dataset.doi
+        try:
+            uuid = nc_dataset.uuid
+        except:
+            raise Exception('UUID not found in %s' % nc_path)
+        
+        try:
+            doi = nc_dataset.doi
+        except:
+            raise Exception('DOI not found in %s' % nc_path)
         nc_dataset.close()
         
         print 'Processing Dataset %s with UUID %s' % (nc_path, uuid)
