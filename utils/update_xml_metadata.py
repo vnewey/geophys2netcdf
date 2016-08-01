@@ -128,8 +128,10 @@ class XMLUpdater(object):
         distributionInfo_tree = metadata_tree.find(expand_namespace('mdb:distributionInfo'))
         
         if distributionInfo_tree is None:
+            print 'Creating new distributionInfo element from template'
             metadata_tree.append(distributionInfo_template_tree)
         else:
+            print 'Replacing existing distributionInfo element with template'
             metadata_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
         
         xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
