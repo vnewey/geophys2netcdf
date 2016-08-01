@@ -123,15 +123,14 @@ class XMLUpdater(object):
             print xml_text
             raise e
         
-        metadata_tree = xml_tree.find(expand_namespace('mdb:MD_Metadata'))
-        distributionInfo_tree = metadata_tree.find(expand_namespace('mdb:distributionInfo'))
+        distributionInfo_tree = xml_tree.find(expand_namespace('mdb:distributionInfo'))
         
         if distributionInfo_tree is None:
             print 'Creating new distributionInfo element from template'
-            metadata_tree.append(distributionInfo_template_tree)
+            xml_tree.append(distributionInfo_template_tree)
         else:
             print 'Replacing existing distributionInfo element with template'
-            metadata_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
+            xml_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
         
         xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
