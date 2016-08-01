@@ -281,6 +281,9 @@ class THREDDSCatalog(object):
                     base_list.append(key)
                 else:
                     base_list += self.find_catalogs(file_path, distribution_types, value)
+        
+        if not base_list:
+            return base_list
                     
         # Find URL matches for longest possible sub-path
         find_path = os.path.abspath(file_path)
