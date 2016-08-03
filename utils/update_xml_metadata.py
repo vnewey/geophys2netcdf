@@ -81,6 +81,7 @@ class XMLUpdater(object):
         
         # Read required values from NetCDF file
         nc_dataset = netCDF4.Dataset(nc_path)
+        
         try:
             uuid = nc_dataset.uuid
         except:
