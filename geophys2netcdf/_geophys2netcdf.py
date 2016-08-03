@@ -245,7 +245,7 @@ class Geophys2NetCDF(object):
                 A tuple containing the geotransform information returned by GDAL.
         
             :return:
-                A tuple containing (min_lat, max_lat, min_lon, max_lat)
+                A tuple containing (min_lat, max_lat, min_lon, max_lon)
         
             :notes:
                 Hasn't been tested for northern or western hemispheres.
@@ -301,14 +301,24 @@ class Geophys2NetCDF(object):
 
         # Set attributes defined in self.METADATA_MAPPING
         # Scan list in reverse to give priority to earlier entries
-        for key, metadata_path in reversed(self.METADATA_MAPPING):
+        keys_read = []
+        for key, metadata_path in self.METADATA_MAPPING:
+            # Skip any keys already read
+            if key in keys_read:
+                continue
+            
             value = self.get_metadata(metadata_path)
             if value is not None:
                 logger.debug('Setting %s to %s', key, value)
                 setattr(self._netcdf_dataset, key, value) #TODO: Check whether hierarchical metadata required
+                keys_read.append(key)
             else:
                 logger.warning('WARNING: Metadata path %s not found', metadata_path)
                 
+        unread_keys = sorted(list(set([item[0] for item in self.METADATA_MAPPING]) - set(keys_read)))
+        if unread_keys:
+            logger.warning('No value found for metadata attribute(s) %s' % ', '.split(unread_keys))
+            
         # Ensure only one DOI is stored - could be multiple, comma-separated entries
         if hasattr(self._netcdf_dataset, 'doi'):
             url_list = [url.strip() for url in self._netcdf_dataset.doi.split(',')]
