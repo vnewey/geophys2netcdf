@@ -317,7 +317,7 @@ class Geophys2NetCDF(object):
                 
         unread_keys = sorted(list(set([item[0] for item in self.METADATA_MAPPING]) - set(keys_read)))
         if unread_keys:
-            logger.warning('No value found for metadata attribute(s) %s' % ', '.split(unread_keys))
+            logger.warning('WARNING: No value found for metadata attribute(s) %s' % ', '.join(unread_keys))
             
         # Ensure only one DOI is stored - could be multiple, comma-separated entries
         if hasattr(self._netcdf_dataset, 'doi'):
