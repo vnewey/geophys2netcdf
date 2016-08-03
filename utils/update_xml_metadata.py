@@ -129,8 +129,8 @@ class XMLUpdater(object):
         
         distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(expand_namespace('mdb:distributionInfo'))
         
+        xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
         try:
-            xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
             xml_tree = etree.fromstring(xml_text)
         except Exception, e:
             print xml_text
