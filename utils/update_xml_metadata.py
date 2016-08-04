@@ -116,15 +116,15 @@ class XMLUpdater(object):
         distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
         
         # Purge any distributionFormat with un-substituted expressions
-        distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
-        MD_Distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+        MD_Distribution_tree = distributionInfo_template_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
         for distributionFormat_tree in MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
-            for text in distributionFormat_tree.itertext(path='gco:CharacterString', namespaces=xml_tree.nsmap):
+            for text in distributionFormat_tree.itertext():
                 if re.search('%.*%', text):
-                    print 'Removing incomplete distributionFormat %s'% distributionFormat_tree.xpath()
+                    print 'Removing incomplete distributionFormat %s' % distributionFormat_tree.tag
                     MD_Distribution_tree.remove(distributionFormat_tree)
                     break
         
+        distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
         if distributionInfo_tree is None:
             print 'Creating new distributionInfo element from template'
             xml_tree.append(distributionInfo_template_tree)
