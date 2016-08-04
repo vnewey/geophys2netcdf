@@ -71,6 +71,7 @@ class ERS2NetCDF(Geophys2NetCDF):
                         ('keywords', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:descriptiveKeywords/mri:MD_Keywords/mri:keyword/gco:CharacterString'),
 #                        ('keywords_vocabulary', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:descriptiveKeywords/mri:MD_Keywords/mri:thesaurusName/cit:CI_Citation/cit:title/gco:CharacterString'),
                         ('license', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:resourceConstraints/mco:MD_LegalConstraints/mco:otherConstraints/gco:CharacterString'),
+                        ('license', 'GA_CSW/mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:resourceConstraints/mco:MD_LegalConstraints/mco:reference/cit:CI_Citation/cit:title/gco:CharacterString'),
                         ]
     
     def read_ers_datetime_string(self, ers_datetime_string):
