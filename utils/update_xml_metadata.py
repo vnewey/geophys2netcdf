@@ -37,40 +37,11 @@ class XMLUpdater(object):
             
             return tc
         
+        self.nsmap = None
         self.thredds_catalog = get_thredds_catalog(self.THREDDS_CATALOG_URL)
         
     
     def update_xml(self, nc_path):
-        
-        def expand_namespace(tag):
-            nsmap = {'mdb': 'http://standards.iso.org/iso/19115/-3/mdb/1.0',
-                     'mrd': 'http://standards.iso.org/iso/19115/-3/mrd/1.0',
-                     'cit': 'http://standards.iso.org/iso/19115/-3/cit/1.0',
-                     'gco': 'http://standards.iso.org/iso/19115/-3/gco/1.0',
-                    }
-            ns_match = re.match('^(\w+):(.+$)', tag)
-            if ns_match:
-                return './/{' + nsmap[ns_match.group(1)] + '}' + ns_match.group(2)
-            else:
-                return tag
-            
-        #=======================================================================
-        # def get_datatype(basename):
-        #     # Dict of datatypes with filename matching regex
-        #     datatype_matches = {'airborne_electromagnetics': None, 
-        #              'gravity': 'grav|bouguer',
-        #              'magnetics': '^mag',
-        #              'magnetotellurics': None,
-        #              'radiometrics': '^rad',
-        #              'surveys': None,
-        #              }
-        # 
-        #     for datatype in datatype_matches.keys():
-        #         if datatype_matches[datatype] and re.search(re.compile(datatype_matches[datatype], re.I), basename):
-        #             return datatype
-        #     return None # Return None for no match
-        #=======================================================================
-            
         
         def get_xml_by_id(geonetwork_url, uuid):
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
@@ -99,8 +70,8 @@ class XMLUpdater(object):
         assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % nc_path
 
         zip_path = os.path.splitext(nc_path)[0] + '.zip'
-        zip_distribution_dict = self.thredds_catalog.find_url_dict(zip_path)
-        assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % zip_path
+        zip_distribution_dict = self.thredds_catalog.find_url_dict(zip_path) # Optional - could be an empty dict
+#        assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % zip_path
         
         thredds_catalog_list = self.thredds_catalog.find_catalogs(nc_path)
         assert thredds_catalog_list, 'No THREDDS catalogue found for %s' % nc_path
@@ -108,28 +79,17 @@ class XMLUpdater(object):
         template_dict = {
                          'UUID': uuid,
                          'DOI': doi,
-                         'THREDDS_CATALOG_URL': thredds_catalog_list[-1],
-                         'NC_HTTP_URL': nc_distribution_dict['HTTPServer'],
-                         'NCSS_URL': nc_distribution_dict['NetcdfSubset'],
-                         'OPENDAP_URL': nc_distribution_dict['OPENDAP'],
-                         'WCS_URL': nc_distribution_dict['WCS'],
-                         'WMS_URL': nc_distribution_dict['WMS'],
-                         'ZIP_HTTP_URL': zip_distribution_dict['HTTPServer'],
+                         'THREDDS_CATALOG_URL': thredds_catalog_list[0], # Should be one - fail otherwise
+                         'NC_HTTP_URL': nc_distribution_dict.get('HTTPServer'),
+                         'NCSS_URL': nc_distribution_dict.get('NetcdfSubset'),
+                         'OPENDAP_URL': nc_distribution_dict.get('OPENDAP'),
+                         'WCS_URL': nc_distribution_dict.get('WCS'),
+                         'WMS_URL': nc_distribution_dict.get('WMS'),
+                         'ZIP_HTTP_URL': zip_distribution_dict.get('HTTPServer'),
                          }
 #        print template_dict
     
-        # Read XML template file
-        distributionInfo_template_file = open('distributionInfo_template.xml')
-        distributionInfo_template_text = distributionInfo_template_file.read()
-        distributionInfo_template_file.close()
-
-        for key in sorted(template_dict.keys()):
-            distributionInfo_template_text = re.sub('%%%s%%' % key, template_dict[key], distributionInfo_template_text)   
-                
-#        print distributionInfo_template_text
-        
-        distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(expand_namespace('mdb:distributionInfo'))
-        
+        # Need to read namespace info from main XML first
         xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
         try:
             xml_tree = etree.fromstring(xml_text)
@@ -137,7 +97,33 @@ class XMLUpdater(object):
             print xml_text
             raise e
         
-        distributionInfo_tree = xml_tree.find(expand_namespace('mdb:distributionInfo'))
+        # Read XML template file
+        distributionInfo_template_file = open('distributionInfo_template.xml')
+        distributionInfo_template_text = distributionInfo_template_file.read()
+        distributionInfo_template_file.close()
+        
+        # Perform any global substitutions
+        distributionInfo_template_text.replace('sales@ga.gov.au', 'clientservices@ga.gov.au')
+
+        # Perform specialised text substitutions
+        for key in sorted(template_dict.keys()):
+            if template_dict[key] is None:
+                print 'WARNING: %s not set in template XML' % key
+            else:
+                distributionInfo_template_text = re.sub('%%%s%%' % key, template_dict[key], distributionInfo_template_text)   
+                
+#        print distributionInfo_template_text        
+        distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
+        
+        # Purge any distributionFormat with un-substituted expressions
+        distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
+        MD_Distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+        for distributionFormat_tree in MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+            for text in distributionFormat_tree.itertext(path='gco:CharacterString', namespaces=xml_tree.nsmap):
+                if re.search('%.*%', text):
+                    print 'Removing incomplete distributionFormat %s'% distributionFormat_tree.xpath()
+                    MD_Distribution_tree.remove(distributionFormat_tree)
+                    break
         
         if distributionInfo_tree is None:
             print 'Creating new distributionInfo element from template'
