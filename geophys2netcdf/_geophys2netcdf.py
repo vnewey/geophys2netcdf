@@ -235,7 +235,10 @@ class Geophys2NetCDF(object):
 #        assert self._metadata_dict, 'No metadata acquired'
         
         # Set geospatial attributes
-        crs = self._netcdf_dataset.variables['crs']
+        grid_mapping = [variable.grid_mapping for variable in self._netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+
+        crs = self._netcdf_dataset.variables[grid_mapping]
+            
         spatial_ref = crs.spatial_ref
         geoTransform = [float(string) for string in crs.GeoTransform.strip().split(' ')]
         xpixels, ypixels = (dimension.size for dimension in self._netcdf_dataset.dimensions.values())
@@ -271,9 +274,10 @@ class Geophys2NetCDF(object):
                                                                                         for y_pixel_offset in [ypixels // 2, ypixels // 2 + 1]]
                                                                                        )
                                    ]
-            # Use Pythagoras to compute centre pixel size in new coordinates
-            yres = pow((centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2) + pow(centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2), 0.5)
-            xres = pow((centre_pixel_coords[2][1] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[2][1] - centre_pixel_coords[0][0], 2), 0.5)
+
+            # Use Pythagoras to compute centre pixel size in new coordinates (never mind the angles)
+            yres = pow(pow(centre_pixel_coords[1][0] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2), 0.5)
+            xres = pow(pow(centre_pixel_coords[2][0] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[2][1] - centre_pixel_coords[0][1], 2), 0.5)
             
             #TODO: Make this more robust
             if to_spatial_ref.IsGeographic():
