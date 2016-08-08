@@ -279,7 +279,7 @@ class Geophys2NetCDF(object):
             yres = pow(pow(centre_pixel_coords[1][0] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2), 0.5)
             xres = pow(pow(centre_pixel_coords[2][0] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[2][1] - centre_pixel_coords[0][1], 2), 0.5)
             
-            #TODO: Make this more robust
+            #TODO: Make this more robust - could pull single unit from WKT
             if to_spatial_ref.IsGeographic():
                 xunits, yunits = ('degrees_east', 'degrees_north')
             elif to_spatial_ref.IsProjected():
@@ -307,11 +307,12 @@ class Geophys2NetCDF(object):
         attribute_dict['geospatial_lat_resolution'] = yres
         attribute_dict['geospatial_lon_units'] = xunits
         attribute_dict['geospatial_lat_units'] = yunits
-        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (xmin, ymin,
-                                                                                                xmax, ymin,
-                                                                                                xmax, ymax,
-                                                                                                xmin, ymax,
-                                                                                                xmin, ymin
+        # Trace clockwise around original bounding polygon (which isn't necessarily orthogonal in new CRS) starting from top left - don't expand bounding box 
+        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (extents[0,0], extents[0,1], #xmin, ymin,
+                                                                                                extents[2,0], extents[2,1], #xmax, ymin,
+                                                                                                extents[3,0], extents[3,1], #xmax, ymax,
+                                                                                                extents[1,0], extents[1,1], #xmin, ymax,
+                                                                                                extents[0,0], extents[0,1], #xmin, ymin
                                                                                                 )
         attribute_dict['geospatial_bounds_crs'] = spatial_ref
 
