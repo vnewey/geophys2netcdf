@@ -38,6 +38,7 @@ from collections import OrderedDict
 import logging
 import subprocess
 #from osgeo import gdal, osr
+from osgeo.osr import SpatialReference, CoordinateTransformation
 import numpy as np
 import netCDF4
 from owslib.csw import CatalogueServiceWeb
@@ -223,78 +224,92 @@ class Geophys2NetCDF(object):
         return focus_element
         
     
-    def set_netcdf_metadata_attributes(self): 
+    def set_netcdf_metadata_attributes(self, to_crs='EPSG:4326'): 
         '''
-        Function to set all NetCDF metadata attributes using self.METADATA_MAPPING to map from NetCDF attribute name to 
+        Function to set all NetCDF metadata attributes using self.METADATA_MAPPING to map from NetCDF ACDD global attribute name to metadata path (e.g. xpath)
+        Parameter:
+            to_crs: EPSG or WKT for spatial metadata
         '''
         assert self.METADATA_MAPPING, 'No metadata mapping defined'
         assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
 #        assert self._metadata_dict, 'No metadata acquired'
         
-        def getMinMaxExtents(samples, lines, geoTransform):
-            """
-            Calculates the min/max extents based on the geotransform and raster sizes.
-        
-            :param samples:
-                An integer representing the number of samples (columns) in an array.
-        
-            :param lines:
-                An integer representing the number of lines (rows) in an array.
-        
-            :param geoTransform:
-                A tuple containing the geotransform information returned by GDAL.
-        
-            :return:
-                A tuple containing (min_lat, max_lat, min_lon, max_lon)
-        
-            :notes:
-                Hasn't been tested for northern or western hemispheres.
-            """
-            extents = []
-            x_list  = [0, samples]
-            y_list  = [0, lines]
-        
-            for px in x_list:
-                for py in y_list:
-                    x = geoTransform[0]+(px*geoTransform[1])+(py*geoTransform[2])
-                    y = geoTransform[3]+(px*geoTransform[4])+(py*geoTransform[5])
-                    extents.append([x,y])
-        
-            extents = np.array(extents)
-            min_lat = np.min(extents[:,1])
-            max_lat = np.max(extents[:,1])
-            min_lon = np.min(extents[:,0])
-            max_lon = np.max(extents[:,0])
-        
-            return (min_lat, max_lat, min_lon, max_lon)
-
         # Set geospatial attributes
         crs = self._netcdf_dataset.variables['crs']
-        geotransform = [float(string) for string in crs.GeoTransform.strip().split(' ')]
-        # min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(self._input_dataset.RasterXSize,
-        #                                                       self._input_dataset.RasterYSize,
-        #                                                       geotransform
-        #                                                       )
-        min_lat, max_lat, min_lon, max_lon = getMinMaxExtents(len(self._netcdf_dataset.variables['lon']),
-                                                              len(self._netcdf_dataset.variables['lat']),
-                                                              geotransform
-                                                              )
+        spatial_ref = crs.spatial_ref
+        geoTransform = [float(string) for string in crs.GeoTransform.strip().split(' ')]
+        xpixels, ypixels = (dimension.size for dimension in self._netcdf_dataset.dimensions.values())
+        dimension_names = (dimension.name for dimension in self._netcdf_dataset.dimensions.values())
         
-        attribute_dict = dict(zip(['geospatial_lat_min', 'geospatial_lat_max', 'geospatial_lon_min', 'geospatial_lon_max'],
-                                  [min_lat, max_lat, min_lon, max_lon]
+        # Create nested list of bounding box corner coordinates
+        bbox_corners = [[geoTransform[0] + (x_pixel_offset * geoTransform[1]) + (y_pixel_offset * geoTransform[2]), 
+                         geoTransform[3] + (x_pixel_offset * geoTransform[4]) + (y_pixel_offset * geoTransform[5])]
+                        for x_pixel_offset in [0, xpixels] 
+                        for y_pixel_offset in [0, ypixels]]
+    
+        if to_crs: # Coordinate transformation required
+            from_spatial_ref = SpatialReference()
+            from_spatial_ref.ImportFromWkt(spatial_ref)
+            
+            to_spatial_ref = SpatialReference()
+            # Check for EPSG then Well Known Text
+            epsg_match = re.match('^EPSG:(\d+)$', to_crs)
+            if epsg_match:
+                to_spatial_ref.ImportFromEPSG(int(epsg_match.group(1)))
+            else: # Assume valid WKT definition
+                to_spatial_ref.ImportFromWkt(to_crs)    
+                
+            coord_trans = CoordinateTransformation(from_spatial_ref, to_spatial_ref)
+                
+            extents = np.array([coord[0:2] for coord in coord_trans.TransformPoints(bbox_corners)])
+            spatial_ref = to_spatial_ref.ExportToWkt()
+            
+            centre_pixel_coords = [coord[0:2] for coord in coord_trans.TransformPoints(
+                                                                                       [[geoTransform[0] + (x_pixel_offset * geoTransform[1]) + (y_pixel_offset * geoTransform[2]), 
+                                                                                         geoTransform[3] + (x_pixel_offset * geoTransform[4]) + (y_pixel_offset * geoTransform[5])]
+                                                                                        for x_pixel_offset in [xpixels // 2, xpixels // 2 + 1] 
+                                                                                        for y_pixel_offset in [ypixels // 2, ypixels // 2 + 1]]
+                                                                                       )
+                                   ]
+            # Use Pythagoras to compute centre pixel size in new coordinates
+            yres = pow((centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2) + pow(centre_pixel_coords[1][1] - centre_pixel_coords[0][1], 2), 0.5)
+            xres = pow((centre_pixel_coords[2][1] - centre_pixel_coords[0][0], 2) + pow(centre_pixel_coords[2][1] - centre_pixel_coords[0][0], 2), 0.5)
+            
+            #TODO: Make this more robust
+            if to_spatial_ref.IsGeographic():
+                xunits, yunits = ('degrees_east', 'degrees_north')
+            elif to_spatial_ref.IsProjected():
+                xunits, yunits = ('m', 'm')
+            else:
+                xunits, yunits = ('unknown', 'unknown')
+            
+    
+        else: # Use native coordinates
+            extents = np.array(bbox_corners)
+            xres = geoTransform[1]
+            yres = geoTransform[5]
+            xunits, yunits = (self._netcdf_dataset.variables[dimension_name].units for dimension_name in dimension_names)
+            
+        xmin = np.min(extents[:,0])
+        ymin = np.min(extents[:,1])
+        xmax = np.max(extents[:,0])
+        ymax = np.max(extents[:,1])
+
+        attribute_dict = dict(zip(['geospatial_lon_min', 'geospatial_lat_min', 'geospatial_lon_max', 'geospatial_lat_max'],
+                                  [xmin, ymin, xmax, ymax]
                                   )
                               )
-        attribute_dict['geospatial_lon_resolution'] = geotransform[1]
-        attribute_dict['geospatial_lat_resolution'] = geotransform[5]
-        attribute_dict['geospatial_lon_units'] = self._netcdf_dataset.variables['lon'].units
-        attribute_dict['geospatial_lat_units'] = self._netcdf_dataset.variables['lat'].units
-        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (min_lon, min_lat,
-                                                                                                max_lon, min_lat,
-                                                                                                max_lon, max_lat,
-                                                                                                min_lon, max_lat,
-                                                                                                min_lon, min_lat
+        attribute_dict['geospatial_lon_resolution'] = xres
+        attribute_dict['geospatial_lat_resolution'] = yres
+        attribute_dict['geospatial_lon_units'] = xunits
+        attribute_dict['geospatial_lat_units'] = yunits
+        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (xmin, ymin,
+                                                                                                xmax, ymin,
+                                                                                                xmax, ymax,
+                                                                                                xmin, ymax,
+                                                                                                xmin, ymin
                                                                                                 )
-        attribute_dict['geospatial_bounds_crs'] = crs.spatial_ref
+        attribute_dict['geospatial_bounds_crs'] = spatial_ref
 
         for key, value in attribute_dict.items():
             setattr(self._netcdf_dataset, key, value)
@@ -594,7 +609,13 @@ class Geophys2NetCDF(object):
             raise Exception('\n'.join(report_list))
         else:
             logger.info('File paths and checksums verified OK in %s', dataset_folder)
-    
+            
+    def convert_bounding_box(self, minmax_tuple, input_crs, output_crs='EPSG:4326'):
+        '''
+        Function to compute EPSG:4326 bounding box from native bounding box
+        '''
+        xmin0, ymin0, xmax0, ymax0 = minmax_tuple
+
         
     @property
     def metadata_dict(self):
@@ -629,6 +650,7 @@ class Geophys2NetCDF(object):
                 logger.setLevel(logging.DEBUG)
             else:
                 logger.setLevel(logging.INFO)
+
 
 def main():
     g2n = Geophys2NetCDF(debug=True)

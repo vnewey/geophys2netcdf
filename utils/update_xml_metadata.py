@@ -23,7 +23,11 @@ class XMLUpdater(object):
     
     def __init__(self):
     
+        #TODO: Work out some way of making this faster.
         def get_thredds_catalog(thredds_catalog_url):
+            '''
+            Function to return a THREDDSCatalog either from a pre-cached YAML file or read from specified THREDDS catalog
+            '''
             yaml_path = os.path.abspath(re.sub('\W', '_', os.path.splitext(re.sub('^http://dap.*\.nci\.org\.au/thredds/', '', thredds_catalog_url))[0]) + '.yaml')
             print 'yaml_path = %s' % yaml_path
             
@@ -42,8 +46,15 @@ class XMLUpdater(object):
         
     
     def update_xml(self, nc_path):
-        
+        '''
+        Function to read, update and write XML metadata for specified NetCDF file
+        N.B: Requires UUID & DOI global attributes to be pre-populated in NetCDF file
+        Currently creates or replaces distributionInfo element using template XML file
+        '''
         def get_xml_by_id(geonetwork_url, uuid):
+            '''
+            Function to return complete, native (ISO19115-3) XML text for metadata record with specified UUID
+            '''
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
             print 'URL = %s' % xml_url
             return urllib.urlopen(xml_url).read()
@@ -124,6 +135,7 @@ class XMLUpdater(object):
                     MD_Distribution_tree.remove(distributionFormat_tree)
                     break
         
+        # Create or replace distributionInfo element
         distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
         if distributionInfo_tree is None:
             print 'Creating new distributionInfo element from template'
@@ -141,6 +153,8 @@ class XMLUpdater(object):
         print 'Finished writing XML to file %s' % xml_path
     
 def main():
+    assert len(sys.argv) > 1, 'Usage: %s <netcdf_file> [<netcdf_file>...]' % sys.argv[0]        
+        
     xml_updater = XMLUpdater()
     
     for nc_path in sys.argv[1:]:
