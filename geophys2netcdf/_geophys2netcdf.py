@@ -148,7 +148,7 @@ class Geophys2NetCDF(object):
         '''
         chunk_size = chunk_size or Geophys2NetCDF.DEFAULT_CHUNK_SIZE
         temp_path = os.path.join(tempfile.gettempdir(), os.path.basename(output_path))
-        gdal_command = ['gdal_translate', 
+        command = ['gdal_translate', 
                         '-of', 'netCDF',
                         '-co', 'FORMAT=NC4C', 
                         '-co', 'COMPRESS=DEFLATE', 
@@ -157,14 +157,24 @@ class Geophys2NetCDF(object):
                         temp_path
                         ]
         
-        logger.debug('gdal_command = %s', ' '.join(gdal_command))
+        logger.debug('command = %s', ' '.join(command))
         
+        logger.info('Translating %s to temporary, un-chunked NetCDF file %s', input_path, temp_path)
+        subprocess.check_call(command)
+
+        arg_list = []
+        temp_dataset = netCDF4.Dataset(temp_path, 'r')
+        assert len(temp_dataset.dimensions) == 2, 'Dataset must have exactly two dimensions'
+        for dimension in temp_dataset.dimensions.values():
+            arg_list += [dimension.name, min(chunk_size, dimension.size)]
+        temp_dataset.close()
+
         try:
-            logger.info('Translating %s to temporary, un-chunked NetCDF file %s', input_path, temp_path)
-            subprocess.check_call(gdal_command)
-            
             logger.info('Translating temporary file %s to chunked NetCDF file %s', temp_path, output_path)
-            subprocess.check_call(['nccopy', '-u', '-d', '2', '-c', 'lat/%d,lon/%d' % (chunk_size, chunk_size), temp_path,  output_path])
+            command = ['nccopy', '-u', '-d', '2', '-c', '%s/%d,%s/%d' % tuple(arg_list), temp_path, output_path]
+            logger.debug('command = %s', ' '.join(command))
+            subprocess.check_call(command)
+            logger.info('Chunked NetCDF file %s created', output_path)
         finally:
             if not self._debug:
                 os.remove(temp_path)
@@ -182,7 +192,11 @@ class Geophys2NetCDF(object):
             self._output_path = output_path
             if self._netcdf_dataset:
                 self._netcdf_dataset.close()
-            self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+            try:
+                self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+            except Exception, e:
+                logger.error('Unable to open NetCDF file %s', self._output_path)
+                raise
             self.import_metadata()
 
         assert self._metadata_dict, 'No metadata acquired'
@@ -235,7 +249,11 @@ class Geophys2NetCDF(object):
 #        assert self._metadata_dict, 'No metadata acquired'
         
         # Set geospatial attributes
-        grid_mapping = [variable.grid_mapping for variable in self._netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        try:
+            grid_mapping = [variable.grid_mapping for variable in self._netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        except:
+            logger.error('Unable to determine grid_mapping for spatial reference')
+            raise
 
         crs = self._netcdf_dataset.variables[grid_mapping]
             
@@ -485,7 +503,7 @@ class Geophys2NetCDF(object):
         if not self._uuid and title:
             get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
             
-        assert self._uuid, 'Unable to determine unique UUID for %s' % self.output_path
+        assert self._uuid, 'Unable to determine unique UUID for %s' % self._output_path
         logger.debug('self._uuid = %s', self._uuid)
         return self._uuid
 

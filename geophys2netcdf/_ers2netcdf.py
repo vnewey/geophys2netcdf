@@ -116,7 +116,11 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._input_driver_name = self._input_dataset.GetDriver().GetDescription()
         assert self._input_driver_name == 'ERS', 'Input file is not of type ERS'
         
-        self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+        try:
+            self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
+        except:
+            logger.error('Unable to open NetCDF file %s', self._output_path)
+            raise
         
         self.import_metadata()
 
@@ -124,9 +128,10 @@ class ERS2NetCDF(Geophys2NetCDF):
         band_name = (self.get_metadata('ERS.DatasetHeader.RasterInfo.BandId.Value') or
                      self.get_metadata('GA_CSW.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.gco:CharacterString'))
             
-        variable = self._netcdf_dataset.variables['Band1']
-        variable.long_name = band_name
-        self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name[0:16])) #TODO: Do something more elegant than string truncation for short name
+        if band_name:
+            variable = self._netcdf_dataset.variables['Band1']
+            variable.long_name = band_name
+            self._netcdf_dataset.renameVariable('Band1', re.sub('\W', '_', band_name[0:16])) #TODO: Do something more elegant than string truncation for short name
 
         self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions.replace('CF-1.5', 'CF-1.6') + ', ACDD-1.3'
         self.update_nc_metadata() # Will close output file for writing and write checksum and uuid files

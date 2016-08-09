@@ -30,9 +30,7 @@ for field_list in [line.strip().split(',') for line in csv_file]:
         and (os.path.splitext(os.path.basename(nc_path))[0] == os.path.basename(os.path.dirname(nc_path))) # Only work with datasets in their own directory
         ):
         print 'Setting metadata in file %s' % nc_path
-        #try:
-        if True:
+        try:
             update_nc_metadata(nc_path, uuid)
-        #except Exception, e:
-        else:
+        except Exception, e:
             print '%s failed: %s' % (nc_path, e.message)
