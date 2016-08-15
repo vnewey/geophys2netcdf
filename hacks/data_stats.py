@@ -12,14 +12,13 @@ class DataStats(object):
     '''
     classdocs
     '''
-    key_list = ['nodata_value', 'min', 'max', 'mean', 'median', 'percentile_1', 'percentile_99']
+    key_list = ['nc_path', 'nodata_value', 'min', 'max', 'mean', 'median', 'percentile_1', 'percentile_99']
 
     def __init__(self, netcdf_path):
         '''
         Constructor
         '''
-        self._netcdf_path = netcdf_path
-        netcdf_dataset = netCDF4.Dataset(self._netcdf_path)
+        netcdf_dataset = netCDF4.Dataset(netcdf_path)
         
         # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
         try:
@@ -27,30 +26,37 @@ class DataStats(object):
         except:
             raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
         
-        data_array = variable[:].flatten()
-        
         self._data_stats = {}        
+        self._data_stats['nc_path'] = netcdf_path
         self._data_stats['nodata_value'] = data_variable._FillValue        
+
+        data_array = variable[:].data # This will fail for larger than memory arrays
+        data_array = data_array[data_array != self._data_stats['nodata_value']] # Discard all no-data elements
+        netcdf_dataset.close()
+        del netcdf_dataset
+        gc.collect()
+
         self._data_stats['min'] = np.nanmin(data_array)
         self._data_stats['max'] = np.nanmax(data_array)
         self._data_stats['mean'] = np.nanmean(data_array)
-        self._data_stats['median'] = np.nanmedian(data_array)
+        self._data_stats['median'] = np.nanpercentile(data_array, 50)
         self._data_stats['percentile_1'] = np.nanpercentile(data_array, 1)
         self._data_stats['percentile_99'] = np.nanpercentile(data_array, 99)
         
         del data_array
-        netcdf_dataset.close()
-        del netcdf_dataset
         gc.collect()
         
-    @property 
     def value(self, key):
         return self._data_stats[key]
         
 def main():
     print ','.join(DataStats.key_list)
     for netcdf_path in sys.argv[1:]:
-        datastats = DataStats(netcdf_path)
-        print ','.join([str(datastats.value[key]) for key in DataStats.key_list])
-        
-    
+        try:
+            datastats = DataStats(netcdf_path)
+            print ','.join([str(datastats.value(key)) for key in DataStats.key_list])
+        except:
+            pass
+
+if __name__ == '__main__':
+    main()
