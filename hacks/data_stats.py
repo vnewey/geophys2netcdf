@@ -10,14 +10,16 @@ import numpy as np
 
 class DataStats(object):
     '''
-    classdocs
+    DataStats class definition. Obtains statistics for gridded data
     '''
-    key_list = ['nc_path', 'nodata_value', 'min', 'max', 'mean', 'median', 'percentile_1', 'percentile_99']
-    CHUNK_MULTIPLE = 32 # How many chunks to grab at a time
+    key_list = ['nc_path', 'nodata_value', 'x_size', 'y_size', 'min', 'max', 'mean', 'median', 'std_dev', 'percentile_1', 'percentile_99']
+    CHUNK_MULTIPLE = 32 # How many chunks to grab at a time in each dimension
 
     def __init__(self, netcdf_path):
         '''
-        Constructor
+        DataStats Constructor
+        Parameter:
+            netcdf_path - string representing path to NetCDF file
         '''
         netcdf_dataset = netCDF4.Dataset(netcdf_path)
         
@@ -33,16 +35,24 @@ class DataStats(object):
 
         try:
 #            raise Exception('Testing only')
-            data_array = variable[:].data # This will fail for larger than memory arrays
+            data_array = variable[:] # This will fail for larger than memory arrays
+            if type(data_array) == np.ma.core.MaskedArray:
+                data_array = data_array.data
+                
             data_array = data_array[data_array != self._data_stats['nodata_value']] # Discard all no-data elements
             netcdf_dataset.close()
             del netcdf_dataset
             gc.collect()
     
+            # Array is ordered YX
+            self._data_stats['x_size'] = data_array.shape[1]
+            self._data_stats['y_size'] = data_array.shape[0]
+            
             self._data_stats['min'] = np.nanmin(data_array)
             self._data_stats['max'] = np.nanmax(data_array)
             self._data_stats['mean'] = np.nanmean(data_array)
-            self._data_stats['median'] = np.nanpercentile(data_array, 50)
+            self._data_stats['median'] = np.nanmedian(data_array)
+            self._data_stats['std_dev'] = np.nanstd(data_array)
             self._data_stats['percentile_1'] = np.nanpercentile(data_array, 1)
             self._data_stats['percentile_99'] = np.nanpercentile(data_array, 99)
 
@@ -51,6 +61,10 @@ class DataStats(object):
         except Exception, e:
             shape = data_variable.shape
 #            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
+
+            # Array is ordered YX
+            self._data_stats['x_size'] = shape[1]
+            self._data_stats['y_size'] = shape[0]
 
             chunking = [DataStats.CHUNK_MULTIPLE * chunk_size for chunk_size in data_variable.chunking()]
 #            print'chunking = %s' % chunking
@@ -101,6 +115,7 @@ class DataStats(object):
             
             #TODO: Implement something clever for these
             self._data_stats['median'] = np.NaN
+            self._data_stats['std_dev'] = np.NaN
             self._data_stats['percentile_1'] = np.NaN
             self._data_stats['percentile_99'] = np.NaN
         
