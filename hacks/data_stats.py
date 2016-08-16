@@ -32,7 +32,7 @@ class DataStats(object):
         self._data_stats['nodata_value'] = data_variable._FillValue        
 
         try:
-            raise Exception('Testing only')
+#            raise Exception('Testing only')
             data_array = variable[:].data # This will fail for larger than memory arrays
             data_array = data_array[data_array != self._data_stats['nodata_value']] # Discard all no-data elements
             netcdf_dataset.close()
@@ -45,27 +45,34 @@ class DataStats(object):
             self._data_stats['median'] = np.nanpercentile(data_array, 50)
             self._data_stats['percentile_1'] = np.nanpercentile(data_array, 1)
             self._data_stats['percentile_99'] = np.nanpercentile(data_array, 99)
-        except Exception, e:
-            shape = list(reversed(data_variable.shape))
 
-            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
+            del data_array
+            gc.collect()
+        except Exception, e:
+            shape = data_variable.shape
+#            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
+
             chunking = [DataStats.CHUNK_MULTIPLE * chunk_size for chunk_size in data_variable.chunking()]
-            start_indices = [0,0]
-            end_indices = [0,0]
-            chunk_counts = [(shape[0] + chunking[0] - 1) / chunking[0], (shape[1] + chunking[1] - 1) / chunking[1]]
-            chunk_length = np.zeros(chunk_counts, dtype=np.int16)
+#            print'chunking = %s' % chunking
+
+            start_index = [0,0]
+            end_index = [0,0]
+            chunk_count = [(shape[0] + chunking[0] - 1) / chunking[0], (shape[1] + chunking[1] - 1) / chunking[1]]
+#            print'chunk_count = %s' % chunk_count
             
             length_read = 0
             weighted_mean = 0.0
-            for _dimension0_index in range(chunk_counts[0]):
-                end_indices[0] = min(start_indices[0] + chunking[0], shape[0])
-                start_indices[1] = 0
-                for _dimension1_index in range(chunk_counts[1]):
-                    end_indices[1] = min(start_indices[1] + chunking[1], shape[1])
-                    print 'Range = %d:%d, %d:%d' % (start_indices[0], end_indices[0], start_indices[1], end_indices[1])
-                    chunk_array = variable[start_indices[0]:end_indices[0], start_indices[1]:end_indices[1]].data
-                    print chunk_array.shape
-                    chunk_array = chunk_array[chunk_array != self._data_stats['nodata_value']] # Discard all no-data elements
+            for _dimension0_index in range(chunk_count[0]):
+                end_index[0] = min(start_index[0] + chunking[0], shape[0])
+                start_index[1] = 0
+                for _dimension1_index in range(chunk_count[1]):
+                    end_index[1] = min(start_index[1] + chunking[1], shape[1])
+#                    print 'Range = %d:%d, %d:%d' % (start_index[0], end_index[0], start_index[1], end_index[1])
+                    chunk_array = variable[start_index[0]:end_index[0], start_index[1]:end_index[1]]
+                    if type(chunk_array) == np.ma.core.MaskedArray:
+                        chunk_array = chunk_array.data
+#                    print 'chunk_array.shape = %s, chunk_array.size = %s' % (chunk_array.shape, chunk_array.size)
+                    chunk_array = np.array(chunk_array[chunk_array != self._data_stats['nodata_value']]) # Discard all no-data elements
                     chunk_length = len(chunk_array)
 
                     if chunk_length:
@@ -81,14 +88,14 @@ class DataStats(object):
 
                         weighted_mean = weighted_mean + np.nanmean(chunk_array) * chunk_length
                         length_read += chunk_length
-                    else:
-                        print 'Empty array'
+#                    else:
+#                        print 'Empty array'
 
                     del chunk_array
                     gc.collect()
-                    start_indices[1] = end_indices[1]
+                    start_index[1] = end_index[1]
 
-                start_indices[0] = end_indices[0]
+                start_index[0] = end_index[0]
             
             self._data_stats['mean'] = weighted_mean / length_read
             
@@ -96,11 +103,6 @@ class DataStats(object):
             self._data_stats['median'] = np.NaN
             self._data_stats['percentile_1'] = np.NaN
             self._data_stats['percentile_99'] = np.NaN
-                    
-                
-        
-        del data_array
-        gc.collect()
         
     def value(self, key):
         return self._data_stats[key]
