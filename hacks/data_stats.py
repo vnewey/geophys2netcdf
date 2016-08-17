@@ -13,7 +13,7 @@ class DataStats(object):
     DataStats class definition. Obtains statistics for gridded data
     '''
     key_list = ['nc_path', 'nodata_value', 'x_size', 'y_size', 'min', 'max', 'mean', 'median', 'std_dev', 'percentile_1', 'percentile_99']
-    CHUNK_MULTIPLE = 32 # How many chunks to grab at a time in each dimension
+    CHUNK_MULTIPLE = 256 # How many chunks to grab at a time in each dimension
 
     def __init__(self, netcdf_path):
         '''
@@ -35,7 +35,8 @@ class DataStats(object):
 
         try:
 #            raise Exception('Testing only')
-            data_array = variable[:] # This will fail for larger than memory arrays
+            shape = data_variable.shape
+            data_array = data_variable[:] # This will fail for larger than memory arrays
             if type(data_array) == np.ma.core.MaskedArray:
                 data_array = data_array.data
                 
@@ -45,8 +46,8 @@ class DataStats(object):
             gc.collect()
     
             # Array is ordered YX
-            self._data_stats['x_size'] = data_array.shape[1]
-            self._data_stats['y_size'] = data_array.shape[0]
+            self._data_stats['x_size'] = shape[1]
+            self._data_stats['y_size'] = shape[0]
             
             self._data_stats['min'] = np.nanmin(data_array)
             self._data_stats['max'] = np.nanmax(data_array)
@@ -59,7 +60,6 @@ class DataStats(object):
             del data_array
             gc.collect()
         except Exception, e:
-            shape = data_variable.shape
 #            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
 
             # Array is ordered YX

@@ -1,4 +1,7 @@
 #!/bin/python
+'''
+Quick and dirty utility to create a convex hull polygon around the data-containing area of a gridded NetCDF dataset
+'''
 from scipy.spatial import ConvexHull
 import scipy.ndimage as ndimage
 import numpy as np
@@ -65,6 +68,9 @@ for sub_points in segment_points:
     
 points = np.zeros((point_count, 2), dtype=netcdf_dataset.variables[data_variable.dimensions[0]].dtype)
 #print points.shape
+
+del netcdf_dataset
+gc.collect()
 
 point_count = 0
 for sub_points in segment_points:
