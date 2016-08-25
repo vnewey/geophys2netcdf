@@ -50,3 +50,4 @@ from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from _ers2netcdf import ERS2NetCDF
 from _zip2netcdf import Zip2NetCDF
 from thredds_catalog import THREDDSCatalog
+from data_stats import DataStats
