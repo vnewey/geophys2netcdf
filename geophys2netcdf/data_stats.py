@@ -13,9 +13,9 @@ class DataStats(object):
     '''
     DataStats class definition. Obtains statistics for gridded data
     '''
-    key_list = ['nc_path', 'nodata_value', 'x_size', 'y_size', 'min', 'max', 'mean', 'median', 'std_dev', 'percentile_1', 'percentile_99']
+    key_list = ['nc_path', 'data_type', 'nodata_value', 'x_size', 'y_size', 'min', 'max', 'mean', 'median', 'std_dev', 'percentile_1', 'percentile_99']
 
-    def __init__(self, netcdf_path, max_array=50000000):
+    def __init__(self, netcdf_path, max_array=500000000):
         '''
         DataStats Constructor
         Parameter:
@@ -31,6 +31,7 @@ class DataStats(object):
         
         self._data_stats = {}        
         self._data_stats['nc_path'] = netcdf_path
+        self._data_stats['data_type'] = str(data_variable.dtype)
         self._data_stats['nodata_value'] = data_variable._FillValue        
 
         try:
@@ -60,19 +61,21 @@ class DataStats(object):
             del data_array
             gc.collect()
         except Exception, e:
-            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
+#            print 'Whole-array read failed (%s) for array size %s' % (e.message, shape)
 
             # Array is ordered YX
             self._data_stats['x_size'] = shape[1]
             self._data_stats['y_size'] = shape[0]
 
             array_size = data_variable.dtype.itemsize * shape[0] * shape[1]
-            axis_divisions = int(math.ceil(math.sqrt(array_size // max_array)))
+#            print 'array_size = %f' % array_size
+            axis_divisions = int(math.ceil(math.sqrt(math.ceil(array_size / float(max_array)))))
+#            print 'axis_divisions = %d' % axis_divisions
             chunk_size = data_variable.chunking() or [128,128]
+#            print 'chunk_size = %s' % chunk_size
 
             chunking = [shape[index] / axis_divisions / chunk_size[index] * chunk_size[index] for index in range(2)]
-
-            print'chunking = %s' % chunking
+#            print'chunking = %s' % chunking
 
             start_index = [0,0]
             end_index = [0,0]
