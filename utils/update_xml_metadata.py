@@ -141,8 +141,43 @@ class XMLUpdater(object):
             print 'Creating new distributionInfo element from template'
             xml_tree.append(distributionInfo_template_tree)
         else:
-            print 'Replacing existing distributionInfo element with template'
-            xml_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
+            print 'Replacing existing distributionFormat elements from template'
+#            xml_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
+            distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+            assert distribution_tree, 'Destination mrd:MD_Distribution not found'
+            
+            for source_distributionFormat_tree in distributionInfo_template_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
+                source_OnlineResource_tree = source_distributionFormat_tree.find(path='cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+                assert source_OnlineResource_tree is not None, 'Unable to find source cit:CI_OnlineResource'
+                
+                source_protocol = source_OnlineResource_tree.find('cit:protocol').find('gco:CharacterString').text
+                source_linkage = source_OnlineResource_tree.find('cit:linkage').find('gco:CharacterString').text
+                source_host = re.match('http://([^/]+)', source_linkage).group(1)
+                source_file = re.match('http://.*/([^/]+)(/dataset.html|$)', source_linkage).group(1)
+                
+                # Check all distributions for match
+                match_found = False
+                for dest_distributionFormat_tree in distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+                    dest_OnlineResource_tree = dest_distributionFormat_tree.find(path='cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+                    assert dest_OnlineResource_tree is not None, 'Unable to find destination cit:CI_OnlineResource'
+                
+                    dest_protocol = dest_OnlineResource_tree.find('cit:protocol').find('gco:CharacterString').text
+                    dest_linkage = dest_OnlineResource_tree.find('cit:linkage').find('gco:CharacterString').text
+                    dest_host = re.match('http://([^/]+)', dest_linkage).group(1)
+                    dest_file = re.match('http://.*/([^/]+)(/dataset.html|$)', dest_linkage).group(1)
+                    
+                    # Determine match based on protocol, host and file
+                    match_found = ((source_protocol == dest_protocol) and 
+                                   (source_host == dest_host) and 
+                                   (source_file == dest_file))
+                    
+                    if match_found: # Update existing distribution
+                        distribution_tree.replace(dest_distributionFormat_tree, source_distributionFormat_tree)
+                        break   
+                     
+                if not match_found: # Add new distribution
+                    distribution_tree.append(source_distributionFormat_tree)   
+
         
         xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
