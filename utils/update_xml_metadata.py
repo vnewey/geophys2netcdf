@@ -15,7 +15,8 @@ class XMLUpdater(object):
 
     # XML_DIR = '/home/547/axi547/national_coverage_metadata'
     XML_DIR = './'
-    GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+    GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # GA's externally-facing GeoNetwork 
+    #GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng' # GA's internal GeoNetwork via port forward
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
     
     THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
