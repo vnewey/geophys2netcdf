@@ -190,7 +190,7 @@ class XMLUpdater(object):
                         dest_dir = match.group(3)
                         dest_file = match.group(5)
                         
-    #                    print 'Checking %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
+#                        print 'Checking %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
     
                         # Determine match based on protocol, host and file
                         distribution_match_found = (((source_protocol == dest_protocol) and 
@@ -206,17 +206,17 @@ class XMLUpdater(object):
                                        (source_file == dest_file)))
                         
                         if distribution_match_found: # Update existing distribution
-                            print 'Match found %s: protocol=%s, link_protocol=%s, host=%s, dir=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
+#                            print 'Match found %s: protocol=%s, link_protocol=%s, host=%s, dir=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
                             dest_MD_Distribution_tree.replace(dest_distributionFormat_tree, source_distributionFormat_tree)
                             replaced_distributionFormat_count += 1
                             break
                          
                     if not distribution_match_found: # Add new distribution
-                        print 'No match found. Adding new mrd:distributionFormat subtree for %s' % source_linkage
+#                        print 'No match found. Adding new mrd:distributionFormat subtree for %s' % source_linkage
                         dest_MD_Distribution_tree.append(source_distributionFormat_tree)   
                         new_distributionFormat_count += 1
     
-        print '%d complete distributions in template. %d replaced and %d added. %d final distributions' % (source_distributionFormat_count,
+        print '%d complete distributions from template. %d replaced and %d added. %d final distributions' % (source_distributionFormat_count,
                                                                                                            replaced_distributionFormat_count,
                                                                                                            new_distributionFormat_count,
                                                                                                            len(dest_MD_Distribution_tree)
