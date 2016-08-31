@@ -125,88 +125,102 @@ class XMLUpdater(object):
                 distributionInfo_template_text = re.sub('%%%s%%' % key, template_dict[key], distributionInfo_template_text)   
                 
 #        print distributionInfo_template_text        
-        distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
+        source_distributionInfo_tree = etree.fromstring(distributionInfo_template_text).find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
         
         # Purge any distributionFormat with un-substituted expressions
-        source_MD_Distribution_tree = distributionInfo_template_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
-        for distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
-            for text in distributionFormat_tree.itertext():
+        source_MD_Distribution_tree = source_distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+        for source_distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+            for text in source_distributionFormat_tree.itertext():
                 if re.search('%.*%', text):
-                    print 'Removing incomplete distributionFormat %s' % distributionFormat_tree.tag
-                    source_MD_Distribution_tree.remove(distributionFormat_tree)
+                    print 'Removing incomplete distributionFormat %s from updated template XML' % source_distributionFormat_tree.tag
+                    source_MD_Distribution_tree.remove(source_distributionFormat_tree)
                     break
         
         # Create or replace distributionInfo element
-        distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
-        if distributionInfo_tree is None:
-            print 'Creating new distributionInfo element from template'
-            xml_tree.append(distributionInfo_template_tree)
+        dest_distributionInfo_tree = xml_tree.find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
+        if dest_distributionInfo_tree is None:
+            print 'Creating new distributionInfo subtree from template'
+            xml_tree.append(source_distributionInfo_tree)
         else:
-            print 'Replacing existing distributionFormat elements from template'
-#            xml_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
-            distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
-            assert distribution_tree is not None, 'Destination mrd:MD_Distribution not found'
-            
-            for source_distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
-                source_OnlineResource_tree = source_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
-                assert source_OnlineResource_tree is not None, 'Unable to find source cit:CI_OnlineResource'
+#            xml_tree.replace(dest_distributionInfo_tree, distributionInfo_template_tree)
+            dest_MD_Distribution_tree = dest_distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+            if dest_MD_Distribution_tree is None: # Destination mrd:MD_Distribution not found
+                print 'Creating new mrd:MD_Distribution subtree from template'
+                dest_distributionInfo_tree.append(source_MD_Distribution_tree)
+            else:
+                print 'Adding or replacing individual mrd:distributionFormat subtrees from template'
+                source_distributionFormat_count = 0
+                replaced_distributionFormat_count = 0
+                new_distributionFormat_count = 0
                 
-                source_protocol = source_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
-                source_linkage = source_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
-                match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', source_linkage)
-                if match is None:
-                    print 'Unable to parse %s' % source_linkage
-                    continue
-
-                source_link_protocol = match.group(1)
-                source_host = match.group(2)
-                source_dir = match.group(3)
-                source_file = match.group(5)
-
-                print 'Processing %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (source_linkage, source_protocol, source_link_protocol, source_host, source_dir, source_file)
-                
-                # Check all distributions for match
-                match_found = False
-                for dest_distributionFormat_tree in distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
-                    dest_OnlineResource_tree = dest_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
-                    assert dest_OnlineResource_tree is not None, 'Unable to find destination cit:CI_OnlineResource'
-                
-                    dest_protocol = dest_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
-                    dest_linkage = dest_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
-                    match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', dest_linkage)
+                for source_distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+                    source_distributionFormat_count += 1 
+                    source_OnlineResource_tree = source_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+                    assert source_OnlineResource_tree is not None, 'Unable to find source cit:CI_OnlineResource under mrd:distributionFormat'
+                    
+                    source_protocol = source_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                    source_linkage = source_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                    match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', source_linkage)
                     if match is None:
-                        print 'Unable to parse %s' % dest_linkage
+                        print 'Unable to parse %s' % source_linkage
                         continue
-
-                    dest_link_protocol = match.group(1)
-                    dest_host = match.group(2)
-                    dest_dir = match.group(3)
-                    dest_file = match.group(5)
+    
+                    source_link_protocol = match.group(1)
+                    source_host = match.group(2)
+                    source_dir = match.group(3)
+                    source_file = match.group(5)
+    
+#                    print 'Processing %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (source_linkage, source_protocol, source_link_protocol, source_host, source_dir, source_file)
                     
-#                    print 'Checking %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
-
-                    # Determine match based on protocol, host and file
-                    match_found = (((source_protocol == dest_protocol) and 
-                                    (source_link_protocol == dest_link_protocol) and 
-                                    (source_host == dest_host) and 
-                                    (source_dir == dest_dir) and
-                                    (source_file == dest_file)) or
-                                  ((re.search('thredds/.*[c|C]atalog', source_dir) is not None) and # Special case for THREDDS catalog page
-                                   (re.search('thredds/.*[c|C]atalog', dest_dir) is not None) and
-                                   (source_protocol == dest_protocol) and 
-                                   (source_link_protocol == dest_link_protocol) and 
-                                   (source_file == dest_file)))
+                    # Check all distributions for match
+                    distribution_match_found = False
+                    for dest_distributionFormat_tree in dest_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+                        dest_OnlineResource_tree = dest_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+                        assert dest_OnlineResource_tree is not None, 'Unable to find destination cit:CI_OnlineResource'
                     
-                    if match_found: # Update existing distribution
-                        print 'Match found %s: protocol=%s, link_protocol=%s, host=%s, dir=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
-                        distribution_tree.replace(dest_distributionFormat_tree, source_distributionFormat_tree)
-                        break
-                     
-                if not match_found: # Add new distribution
-                    print 'No match found. Adding new mrd:distributionFormat subtree for %s' % source_linkage
-                    distribution_tree.append(source_distributionFormat_tree)   
-
-        
+                        dest_protocol = dest_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                        dest_linkage = dest_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                        match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', dest_linkage)
+                        if match is None:
+                            print 'Unable to parse %s' % dest_linkage
+                            continue
+    
+                        dest_link_protocol = match.group(1)
+                        dest_host = match.group(2)
+                        dest_dir = match.group(3)
+                        dest_file = match.group(5)
+                        
+    #                    print 'Checking %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
+    
+                        # Determine match based on protocol, host and file
+                        distribution_match_found = (((source_protocol == dest_protocol) and 
+                                        (source_link_protocol == dest_link_protocol) and 
+                                        (source_host == dest_host) and 
+                                        (source_dir == dest_dir) and
+                                        (source_file == dest_file)) 
+                                       or
+                                      ((re.search('thredds/.*[c|C]atalog', source_dir) is not None) and # Special case for THREDDS catalog page
+                                       (re.search('thredds/.*[c|C]atalog', dest_dir) is not None) and
+                                       (source_protocol == dest_protocol) and 
+                                       (source_link_protocol == dest_link_protocol) and 
+                                       (source_file == dest_file)))
+                        
+                        if distribution_match_found: # Update existing distribution
+                            print 'Match found %s: protocol=%s, link_protocol=%s, host=%s, dir=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
+                            dest_MD_Distribution_tree.replace(dest_distributionFormat_tree, source_distributionFormat_tree)
+                            replaced_distributionFormat_count += 1
+                            break
+                         
+                    if not distribution_match_found: # Add new distribution
+                        print 'No match found. Adding new mrd:distributionFormat subtree for %s' % source_linkage
+                        dest_MD_Distribution_tree.append(source_distributionFormat_tree)   
+                        new_distributionFormat_count += 1
+    
+        print '%d complete distributions in template. %d replaced and %d added. %d final distributions' % (source_distributionFormat_count,
+                                                                                                           replaced_distributionFormat_count,
+                                                                                                           new_distributionFormat_count,
+                                                                                                           len(dest_MD_Distribution_tree)
+                                                                                                           )
         xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
         
