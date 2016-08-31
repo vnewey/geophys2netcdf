@@ -25,7 +25,7 @@ def main():
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
     
         # Find variable name
-        variable_name = [key for key in nc_dataset.variables.keys() if key not in ['crs', 'lat', 'lon']][0]
+        variable_name = [key for key in nc_dataset.variables.keys() if len(nc_dataset.variables[key].dimensions) == 2][0]
     
         variable = nc_dataset.variables[variable_name]
 

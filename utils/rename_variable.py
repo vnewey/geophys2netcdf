@@ -29,7 +29,7 @@ def main():
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
     
         # Find variable name
-        old_variable_name = [key for key in nc_dataset.variables.keys() if key not in ['crs', 'lat', 'lon']][0]
+        old_variable_name = [key for key in nc_dataset.variables.keys() if len(nc_dataset.variables[key].dimensions) == 2][0]
     
         if new_variable_name != old_variable_name:
             nc_dataset.renameVariable(old_variable_name, new_variable_name)
