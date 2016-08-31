@@ -15,8 +15,8 @@ class XMLUpdater(object):
 
     # XML_DIR = '/home/547/axi547/national_coverage_metadata'
     XML_DIR = './'
-    GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # GA's externally-facing GeoNetwork 
-    #GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng' # GA's internal GeoNetwork via port forward
+    #GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # GA's externally-facing GeoNetwork - DO NOT USE!!!
+    GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng' # GA's internal GeoNetwork via port forward
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
     
     THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
@@ -145,38 +145,65 @@ class XMLUpdater(object):
             print 'Replacing existing distributionFormat elements from template'
 #            xml_tree.replace(distributionInfo_tree, distributionInfo_template_tree)
             distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
-            assert distribution_tree, 'Destination mrd:MD_Distribution not found'
+            assert distribution_tree is not None, 'Destination mrd:MD_Distribution not found'
             
-            for source_distributionFormat_tree in distributionInfo_template_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
-                source_OnlineResource_tree = source_distributionFormat_tree.find(path='cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+            for source_distributionFormat_tree in MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
+                source_OnlineResource_tree = source_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
                 assert source_OnlineResource_tree is not None, 'Unable to find source cit:CI_OnlineResource'
                 
-                source_protocol = source_OnlineResource_tree.find('cit:protocol').find('gco:CharacterString').text
-                source_linkage = source_OnlineResource_tree.find('cit:linkage').find('gco:CharacterString').text
-                source_host = re.match('http://([^/]+)', source_linkage).group(1)
-                source_file = re.match('http://.*/([^/]+)(/dataset.html|$)', source_linkage).group(1)
+                source_protocol = source_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                source_linkage = source_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', source_linkage)
+                if match is None:
+                    print 'Unable to parse %s' % source_linkage
+                    continue
+
+                source_link_protocol = match.group(1)
+                source_host = match.group(2)
+                source_dir = match.group(3)
+                source_file = match.group(5)
+
+                print 'Processing %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (source_linkage, source_protocol, source_link_protocol, source_host, source_dir, source_file)
                 
                 # Check all distributions for match
                 match_found = False
                 for dest_distributionFormat_tree in distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
-                    dest_OnlineResource_tree = dest_distributionFormat_tree.find(path='cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
+                    dest_OnlineResource_tree = dest_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
                     assert dest_OnlineResource_tree is not None, 'Unable to find destination cit:CI_OnlineResource'
                 
-                    dest_protocol = dest_OnlineResource_tree.find('cit:protocol').find('gco:CharacterString').text
-                    dest_linkage = dest_OnlineResource_tree.find('cit:linkage').find('gco:CharacterString').text
-                    dest_host = re.match('http://([^/]+)', dest_linkage).group(1)
-                    dest_file = re.match('http://.*/([^/]+)(/dataset.html|$)', dest_linkage).group(1)
+                    dest_protocol = dest_OnlineResource_tree.find('cit:protocol', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                    dest_linkage = dest_OnlineResource_tree.find('cit:linkage', namespaces=xml_tree.nsmap).find('gco:CharacterString', namespaces=xml_tree.nsmap).text
+                    match = re.match('(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', dest_linkage)
+                    if match is None:
+                        print 'Unable to parse %s' % dest_linkage
+                        continue
+
+                    dest_link_protocol = match.group(1)
+                    dest_host = match.group(2)
+                    dest_dir = match.group(3)
+                    dest_file = match.group(5)
                     
+#                    print 'Checking %s: protocol=%s, link_protocol=%s, host=%s, root=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
+
                     # Determine match based on protocol, host and file
-                    match_found = ((source_protocol == dest_protocol) and 
-                                   (source_host == dest_host) and 
-                                   (source_file == dest_file))
+                    match_found = (((source_protocol == dest_protocol) and 
+                                    (source_link_protocol == dest_link_protocol) and 
+                                    (source_host == dest_host) and 
+                                    (source_dir == dest_dir) and
+                                    (source_file == dest_file)) or
+                                  ((re.search('thredds/.*[c|C]atalog', source_dir) is not None) and # Special case for THREDDS catalog page
+                                   (re.search('thredds/.*[c|C]atalog', dest_dir) is not None) and
+                                   (source_protocol == dest_protocol) and 
+                                   (source_link_protocol == dest_link_protocol) and 
+                                   (source_file == dest_file)))
                     
                     if match_found: # Update existing distribution
+                        print 'Match found %s: protocol=%s, link_protocol=%s, host=%s, dir=%s, file=%s' % (dest_linkage, dest_protocol, dest_link_protocol, dest_host, dest_dir, dest_file)
                         distribution_tree.replace(dest_distributionFormat_tree, source_distributionFormat_tree)
-                        break   
+                        break
                      
                 if not match_found: # Add new distribution
+                    print 'No match found. Adding new mrd:distributionFormat subtree for %s' % source_linkage
                     distribution_tree.append(source_distributionFormat_tree)   
 
         
