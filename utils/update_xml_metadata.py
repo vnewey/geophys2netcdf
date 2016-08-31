@@ -128,12 +128,12 @@ class XMLUpdater(object):
         distributionInfo_template_tree = etree.fromstring(distributionInfo_template_text).find(path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
         
         # Purge any distributionFormat with un-substituted expressions
-        MD_Distribution_tree = distributionInfo_template_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
-        for distributionFormat_tree in MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
+        source_MD_Distribution_tree = distributionInfo_template_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
+        for distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap):
             for text in distributionFormat_tree.itertext():
                 if re.search('%.*%', text):
                     print 'Removing incomplete distributionFormat %s' % distributionFormat_tree.tag
-                    MD_Distribution_tree.remove(distributionFormat_tree)
+                    source_MD_Distribution_tree.remove(distributionFormat_tree)
                     break
         
         # Create or replace distributionInfo element
@@ -147,7 +147,7 @@ class XMLUpdater(object):
             distribution_tree = distributionInfo_tree.find(path='mrd:MD_Distribution', namespaces=xml_tree.nsmap)
             assert distribution_tree is not None, 'Destination mrd:MD_Distribution not found'
             
-            for source_distributionFormat_tree in MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
+            for source_distributionFormat_tree in source_MD_Distribution_tree.iterfind(path='mrd:distributionFormat', namespaces=xml_tree.nsmap): 
                 source_OnlineResource_tree = source_distributionFormat_tree.find(path='.//cit:CI_OnlineResource', namespaces=xml_tree.nsmap)
                 assert source_OnlineResource_tree is not None, 'Unable to find source cit:CI_OnlineResource'
                 
