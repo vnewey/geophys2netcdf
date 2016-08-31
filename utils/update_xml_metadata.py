@@ -20,9 +20,9 @@ class XMLUpdater(object):
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
     
     THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
-    print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
+    #print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
     
-    def __init__(self):
+    def __init__(self, update_bounds=True, update_distributions=True):
     
         #TODO: Work out some way of making this faster.
         def get_thredds_catalog(thredds_catalog_url):
@@ -30,20 +30,25 @@ class XMLUpdater(object):
             Function to return a THREDDSCatalog either from a pre-cached YAML file or read from specified THREDDS catalog
             '''
             yaml_path = os.path.abspath(re.sub('\W', '_', os.path.splitext(re.sub('^http://dap.*\.nci\.org\.au/thredds/', '', thredds_catalog_url))[0]) + '.yaml')
-            print 'yaml_path = %s' % yaml_path
+            #print 'yaml_path = %s' % yaml_path
             
             if os.path.isfile(yaml_path):
-                # Load previously cached catalogue tree
+                print 'Loading previously cached catalogue tree from %s' % yaml_path
                 tc = THREDDSCatalog(yaml_path=yaml_path)
             else:
-                # WARNING: This operation may take several hours to complete!
+                print 'Crawling THREDDS catalog %s\nWARNING: This operation may take several hours to complete!' % thredds_catalog_url
                 tc = THREDDSCatalog(thredds_catalog_url=thredds_catalog_url)
                 tc.dump(yaml_path)
             
             return tc
         
-        self.nsmap = None
-        self.thredds_catalog = get_thredds_catalog(self.THREDDS_CATALOG_URL)
+        self.update_bounds = update_bounds
+        self.update_distributions = update_distributions
+
+        if self.update_distributions:
+            self.thredds_catalog = get_thredds_catalog(self.THREDDS_CATALOG_URL)
+        else:
+            self.thredds_catalog = None
         
     
     def update_xml(self, nc_path):
@@ -62,7 +67,7 @@ class XMLUpdater(object):
         
         def update_bounds(nc_dataset, xml_tree):
             '''
-            Read the following ACDD global attributes from the NetCDF file:
+            Read the following ACDD global attributes from the NetCDF file and set the extents values in the XML:
             
                 :geospatial_bounds = "POLYGON((112.502532442 -9.0256618335, 154.662515579 -9.0256618335, 154.662515579 -43.9289812055, 112.502532442 -43.9289812055, 112.502532442 -9.0256618335))" ;
                 :geospatial_bounds_crs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]" ;
@@ -74,33 +79,6 @@ class XMLUpdater(object):
                 :geospatial_lon_min = 112.5025324425 ;
                 :geospatial_lon_resolution = 0.000833332999974346 ;
                 :geospatial_lon_units = "degrees_east" ;
-            
-            then populate the following XML elements:  
-              
-                  <mri:extent>
-                    <gex:EX_Extent>
-                      <gex:description>
-                        <gco:CharacterString>unknown</gco:CharacterString>
-                      </gex:description>
-                      <gex:geographicElement>
-                        <gex:EX_GeographicBoundingBox>
-                          <gex:westBoundLongitude>
-                            <gco:Decimal>112.5</gco:Decimal>
-                          </gex:westBoundLongitude>
-                          <gex:eastBoundLongitude>
-                            <gco:Decimal>154.7</gco:Decimal>
-                          </gex:eastBoundLongitude>
-                          <gex:southBoundLatitude>
-                            <gco:Decimal>-43.9</gco:Decimal>
-                          </gex:southBoundLatitude>
-                          <gex:northBoundLatitude>
-                            <gco:Decimal>-9</gco:Decimal>
-                          </gex:northBoundLatitude>
-                        </gex:EX_GeographicBoundingBox>
-                      </gex:geographicElement>
-                    </gex:EX_Extent>
-                  </mri:extent>
-                
             '''
             # Create or replace distributionInfo element
             source_tree = etree.fromstring('''
@@ -156,7 +134,7 @@ class XMLUpdater(object):
                 )
             source_extent_tree = source_tree.find(path='.//mri:extent', namespaces=xml_tree.nsmap)
             
-            dest_MD_DataIdentification_tree = xml_tree.find(path='mri:MD_DataIdentification', namespaces=xml_tree.nsmap)
+            dest_MD_DataIdentification_tree = xml_tree.find(path='.//mri:MD_DataIdentification', namespaces=xml_tree.nsmap)
             assert dest_MD_DataIdentification_tree is not None, 'dest_MD_DataIdentification_tree element does not exist'
             
             dest_extent_tree = dest_MD_DataIdentification_tree.find(path='mri:extent', namespaces=xml_tree.nsmap)
@@ -331,10 +309,13 @@ class XMLUpdater(object):
             print xml_text
             raise e
         
-        update_bounds(nc_dataset, xml_tree)
-        nc_dataset.close()
+        if self.update_bounds:
+            update_bounds(nc_dataset, xml_tree)
+
+        nc_dataset.close() # Finished reading stuff from NetCDF file - close it
         
-        update_distributions(xml_tree)
+        if self.update_distributions:
+            update_distributions(xml_tree)
         
         xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
@@ -347,7 +328,7 @@ class XMLUpdater(object):
 def main():
     assert len(sys.argv) > 1, 'Usage: %s <netcdf_file> [<netcdf_file>...]' % sys.argv[0]        
         
-    xml_updater = XMLUpdater()
+    xml_updater = XMLUpdater(update_bounds=True, update_distributions=True)
     
     for nc_path in sys.argv[1:]:
         try:
