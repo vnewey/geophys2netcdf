@@ -67,7 +67,7 @@ class XMLUpdater(object):
         
         def update_bounds(nc_dataset, xml_tree):
             '''
-            Read the following ACDD global attributes from the NetCDF file and set the extents values in the XML:
+            Read the following ACDD global attributes from the NetCDF file and set the mri:extent values in the XML:
             
                 :geospatial_bounds = "POLYGON((112.502532442 -9.0256618335, 154.662515579 -9.0256618335, 154.662515579 -43.9289812055, 112.502532442 -43.9289812055, 112.502532442 -9.0256618335))" ;
                 :geospatial_bounds_crs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]" ;
@@ -80,7 +80,7 @@ class XMLUpdater(object):
                 :geospatial_lon_resolution = 0.000833332999974346 ;
                 :geospatial_lon_units = "degrees_east" ;
             '''
-            # Create or replace distributionInfo element
+            # Template for mri:extent subtree
             source_tree = etree.fromstring('''
 <mdb:MD_Metadata xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/1.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cat="http://standards.iso.org/iso/19115/-3/cat/1.0"
