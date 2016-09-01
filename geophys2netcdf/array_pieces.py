@@ -50,6 +50,11 @@ def array_pieces(nc_data_variable, max_bytes=500000000):
                  
     else: # Only one piece required
         yield nc_data_variable[:], (0, 0)
+        
+        
+    def value(self, key):
+        return self._data_stats[key]
+    
           
 def main():
     '''
