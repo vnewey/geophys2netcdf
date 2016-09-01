@@ -28,15 +28,18 @@ def main():
         
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
     
-        # Find variable name
-        old_variable_name = [key for key in nc_dataset.variables.keys() if len(nc_dataset.variables[key].dimensions) == 2][0]
+        # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
+        try:
+            variable = [variable for variable in nc_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        except:
+            raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
+        
+        old_variable_name = variable.name
     
         if new_variable_name != old_variable_name:
             nc_dataset.renameVariable(old_variable_name, new_variable_name)
             print '%s.variables["%s"] renamed to %s' % (nc_path, old_variable_name, new_variable_name)
         
-        variable = nc_dataset.variables[new_variable_name]
-
         if long_variable_name and (variable.long_name != long_variable_name):
             variable.long_name = long_variable_name
             print '%s.variables["%s"].long_name changed to %s' % (nc_path, new_variable_name, long_variable_name)

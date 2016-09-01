@@ -24,22 +24,23 @@ def main():
         
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
     
-        # Find variable name
-        variable_name = [key for key in nc_dataset.variables.keys() if len(nc_dataset.variables[key].dimensions) == 2][0]
-    
-        variable = nc_dataset.variables[variable_name]
+        # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
+        try:
+            variable = [variable for variable in nc_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        except:
+            raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
 
         try:
-            print 'Original %s.%s = %s' % (variable_name, attribute_name, getattr(variable, attribute_name))
+            print 'Original %s.%s = %s' % (variable.name, attribute_name, getattr(variable, attribute_name))
         except:
-            print 'Original %s.%s not set' % (variable_name, attribute_name)
+            print 'Original %s.%s not set' % (variable.name, attribute_name)
 
         setattr(variable, attribute_name, attribute_value)
     
         # Retrospective fixup
         nc_dataset.Conventions = nc_dataset.Conventions.replace('CF-1.5', 'CF-1.6').replace(', ', ',')
     
-        print 'Final %s.%s = %s' % (variable_name, attribute_name, getattr(variable, attribute_name))
+        print 'Final %s.%s = %s' % (variable.name, attribute_name, getattr(variable, attribute_name))
     
         nc_dataset.close()
         

@@ -24,10 +24,12 @@ def main():
         
         nc_dataset = netCDF4.Dataset(nc_path, 'r+')
     
-        # Find variable name
-        variable_name = [key for key in nc_dataset.variables.keys() if len(nc_dataset.variables[key].dimensions) == 2][0]
-    
-        variable = nc_dataset.variables[variable_name]
+        # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
+        try:
+            variable = [variable for variable in nc_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        except:
+            raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
+
         variable.units = units
     
         # Retrospective fixup
@@ -35,7 +37,7 @@ def main():
     
         nc_dataset.close()
         
-        print '%s.variables["%s"].units = %s' % (nc_path, variable_name, units)
+        print '%s.variables["%s"].units = %s' % (nc_path, variable.name, units)
     
         g2n_object = ERS2NetCDF()
         g2n_object.update_nc_metadata(nc_path)
