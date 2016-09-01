@@ -52,7 +52,7 @@ def array_pieces(nc_data_variable, max_bytes=500000000):
         yield nc_data_variable[:], (0, 0)
         
         
-    def value(self, key):
+    def value(self, key): #TODO: Do something nicer than this to get at the values, A property might be good.
         return self._data_stats[key]
     
           
