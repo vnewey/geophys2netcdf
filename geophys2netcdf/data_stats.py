@@ -82,6 +82,10 @@ class DataStats(object):
         #===================================================================
 
 
+    def value(self, key): #TODO: Do something nicer than this to get at the values, A property might be good.
+        return self._data_stats[key]
+    
+          
 def main():
     print ','.join(DataStats.key_list)
     for netcdf_path in sys.argv[1:]:
