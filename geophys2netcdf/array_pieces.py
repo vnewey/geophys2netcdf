@@ -9,29 +9,32 @@ import netCDF4
 import math
 import itertools
 
-def array_pieces(nc_data_variable, max_bytes=500000000):
+def array_pieces(ndarray, max_bytes=500000000):
     '''
     Generator to return a series of numpy arrays less than max_bytes in size and the offset within the complete data from a NetCDF variable
     Parameters:
-        nc_data_variable: NetCDF array variable
+        ndarray: Numpy array or NetCDF array variable
         max_bytes: Maximum number of bytes to retrieve. Defaults to 500,000,000 for NCI's OPeNDAP
         
     Yields:
         piece_array: array subset less than max_bytes in size
         array_offset: start indices of subset in whole array
     '''
-    array_shape = nc_data_variable.shape
+    array_shape = ndarray.shape
     array_dimensions = len(array_shape)
     
     # Determine overall array size in bytes
-    array_bytes = nc_data_variable.dtype.itemsize * reduce(lambda x, y: x*y, array_shape)
+    array_bytes = ndarray.dtype.itemsize * reduce(lambda x, y: x*y, array_shape)
 
     if array_bytes > max_bytes: # Multiple pieces required
         # Determine number of divisions in each axis required to keep pieces under max_bytes in size
         axis_divisions = int(math.ceil(math.pow(math.ceil(array_bytes / float(max_bytes)), 1.0 / array_dimensions)))
     
         # Determine chunk size for pieces or default to natural divisions if no chunking set
-        chunking = nc_data_variable.chunking() or (1, 1) 
+        try:
+            chunking = ndarray.chunking() or (1, 1) 
+        except: # Numpy arrays don't have chunking
+            chunking = (1, 1)
     
         # Determine piece shape rounded down to chunk sizes
         piece_shape = [array_shape[index] / axis_divisions / chunking[index] * chunking[index] for index in range(array_dimensions)]
@@ -45,11 +48,11 @@ def array_pieces(nc_data_variable, max_bytes=500000000):
             end_indices = [min(start_indices[dimension_index] + piece_shape[dimension_index], array_shape[dimension_index]) for dimension_index in range(array_dimensions)]
             array_slices = [slice(start_indices[dimension_index], end_indices[dimension_index]) for dimension_index in range(array_dimensions)]
             
-            piece_array = nc_data_variable[array_slices]
+            piece_array = ndarray[array_slices]
             yield piece_array, tuple(start_indices) 
                  
     else: # Only one piece required
-        yield nc_data_variable[:], (0, 0)
+        yield ndarray[:], (0, 0)
         
         
 def main():
