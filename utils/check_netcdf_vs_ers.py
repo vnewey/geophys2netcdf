@@ -48,7 +48,7 @@ class ERS2NetCDFChecker(object):
         '''
         Function to check NetCDF file against zipped ERS. Assumes only one .zip file and one .nc file exist in dataset_dir
         '''
-        assert os.path.isdir(dataset_dir), '%s is not a directory'
+        assert os.path.isdir(dataset_dir), '%s is not a directory' % dataset_dir
         zip_list = glob.glob(os.path.join(dataset_dir, '*.zip'))
         assert len(zip_list) == 1, 'Unable to find single zip file in %s. (%s)' % (dataset_dir, zip_list.join(', '))
         zip_path = zip_list[0]
@@ -91,7 +91,7 @@ class ERS2NetCDFChecker(object):
         logger.debug('file_list = %s', file_list)
         logger.debug('extension_set = %s', extension_set)
 
-        if set(['.ers', '.isi', '']) <= extension_set:
+        if set(['.ers', '']) <= extension_set: # N.B: .isi files are optional
             logger.info('%s contains an ERS dataset', self._zipdir)
             ers_list = [file_path for file_path in file_list if file_path.lower().endswith('.ers')]
             assert len(ers_list) == 1, 'Multiple .ers files found in %s' % self._zipdir
