@@ -1,7 +1,7 @@
 '''
 Created on 2Sep.,2016
 
-@author: Alex
+@author: Alex Ip
 '''
 import os
 import sys
@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO) # Initial logging level for this module
 
 class ERS2NetCDFChecker(object):
     '''
-    Class definition for ERS2NetCDFChecker to handle datasets held in zip files
+    Class definition for ERS2NetCDFChecker to check conversion of ERS to NetCDF datasets
     '''
     FILE_EXTENSION = 'zip'
     def __init__(self, dataset_dir=None, debug=False):
@@ -46,7 +46,7 @@ class ERS2NetCDFChecker(object):
 
     def check_ERS2NetCDF(self, dataset_dir):
         '''
-        Function to check NetCDF file against ERS 
+        Function to check NetCDF file against zipped ERS. Assumes only one .zip file and one .nc file exist in dataset_dir
         '''
         assert os.path.isdir(dataset_dir), '%s is not a directory'
         zip_list = glob.glob(os.path.join(dataset_dir, '*.zip'))
@@ -104,6 +104,11 @@ class ERS2NetCDFChecker(object):
             raise Exception('Unhandled file types in zip file %s' % zip_path)      
         
     def compare_ERS2NetCDF(self, ers_path, nc_path):
+        '''
+        Function to compare ERS file to NetCDF file
+        Currently retrieves data from ERS file using GDAL, and from NetCDF file using netCDF4.
+        Note that NetCDF array is YX ordered, with a LL origin, while the ERS is XY ordered with a UL origin.
+        '''
         assert os.path.isfile(ers_path), 'ERS file %s does not exist' % ers_path
         assert os.path.isfile(nc_path), 'NetCDF file %s does not exist' % nc_path
         
