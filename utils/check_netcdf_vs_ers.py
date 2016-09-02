@@ -130,7 +130,7 @@ class ERS2NetCDFChecker(object):
             else:
                 raise Exception('FAIL: Both datasets do not have the same projection')
             
-            if ers_gdal_dataset.GetGeoTransform() == nc_gdal_dataset.GetGeoTransform():
+            if not [nc_gdal_dataset.GetGeoTransform()[index] for index in range(5) if ers_gdal_dataset.GetGeoTransform()[index] - nc_gdal_dataset.GetGeoTransform()[index] > 0.000001]:
                 print 'PASS: Both datasets have the same spatial extent and resolution'
             else:
                 raise Exception('FAIL: Both datasets do not have the same spatial extent and resolution')
@@ -152,29 +152,27 @@ class ERS2NetCDFChecker(object):
                 raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
         
             pixel_count = 0
-            min_nc_value = None
-            max_nc_value = None
-            min_ers_value = None
-            max_ers_value = None
-            min_difference = None
-            max_difference = None
             weighted_mean_nc_value = 0
             weighted_mean_ers_value = 0
-            weighted_mean_difference = 0
+            weighted_mean_percentage_difference = 0
             for nc_piece_array, start_indices in array_pieces(data_variable, 1000000000): # 1GB Pieces  
                 piece_size = reduce(lambda x, y: x*y, nc_piece_array.shape)
                               
                 if type(nc_piece_array) == np.ma.core.MaskedArray:
                     nc_piece_array = nc_piece_array.data
-                    
-                ers_piece_array = ers_band.ReadAsArray(start_indices[0], start_indices[1], nc_piece_array.shape[0], nc_piece_array.shape[1])
-                
-                difference_piece_array = nc_piece_array - ers_piece_array
-                
+
+                # Invert NetCDF array to convert LL origin to UL. GDAL would ordinarily do this for us.
+                nc_piece_array = np.flipud(nc_piece_array)
+
+                # Note reversed indices to match YX ordering in NetCDF with XY ordering in ERS. GDAL would ordinarily do this for us.
+                ers_piece_array = ers_band.ReadAsArray(start_indices[1], start_indices[0], nc_piece_array.shape[1], nc_piece_array.shape[0])
+
+                percentage_difference_piece_array = np.absolute(1 - nc_piece_array / ers_piece_array) * 100
+
                 try:
                     min_nc_value = min(min_nc_value, np.nanmin(nc_piece_array))
                 except:
-                    min_nc_value= np.nanmin(nc_piece_array)
+                    min_nc_value = np.nanmin(nc_piece_array)
         
                 try:
                     max_nc_value = max(max_nc_value, np.nanmax(nc_piece_array))
@@ -184,7 +182,7 @@ class ERS2NetCDFChecker(object):
                 try:
                     min_ers_value = min(min_ers_value, np.nanmin(ers_piece_array))
                 except:
-                    min_ers_value= np.nanmin(ers_piece_array)
+                    min_ers_value = np.nanmin(ers_piece_array)
         
                 try:
                     max_ers_value = max(max_ers_value, np.nanmax(ers_piece_array))
@@ -192,29 +190,33 @@ class ERS2NetCDFChecker(object):
                     max_ers_value = np.nanmax(ers_piece_array)
 
                 try:
-                    min_difference = min(min_difference, np.nanmin(difference_piece_array))
+                    min_percentage_difference = min(min_percentage_difference, np.nanmin(percentage_difference_piece_array))
                 except:
-                    min_difference= np.nanmin(difference_piece_array)
+                    min_percentage_difference = np.nanmin(percentage_difference_piece_array)
         
                 try:
-                    max_difference = max(max_difference, np.nanmax(difference_piece_array))
+                    max_percentage_difference = max(max_percentage_difference, np.nanmax(percentage_difference_piece_array))
                 except:
-                    max_difference = np.nanmax(difference_piece_array)
+                    max_percentage_difference = np.nanmax(percentage_difference_piece_array)
 
-                
-                weighted_mean_nc_value += np.nanmean(nc_piece_array) * piece_size
-                weighted_mean_ers_value += np.nanmean(ers_piece_array) * piece_size
-                weighted_mean_difference += np.nanmean(difference_piece_array) * piece_size
+                weighted_mean_nc_value = weighted_mean_nc_value + np.nanmean(nc_piece_array) * piece_size
+                weighted_mean_ers_value = weighted_mean_ers_value + np.nanmean(ers_piece_array) * piece_size
+                weighted_mean_percentage_difference = weighted_mean_percentage_difference + np.nanmean(percentage_difference_piece_array) * piece_size
                 
                 pixel_count += piece_size
-                
+
             mean_nc_value = weighted_mean_nc_value / pixel_count 
             mean_ers_value = weighted_mean_ers_value / pixel_count 
-            mean_difference = weighted_mean_difference / pixel_count 
-            
+            mean_percentage_difference = weighted_mean_percentage_difference / pixel_count 
+           
+            if max_percentage_difference < 0.000001:
+                print 'PASS: There is less than 0.000001% percentage_difference in all data values'
+            else:
+                raise Exception('FAIL: There is more than 0.000001 percentage_difference in data values')
+  
             print 'min nc_value = %f, mean nc_value = %f, max nc_value = %f' % (min_nc_value, mean_nc_value, max_nc_value)
             print 'min ers_value = %f, mean ers_value = %f, max ers_value = %f' % (min_ers_value, mean_ers_value, max_ers_value)
-            print 'min difference = %f, mean difference = %f, max difference = %f' % (min_difference, mean_difference, max_difference)
+            print 'min percentage_difference = %f%%, mean percentage_difference = %f%%, max percentage_difference = %f%%' % (min_percentage_difference, mean_percentage_difference, max_percentage_difference)
              
         except Exception, e:
             print 'File comparison failed: %s' % e.message
