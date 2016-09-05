@@ -109,6 +109,7 @@ class ERS2NetCDFChecker(object):
         Currently retrieves data from ERS file using GDAL, and from NetCDF file using netCDF4.
         Note that NetCDF array is YX ordered, with a LL origin, while the ERS is XY ordered with a UL origin.
         '''
+        print 'Comparing ERS file %s and NetCDF file %s' % (ers_path, nc_path)
         assert os.path.isfile(ers_path), 'ERS file %s does not exist' % ers_path
         assert os.path.isfile(nc_path), 'NetCDF file %s does not exist' % nc_path
         
@@ -123,22 +124,22 @@ class ERS2NetCDFChecker(object):
             if (ers_gdal_dataset.RasterCount == 1) and (nc_gdal_dataset.RasterCount == 1):
                 print 'PASS: Both datasets have a single data variable'
             else:
-                raise Exception('FAIL: Both datasets DO NOT have a single data variable')
+                raise Exception('Both datasets DO NOT have a single data variable')
             
             if (ers_gdal_dataset.RasterXSize == nc_gdal_dataset.RasterXSize) and (ers_gdal_dataset.RasterYSize == nc_gdal_dataset.RasterYSize):
                 print 'PASS: Both datasets are the same shape'
             else:
-                raise Exception('FAIL: Both datasets are not of the same shape')
+                raise Exception('Both datasets are not of the same shape')
             
             if ers_gdal_dataset.GetProjection() == nc_gdal_dataset.GetProjection():
                 print 'PASS: Both datasets have the same projection'
             else:
-                raise Exception('FAIL: Both datasets do not have the same projection')
+                raise Exception('Both datasets do not have the same projection')
             
             if not [nc_gdal_dataset.GetGeoTransform()[index] for index in range(5) if ers_gdal_dataset.GetGeoTransform()[index] - nc_gdal_dataset.GetGeoTransform()[index] > 0.000001]:
                 print 'PASS: Both datasets have the same spatial extent and resolution'
             else:
-                raise Exception('FAIL: Both datasets do not have the same spatial extent and resolution')
+                raise Exception('Both datasets do not have the same spatial extent and resolution')
             
             ers_band = ers_gdal_dataset.GetRasterBand(1)
             nc_band = ers_gdal_dataset.GetRasterBand(1)
@@ -146,7 +147,7 @@ class ERS2NetCDFChecker(object):
             if ers_band.GetNoDataValue() == nc_band.GetNoDataValue():
                 print 'PASS: Both datasets have the same no-data value'
             else:
-                raise Exception('FAIL: Both datasets do not have the same no-data value')
+                raise Exception('Both datasets do not have the same no-data value')
             
             
             
@@ -173,7 +174,7 @@ class ERS2NetCDFChecker(object):
                 # Note reversed indices to match YX ordering in NetCDF with XY ordering in ERS. GDAL would ordinarily do this for us.
                 ers_piece_array = ers_band.ReadAsArray(start_indices[1], ers_gdal_dataset.RasterYSize - start_indices[0] - nc_piece_array.shape[0], nc_piece_array.shape[1], nc_piece_array.shape[0])
 
-                percentage_difference_piece_array = np.absolute(1 - nc_piece_array / ers_piece_array) * 100
+                percentage_difference_piece_array = np.absolute(1.0 - nc_piece_array / ers_piece_array) * 100.0
 
                 try:
                     min_nc_value = min(min_nc_value, np.nanmin(nc_piece_array))
@@ -218,21 +219,20 @@ class ERS2NetCDFChecker(object):
             if max_percentage_difference < 0.000001:
                 print 'PASS: There is less than 0.000001% percentage_difference in all data values'
             else:
-                #raise Exception('FAIL: There is more than 0.000001 percentage_difference in data values')
-                pass
+                raise Exception('There is more than 0.000001 percentage_difference in data values')
   
             print 'min nc_value = %f, mean nc_value = %f, max nc_value = %f' % (min_nc_value, mean_nc_value, max_nc_value)
             print 'min ers_value = %f, mean ers_value = %f, max ers_value = %f' % (min_ers_value, mean_ers_value, max_ers_value)
             print 'min percentage_difference = %f%%, mean percentage_difference = %f%%, max percentage_difference = %f%%' % (min_percentage_difference, mean_percentage_difference, max_percentage_difference)
              
         except Exception, e:
-            print 'File comparison failed: %s' % e.message
+            print 'FAIL: %s' % e.message
             
             
 def main():
     if len(sys.argv) == 2: # Only directory provided
         e2nchecker = ERS2NetCDFChecker(sys.argv[1])
-    if len(sys.argv) == 3: # Only directory provided
+    if len(sys.argv) == 3: # ERS and NetCDF filenames provided
         e2nchecker = ERS2NetCDFChecker()
         e2nchecker.compare_ERS2NetCDF(sys.argv[1], sys.argv[2])
         
