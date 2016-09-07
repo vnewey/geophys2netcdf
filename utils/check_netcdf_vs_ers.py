@@ -178,14 +178,14 @@ class ERS2NetCDFChecker(object):
                 except:
                     seconds = 0.0
                     
-                value = degrees + minutes / 60 + seconds / 360
+                value = degrees + (minutes + seconds / 60) / 60
                 
                 if sign == '-':
                     value = -value
                     
                 return value
                 
-            #TODO: Make this work with UTM datasets
+            #TODO: Make this work with UTM datasets - untested
             ers_file = open(ers_path)
             lines =  ers_file.readlines()
             ers_file.close()
@@ -281,6 +281,14 @@ class ERS2NetCDFChecker(object):
             weighted_mean_nc_value = 0
             weighted_mean_ers_value = 0
             weighted_mean_percentage_difference = 0
+            
+            min_nc_value = None
+            max_nc_value = None
+            min_ers_value = None
+            max_ers_value = None
+            min_percentage_difference = None
+            max_percentage_difference = None
+            
             for nc_piece_array, start_indices in array_pieces(data_variable, 1000000000): # 1GB Pieces  
                 piece_size = reduce(lambda x, y: x*y, nc_piece_array.shape)
                 #print start_indices, nc_piece_array.shape, piece_size
@@ -296,34 +304,19 @@ class ERS2NetCDFChecker(object):
 
                 percentage_difference_piece_array = np.absolute(1.0 - nc_piece_array / ers_piece_array) * 100.0
 
-                try:
+                if pixel_count: # Not the first piecee
                     min_nc_value = min(min_nc_value, np.nanmin(nc_piece_array))
-                except:
-                    min_nc_value = np.nanmin(nc_piece_array)
-        
-                try:
                     max_nc_value = max(max_nc_value, np.nanmax(nc_piece_array))
-                except:
-                    max_nc_value = np.nanmax(nc_piece_array)
-
-                try:
                     min_ers_value = min(min_ers_value, np.nanmin(ers_piece_array))
-                except:
-                    min_ers_value = np.nanmin(ers_piece_array)
-        
-                try:
                     max_ers_value = max(max_ers_value, np.nanmax(ers_piece_array))
-                except:
-                    max_ers_value = np.nanmax(ers_piece_array)
-
-                try:
                     min_percentage_difference = min(min_percentage_difference, np.nanmin(percentage_difference_piece_array))
-                except:
-                    min_percentage_difference = np.nanmin(percentage_difference_piece_array)
-        
-                try:
                     max_percentage_difference = max(max_percentage_difference, np.nanmax(percentage_difference_piece_array))
-                except:
+                else:
+                    min_nc_value = np.nanmin(nc_piece_array)
+                    max_nc_value = np.nanmax(nc_piece_array)
+                    min_ers_value = np.nanmin(ers_piece_array)
+                    max_ers_value = np.nanmax(ers_piece_array)
+                    min_percentage_difference = np.nanmin(percentage_difference_piece_array)
                     max_percentage_difference = np.nanmax(percentage_difference_piece_array)
 
                 weighted_mean_nc_value = weighted_mean_nc_value + np.nanmean(nc_piece_array) * piece_size
@@ -339,7 +332,7 @@ class ERS2NetCDFChecker(object):
             if max_percentage_difference < 0.000001:
                 print 'PASS: There is less than 0.000001% percentage_difference in all data values'
             else:
-                raise Exception('There is more than 0.000001 percentage_difference in data values')
+                raise Exception('There is more than 0.000001% percentage_difference in data values')
   
             print 'min nc_value = %f, mean nc_value = %f, max nc_value = %f' % (min_nc_value, mean_nc_value, max_nc_value)
             print 'min ers_value = %f, mean ers_value = %f, max ers_value = %f' % (min_ers_value, mean_ers_value, max_ers_value)
