@@ -7,6 +7,7 @@ import os
 import sys
 import errno
 import logging
+import re
 import subprocess
 import tempfile
 from shutil import rmtree
@@ -109,12 +110,131 @@ class ERS2NetCDFChecker(object):
         Currently retrieves data from ERS file using GDAL, and from NetCDF file using netCDF4.
         Note that NetCDF array is YX ordered, with a LL origin, while the ERS is XY ordered with a UL origin.
         '''
+        
+        def check_ers_extent(ers_path, geotransform):
+            '''
+            Function to check extent shown in ERS header file against GDAL geotransform.
+            Used to check for bug in GDAL 1.9 and earlier
+            
+            Sample ERS header file is as follows:
+            
+            DatasetHeader Begin
+                LastUpdated    = Tue Feb 28 05:16:57 GMT 2012
+                Version    = "5.0"
+                DataSetType    = ERStorage
+                DataType    = Raster
+                HeaderOffset    = 512
+                CoordinateSpace Begin
+                    Projection    = "GEODETIC"
+                    CoordinateType    = LATLONG
+                    Datum    = "GDA94"
+                    Rotation    = 0:0:0 
+                CoordinateSpace End
+                ByteOrder    = LSBFirst
+                RasterInfo Begin
+                    CellType    = IEEE4ByteReal
+                    NrOfLines    = 4182
+                    NrOfCellsPerLine    = 5717
+                    NrOfBands    = 1
+                    NullCellValue    = -99999.00000000
+                    CellInfo Begin
+                        Xdimension    =      0.00833333
+                        Ydimension    =      0.00833333
+                    CellInfo End
+                    RegistrationCellX    = 0
+                    RegistrationCellY    = 0
+                    RegistrationCoord Begin
+                        Longitude    = 109:6:0.843442298
+                        Latitude    = -9:21:17.81304202
+                    RegistrationCoord End
+                    BandId Begin
+                        Value    = "IR_gravity_anomaly V1"
+                    BandId End
+                RasterInfo End
+            DatasetHeader End
+
+            Sample geotransform = (109.1002342895272 0.00833333 0 -9.354948067227777 0 -0.00833333)
+            '''
+            
+            def dms2degrees(dms_string):
+                '''
+                Function to translate degrees:minutes:seconds string into float degrees
+                '''
+                dms_match = re.match('(\-|\+)?(\d+):(\d+):(\d+(\.\d*)?)', dms_string)
+                assert dms_match, 'Unable to parse degrees:minutes:seconds string %s' % dms_string
+                sign = dms_match.group(1)
+                try:
+                    degrees = float(dms_match.group(2))
+                except:
+                    degrees = 0.0
+                    
+                try:
+                    minutes = float(dms_match.group(3))
+                except:
+                    minutes = 0.0
+                    
+                try:
+                    seconds = float(dms_match.group(4))
+                except:
+                    seconds = 0.0
+                    
+                value = degrees + minutes / 60 + seconds / 360
+                
+                if sign == '-':
+                    value = -value
+                    
+                return value
+                
+            #TODO: Make this work with UTM datasets
+            ers_file = open(ers_path)
+            lines =  ers_file.readlines()
+            ers_file.close()
+            
+            ers_dict = {}
+            parent_dicts = [ers_dict]
+            section_dict = ers_dict
+            for line in lines:
+                begin_match = re.match('\s*([^\s]+) Begin', line, re.IGNORECASE)
+                if begin_match:
+                    current_section = begin_match.group(1)
+                    parent_dicts.append(section_dict)
+                    section_dict = {}
+                    parent_dicts[-1][current_section] = section_dict
+                    continue
+                
+                end_match = re.match('\s*([^\s]+) End', line, re.IGNORECASE)
+                if end_match:
+                    end_section = end_match.group(1)
+                    assert end_section == current_section, 'Malformed sections in ERS file: End found for %s when current section is %s' % (end_section, current_section)
+                    parent_dicts.pop()
+                    section_dict = parent_dicts[-1]
+                    continue
+                
+                keyvalue_match = re.match('\s*([^\s]+)\s*=\s*([^\s]+)', line, re.IGNORECASE)
+                if keyvalue_match:
+                    key = keyvalue_match.group(1)
+                    value = keyvalue_match.group(2)
+                    section_dict[key] = re.sub('^"|"$', '', value) # Strip double quotes from string
+                
+            assert parent_dicts[-1] == ers_dict, 'Section not closed in ERS file'
+            
+            assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1] < 0.000001), 'ERS & GDAL pixel X size are not equal'
+            assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) - geotransform[5] < 0.000001), 'ERS & GDAL pixel Y size are not equal'
+            assert (dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['RegistrationCoord']['Longitude']) - geotransform[0] < 0.000001), 'ERS & GDAL X origin are not equal'
+            assert (dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['RegistrationCoord']['Latitude']) - geotransform[3] < 0.000001), 'ERS & GDAL Y origin are not equal'
+            
+            return True
+        
         assert os.path.isfile(ers_path), 'ERS file %s does not exist' % ers_path
         assert os.path.isfile(nc_path), 'NetCDF file %s does not exist' % nc_path
         
         try:
             ers_gdal_dataset = gdal.Open(ers_path, gdalconst.GF_Read)
             assert ers_gdal_dataset, 'Unable to open ERS file %s using GDAL' % ers_path
+            
+            if check_ers_extent(ers_path, ers_gdal_dataset.GetGeoTransform()):
+                print 'ERS extents translated correctly by GDAL'
+                        
             nc_gdal_dataset = gdal.Open(nc_path, gdalconst.GF_Read)
             assert nc_gdal_dataset, 'Unable to open NetCDF file %s using GDAL' % nc_path
             nc_dataset = netCDF4.Dataset(nc_path, 'r')
@@ -167,10 +287,10 @@ class ERS2NetCDFChecker(object):
                 if type(nc_piece_array) == np.ma.core.MaskedArray:
                     nc_piece_array = nc_piece_array.data
 
-                # Invert NetCDF array to convert LL origin to UL. GDAL would ordinarily do this for us.
+                # Invert NetCDF array to convert LL origin to UL
                 nc_piece_array = np.flipud(nc_piece_array)
 
-                # Note reversed indices to match YX ordering in NetCDF with XY ordering in ERS. GDAL would ordinarily do this for us.
+                # Note reversed indices to match YX ordering in NetCDF with XY ordering in ERS
                 ers_piece_array = ers_band.ReadAsArray(start_indices[1], ers_gdal_dataset.RasterYSize - start_indices[0] - nc_piece_array.shape[0], nc_piece_array.shape[1], nc_piece_array.shape[0])
 
                 percentage_difference_piece_array = np.absolute(1 - nc_piece_array / ers_piece_array) * 100
