@@ -21,6 +21,8 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
 
+FLOAT_TOLERANCE = 0.000001
+
 class ERS2NetCDFChecker(object):
     '''
     Class definition for ERS2NetCDFChecker to check conversion of ERS to NetCDF datasets
@@ -191,16 +193,16 @@ class ERS2NetCDFChecker(object):
             lines =  ers_file.readlines()
             ers_file.close()
             
-            ers_dict = OrderedDict()
+            ers_dict = {}
             hierarchy = OrderedDict() # Flat key:value list of current dict path
             section_dict = ers_dict
             for line in lines:
-                print 'line = %s' % line
+#                print 'line = %s' % line
                 begin_match = re.match('\s*(\S+) Begin', line, re.IGNORECASE)
                 if begin_match:
                     current_section = begin_match.group(1)
-                    print 'current_section = %s' % current_section
-                    new_section_dict = OrderedDict()
+#                    print 'current_section = %s' % current_section
+                    new_section_dict = {}
                     section_dict[current_section] = new_section_dict
                     hierarchy[current_section] = new_section_dict
                     section_dict = new_section_dict
@@ -229,11 +231,12 @@ class ERS2NetCDFChecker(object):
                 print 'Unhandled line: %s' % line
                 
             assert section_dict == ers_dict, 'Section not closed in ERS file'
-            
-            assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1] < 0.000001), 'ERS & GDAL pixel X size are not equal'
-            assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) - geotransform[5] < 0.000001), 'ERS & GDAL pixel Y size are not equal'
-            assert (dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['RegistrationCoord']['Longitude']) - geotransform[0] < 0.000001), 'ERS & GDAL X origin are not equal'
-            assert (dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['RegistrationCoord']['Latitude']) - geotransform[3] < 0.000001), 'ERS & GDAL Y origin are not equal'
+#            print ers_dict
+            assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
+            # N.B: Sign changed to deal with GDAL's UL origin
+            assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
+            assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Longitude']) - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
+            assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Latitude']) - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
             
             return True
         
@@ -246,7 +249,7 @@ class ERS2NetCDFChecker(object):
             assert ers_gdal_dataset, 'Unable to open ERS file %s using GDAL' % ers_path
             
             if check_ers_extent(ers_path, ers_gdal_dataset.GetGeoTransform()):
-                print 'ERS extents translated correctly by GDAL'
+                print 'PASS: ERS extents translated correctly by GDAL'
                         
             nc_gdal_dataset = gdal.Open(nc_path, gdalconst.GF_Read)
             assert nc_gdal_dataset, 'Unable to open NetCDF file %s using GDAL' % nc_path
@@ -268,7 +271,7 @@ class ERS2NetCDFChecker(object):
             else:
                 raise Exception('Both datasets do not have the same projection')
             
-            if not [nc_gdal_dataset.GetGeoTransform()[index] for index in range(5) if ers_gdal_dataset.GetGeoTransform()[index] - nc_gdal_dataset.GetGeoTransform()[index] > 0.000001]:
+            if not [nc_gdal_dataset.GetGeoTransform()[index] for index in range(5) if abs(ers_gdal_dataset.GetGeoTransform()[index] - nc_gdal_dataset.GetGeoTransform()[index]) > FLOAT_TOLERANCE]:
                 print 'PASS: Both datasets have the same spatial extent and resolution'
             else:
                 raise Exception('Both datasets do not have the same spatial extent and resolution')
@@ -341,10 +344,10 @@ class ERS2NetCDFChecker(object):
             mean_ers_value = weighted_mean_ers_value / pixel_count 
             mean_percentage_difference = weighted_mean_percentage_difference / pixel_count 
            
-            if max_percentage_difference < 0.000001:
-                print 'PASS: There is less than 0.000001% percentage_difference in all data values'
+            if max_percentage_difference < FLOAT_TOLERANCE:
+                print 'PASS: There is less than %f%% percentage_difference in all data values' % FLOAT_TOLERANCE
             else:
-                raise Exception('There is more than 0.000001% percentage_difference in data values')
+                raise Exception('There is more than %f%% percentage_difference in data values' % FLOAT_TOLERANCE)
   
             print 'min nc_value = %f, mean nc_value = %f, max nc_value = %f' % (min_nc_value, mean_nc_value, max_nc_value)
             print 'min ers_value = %f, mean ers_value = %f, max ers_value = %f' % (min_ers_value, mean_ers_value, max_ers_value)
