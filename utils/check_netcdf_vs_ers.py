@@ -16,6 +16,7 @@ from osgeo import gdal, gdalconst
 import netCDF4
 from geophys2netcdf.array_pieces import array_pieces
 import numpy as np
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
@@ -190,33 +191,44 @@ class ERS2NetCDFChecker(object):
             lines =  ers_file.readlines()
             ers_file.close()
             
-            ers_dict = {}
-            parent_dicts = [ers_dict]
+            ers_dict = OrderedDict()
+            hierarchy = OrderedDict() # Flat key:value list of current dict path
             section_dict = ers_dict
             for line in lines:
-                begin_match = re.match('\s*([^\s]+) Begin', line, re.IGNORECASE)
+                print 'line = %s' % line
+                begin_match = re.match('\s*(\S+) Begin', line, re.IGNORECASE)
                 if begin_match:
                     current_section = begin_match.group(1)
-                    parent_dicts.append(section_dict)
-                    section_dict = {}
-                    parent_dicts[-1][current_section] = section_dict
+                    print 'current_section = %s' % current_section
+                    new_section_dict = OrderedDict()
+                    section_dict[current_section] = new_section_dict
+                    hierarchy[current_section] = new_section_dict
+                    section_dict = new_section_dict
                     continue
                 
-                end_match = re.match('\s*([^\s]+) End', line, re.IGNORECASE)
+                end_match = re.match('\s*(\S+) End', line, re.IGNORECASE)
                 if end_match:
                     end_section = end_match.group(1)
                     assert end_section == current_section, 'Malformed sections in ERS file: End found for %s when current section is %s' % (end_section, current_section)
-                    parent_dicts.pop()
-                    section_dict = parent_dicts[-1]
+                    del hierarchy[end_section] # Remove last key:value pair
+                    if hierarchy: # Not yet at root
+                        current_section = hierarchy.keys()[-1]
+                        section_dict = hierarchy[current_section]
+                    else:
+                        current_section = None
+                        section_dict = ers_dict
                     continue
                 
-                keyvalue_match = re.match('\s*([^\s]+)\s*=\s*([^\s]+)', line, re.IGNORECASE)
+                keyvalue_match = re.match('\s*(\S+)\s*=\s*(\S+)', line, re.IGNORECASE)
                 if keyvalue_match:
                     key = keyvalue_match.group(1)
                     value = keyvalue_match.group(2)
                     section_dict[key] = re.sub('^"|"$', '', value) # Strip double quotes from string
+                    continue
                 
-            assert parent_dicts[-1] == ers_dict, 'Section not closed in ERS file'
+                print 'Unhandled line: %s' % line
+                
+            assert section_dict == ers_dict, 'Section not closed in ERS file'
             
             assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1] < 0.000001), 'ERS & GDAL pixel X size are not equal'
             assert (float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) - geotransform[5] < 0.000001), 'ERS & GDAL pixel Y size are not equal'
