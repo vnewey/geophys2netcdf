@@ -188,57 +188,65 @@ class ERS2NetCDFChecker(object):
                     
                 return value
                 
-            #TODO: Make this work with UTM datasets - untested
-            ers_file = open(ers_path)
-            lines =  ers_file.readlines()
-            ers_file.close()
-            
-            ers_dict = {}
-            hierarchy = OrderedDict() # Flat key:value list of current dict path
-            section_dict = ers_dict
-            for line in lines:
-#                print 'line = %s' % line
-                begin_match = re.match('\s*(\S+) Begin', line, re.IGNORECASE)
-                if begin_match:
-                    current_section = begin_match.group(1)
-#                    print 'current_section = %s' % current_section
-                    new_section_dict = {}
-                    section_dict[current_section] = new_section_dict
-                    hierarchy[current_section] = new_section_dict
-                    section_dict = new_section_dict
-                    continue
+            try:
+                #TODO: Make this work with UTM datasets - untested
+                ers_file = open(ers_path)
+                lines =  ers_file.readlines()
+                ers_file.close()
                 
-                end_match = re.match('\s*(\S+) End', line, re.IGNORECASE)
-                if end_match:
-                    end_section = end_match.group(1)
-                    assert end_section == current_section, 'Malformed sections in ERS file: End found for %s when current section is %s' % (end_section, current_section)
-                    del hierarchy[end_section] # Remove last key:value pair
-                    if hierarchy: # Not yet at root
-                        current_section = hierarchy.keys()[-1]
-                        section_dict = hierarchy[current_section]
-                    else:
-                        current_section = None
-                        section_dict = ers_dict
-                    continue
+                ers_dict = {}
+                hierarchy = OrderedDict() # Flat key:value list of current dict path
+                section_dict = ers_dict
+                for line in lines:
+    #                print 'line = %s' % line
+                    begin_match = re.match('\s*(\S+) Begin', line, re.IGNORECASE)
+                    if begin_match:
+                        current_section = begin_match.group(1)
+    #                    print 'current_section = %s' % current_section
+                        new_section_dict = {}
+                        section_dict[current_section] = new_section_dict
+                        hierarchy[current_section] = new_section_dict
+                        section_dict = new_section_dict
+                        continue
+                    
+                    end_match = re.match('\s*(\S+) End', line, re.IGNORECASE)
+                    if end_match:
+                        end_section = end_match.group(1)
+                        assert end_section == current_section, 'Malformed sections in ERS file: End found for %s when current section is %s' % (end_section, current_section)
+                        del hierarchy[end_section] # Remove last key:value pair
+                        if hierarchy: # Not yet at root
+                            current_section = hierarchy.keys()[-1]
+                            section_dict = hierarchy[current_section]
+                        else:
+                            current_section = None
+                            section_dict = ers_dict
+                        continue
+                    
+                    keyvalue_match = re.match('\s*(\S+)\s*=\s*(\S+)', line, re.IGNORECASE)
+                    if keyvalue_match:
+                        key = keyvalue_match.group(1)
+                        value = keyvalue_match.group(2)
+                        section_dict[key] = re.sub('^"|"$', '', value) # Strip double quotes from string
+                        continue
+                    
+                    assert False, 'Unhandled line: %s' % line
+                    
+                assert section_dict == ers_dict, 'Section not closed in ERS file'
+    #            print ers_dict
+                assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
+                # N.B: Sign changed to deal with GDAL's UL origin
+                assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
+                assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Longitude']) - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
+                assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Latitude']) - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
                 
-                keyvalue_match = re.match('\s*(\S+)\s*=\s*(\S+)', line, re.IGNORECASE)
-                if keyvalue_match:
-                    key = keyvalue_match.group(1)
-                    value = keyvalue_match.group(2)
-                    section_dict[key] = re.sub('^"|"$', '', value) # Strip double quotes from string
-                    continue
+                return True
+            except:
+                # Dump ERS file
+                if self.debug:
+                    for line in lines:
+                        print line.replace('\n', '')
+                raise
                 
-                print 'Unhandled line: %s' % line
-                
-            assert section_dict == ers_dict, 'Section not closed in ERS file'
-#            print ers_dict
-            assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
-            # N.B: Sign changed to deal with GDAL's UL origin
-            assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
-            assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Longitude']) - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
-            assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Latitude']) - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
-            
-            return True
         
         print 'Comparing ERS file %s and NetCDF file %s' % (ers_path, nc_path)
         assert os.path.isfile(ers_path), 'ERS file %s does not exist' % ers_path
