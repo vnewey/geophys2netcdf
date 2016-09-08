@@ -227,17 +227,45 @@ class ERS2NetCDFChecker(object):
                         key = keyvalue_match.group(1)
                         value = keyvalue_match.group(2)
                         section_dict[key] = re.sub('^"|"$', '', value) # Strip double quotes from string
+                        if section_dict[key][0] == '{':
+                            open_key = key
+                        else:
+                            open_key = None
                         continue
                     
-                    assert False, 'Unhandled line: %s' % line
+                    if open_key:
+                        section_dict[open_key] = section_dict[open_key] + ' ' + re.sub('\s+', ' ', line.strip())
+                        if section_dict[open_key][-1] == '}':
+                            open_key = None
+                    else:
+                        assert False, 'Unhandled line: "%s"' % line.strip()
                     
                 assert section_dict == ers_dict, 'Section not closed in ERS file'
     #            print ers_dict
                 assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Xdimension']) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
+
                 # N.B: Sign changed to deal with GDAL's UL origin
                 assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo']['Ydimension']) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
-                assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Longitude']) - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
-                assert (abs(dms2degrees(ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Latitude']) - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
+
+                try:
+                    value_string = ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Longitude']
+                except:
+                    value_string = ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Eastings']
+                try:
+                    value = float(value_string)
+                except:
+                    value = dms2degrees(value_string)
+                assert (abs(value - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
+
+                try:
+                    value_string = ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Latitude']
+                except:
+                    value_string = ers_dict['DatasetHeader']['RasterInfo']['RegistrationCoord']['Northings']
+                try:
+                    value = float(value_string)
+                except:
+                    value = dms2degrees(value_string)
+                assert (abs(value - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
                 
                 return True
             except:
@@ -367,9 +395,9 @@ class ERS2NetCDFChecker(object):
             
 def main():
     if len(sys.argv) == 2: # Only directory provided
-        e2nchecker = ERS2NetCDFChecker(sys.argv[1])
+        e2nchecker = ERS2NetCDFChecker(sys.argv[1], debug=True)
     if len(sys.argv) == 3: # ERS and NetCDF filenames provided
-        e2nchecker = ERS2NetCDFChecker()
+        e2nchecker = ERS2NetCDFChecker(debug=True)
         e2nchecker.compare_ERS2NetCDF(sys.argv[1], sys.argv[2])
         
 if __name__ == '__main__':
