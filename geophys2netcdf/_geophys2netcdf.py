@@ -329,7 +329,7 @@ class Geophys2NetCDF(object):
         attribute_dict['geospatial_lat_units'] = yunits
         
         convex_hull = coord_trans.TransformPoints(netcdf2convex_hull(self.netcdf_dataset, 2000000000)) # Process dataset in pieces <= 2GB in size
-        attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([str(ordinate) for ordinate in convex_hull.flatten()]) + '))'
+        attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([' '.join(coordinates) for coordinates in convex_hull]) + '))'
         
         #=======================================================================
         # # Trace clockwise around original bounding polygon (which isn't necessarily orthogonal in new CRS) starting from top left - don't expand bounding box 
