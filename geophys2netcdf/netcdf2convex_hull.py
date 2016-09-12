@@ -65,13 +65,8 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
 
     convex_hull = geometry.MultiPoint(get_edge_points(netcdf_dataset, max_bytes)).convex_hull
     
-    convex_hull = convex_hull.buffer(avg_pixel_size/2.0, cap_style=2, join_style=2, mitre_limit=avg_pixel_size).simplify(avg_pixel_size) # Offset outward by half a pixel width    
-    
-    #===========================================================================
-    # # Perform offsets to (hopefully) simplify shape and take pixel size into account
-    # convex_hull = convex_hull.buffer(-avg_pixel_size / 2.0, cap_style=3, join_style=3, mitre_limit=avg_pixel_size) # Offset inward by half a pixel width
-    # convex_hull = convex_hull.buffer(avg_pixel_size, cap_style=3, join_style=3, mitre_limit=avg_pixel_size) # Offset outward by a whole pixel width    
-    #===========================================================================
+    # Offset outward by a full pixel width (instead of half) and simplify   
+    convex_hull = convex_hull.buffer(avg_pixel_size, cap_style=2, join_style=2, mitre_limit=avg_pixel_size).simplify(avg_pixel_size)
     
     return [coordinates for coordinates in convex_hull.exterior.coords] # Convert generator to list
     
