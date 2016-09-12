@@ -9,7 +9,7 @@ import netCDF4
 import math
 import itertools
 
-def array_pieces(ndarray, max_bytes=500000000):
+def array_pieces(ndarray, max_bytes=None):
     '''
     Generator to return a series of numpy arrays less than max_bytes in size and the offset within the complete data from a NetCDF variable
     Parameters:
@@ -20,6 +20,8 @@ def array_pieces(ndarray, max_bytes=500000000):
         piece_array: array subset less than max_bytes in size
         array_offset: start indices of subset in whole array
     '''
+    max_bytes = max_bytes or 500000000 # Defaults to 500,000,000 for NCI's OPeNDAP
+    
     array_shape = ndarray.shape
     array_dimensions = len(array_shape)
     
