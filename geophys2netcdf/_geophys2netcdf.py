@@ -34,7 +34,7 @@ Created on 29/02/2016
 '''
 import os
 import re
-from collections import OrderedDict
+#from collections import OrderedDict
 import logging
 import subprocess
 #from osgeo import gdal, osr
@@ -53,6 +53,8 @@ import json
 import urllib
 
 from metadata import XMLMetadata, NetCDFMetadata
+from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # Initial logging level for this module
@@ -325,13 +327,20 @@ class Geophys2NetCDF(object):
         attribute_dict['geospatial_lat_resolution'] = yres
         attribute_dict['geospatial_lon_units'] = xunits
         attribute_dict['geospatial_lat_units'] = yunits
-        # Trace clockwise around original bounding polygon (which isn't necessarily orthogonal in new CRS) starting from top left - don't expand bounding box 
-        attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (extents[0,0], extents[0,1], #xmin, ymin,
-                                                                                                extents[2,0], extents[2,1], #xmax, ymin,
-                                                                                                extents[3,0], extents[3,1], #xmax, ymax,
-                                                                                                extents[1,0], extents[1,1], #xmin, ymax,
-                                                                                                extents[0,0], extents[0,1], #xmin, ymin
-                                                                                                )
+        
+        convex_hull = coord_trans.TransformPoints(netcdf2convex_hull(self.netcdf_dataset, 2000000000)) # Process dataset in pieces <= 2GB in size
+        attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([str(ordinate) for ordinate in convex_hull.flatten()]) + '))'
+        
+        #=======================================================================
+        # # Trace clockwise around original bounding polygon (which isn't necessarily orthogonal in new CRS) starting from top left - don't expand bounding box 
+        # attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (extents[0,0], extents[0,1], #xmin, ymin,
+        #                                                                                         extents[2,0], extents[2,1], #xmax, ymin,
+        #                                                                                         extents[3,0], extents[3,1], #xmax, ymax,
+        #                                                                                         extents[1,0], extents[1,1], #xmin, ymax,
+        #                                                                                         extents[0,0], extents[0,1], #xmin, ymin
+        #                                                                                         )
+        #=======================================================================
+
         attribute_dict['geospatial_bounds_crs'] = spatial_ref
 
         for key, value in attribute_dict.items():
