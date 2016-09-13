@@ -19,7 +19,7 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
         data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
     except:
         raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
-#    print data_variable.name
+#    print 'Variable %s has shape %s' % (data_variable.name, data_variable.shape)
     
     assert len(data_variable.dimensions) == 2, '%s is not 2D' % data_variable.name
     dimension_variable = [netcdf_dataset.variables[data_variable.dimensions[dim_index]] for dim_index in range(2)]
@@ -27,11 +27,11 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
     
     point_list = [] # Complete list of edge points (unknown length)
     for piece_array, array_offset in array_pieces(data_variable, max_bytes):
-        dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:piece_array.shape[dim_index]] for dim_index in range(2)]
+        dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:array_offset[dim_index]+piece_array.shape[dim_index]] for dim_index in range(2)]
         
         if type(piece_array) == np.ma.core.MaskedArray:
             piece_array = piece_array.data
-#        print 'piece_array.shape = %s, piece_array.size = %s' % (piece_array.shape, piece_array.size)
+#        print 'array_offset = %s, piece_array.shape = %s, piece_array.size = %s' % (array_offset, piece_array.shape, piece_array.size)
         piece_array = (piece_array != nodata_value)
         
         # Detect edges
@@ -45,13 +45,9 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
             piece_points[:,0] = dimension_subset[1][edges[1]]
             point_list += list(piece_points)
 #            print '%s edge points found' % piece_points.shape[0]
-            del piece_points
 #        else:
 #            print 'No edge points found'
 
-        del piece_array
-        gc.collect()
-        
     return point_list
         
 def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
