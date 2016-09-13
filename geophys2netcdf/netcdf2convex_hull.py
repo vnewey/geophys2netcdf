@@ -26,7 +26,7 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
     nodata_value = data_variable._FillValue
     
     point_list = [] # Complete list of edge points (unknown length)
-    for piece_array, array_offset in array_pieces(data_variable):
+    for piece_array, array_offset in array_pieces(data_variable, max_bytes):
         dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:piece_array.shape[dim_index]] for dim_index in range(2)]
         
         if type(piece_array) == np.ma.core.MaskedArray:
@@ -58,7 +58,6 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of vertices in the convex hull around data-containing areas
     '''
-    # Start of netcdf2convex_hull function
     # Find variable with "GeoTransform" attribute - assumed to be grid mapping variable
     try:
         grid_mapping_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'GeoTransform')][0]
