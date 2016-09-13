@@ -19,11 +19,12 @@ def main():
     
     for nc_path in nc_path_list:
         print 'Updating metadata in %s' % nc_path
-        
-        g2n_object = ERS2NetCDF()
-        g2n_object.update_nc_metadata(nc_path)
-        g2n_object.check_json_metadata(nc_path) # Kind of redundant, but possibly useful for debugging
-
+        try:
+            g2n_object = ERS2NetCDF()
+            g2n_object.update_nc_metadata(nc_path)
+            g2n_object.check_json_metadata(nc_path) # Kind of redundant, but possibly useful for debugging
+        except Exception, e:
+            print 'Metadata update failed: %s' % e.message
 
 if __name__ == '__main__':
     main()
