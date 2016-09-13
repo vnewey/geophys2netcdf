@@ -8,57 +8,56 @@ import numpy as np
 import gc
 from scipy import ndimage
 import shapely.geometry as geometry
-from shapely.ops import polygonize
 from geophys2netcdf.array_pieces import array_pieces
 
+def get_edge_points(netcdf_dataset, max_bytes=None):
+    '''
+    Function to return a list of points corresponding to pixels on the edge of data-containing areas
+    '''
+    # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
+    try:
+        data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+    except:
+        raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
+#    print data_variable.name
+    
+    assert len(data_variable.dimensions) == 2, '%s is not 2D' % data_variable.name
+    dimension_variable = [netcdf_dataset.variables[data_variable.dimensions[dim_index]] for dim_index in range(2)]
+    nodata_value = data_variable._FillValue
+    
+    point_list = [] # Complete list of edge points (unknown length)
+    for piece_array, array_offset in array_pieces(data_variable):
+        dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:piece_array.shape[dim_index]] for dim_index in range(2)]
+        
+        if type(piece_array) == np.ma.core.MaskedArray:
+            piece_array = piece_array.data
+#        print 'piece_array.shape = %s, piece_array.size = %s' % (piece_array.shape, piece_array.size)
+        piece_array = (piece_array != nodata_value)
+        
+        # Detect edges
+        edges = np.where(ndimage.filters.maximum_filter(piece_array, size=2) != 
+                         ndimage.filters.minimum_filter(piece_array, size=2))
+
+        if edges[0].size:
+            piece_points = np.zeros((edges[0].size, 2), dtype=netcdf_dataset.variables[data_variable.dimensions[0]].dtype)
+            #TODO: Do something more general here to account for YX or XY dimension order
+            piece_points[:,1] = dimension_subset[0][edges[0]]
+            piece_points[:,0] = dimension_subset[1][edges[1]]
+            point_list += list(piece_points)
+#            print '%s edge points found' % piece_points.shape[0]
+#        else:
+#            print 'No edge points found'
+
+        del piece_array
+        del piece_points
+        gc.collect()
+        
+    return point_list
+        
 def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of vertices in the convex hull around data-containing areas
     '''
-    def get_edge_points(netcdf_dataset, max_bytes=None):
-        '''
-        Function to return a list of points corresponding to pixels on the edge of data-containing areas
-        '''
-        # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
-        try:
-            data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
-        except:
-            raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
-#        print data_variable.name
-        
-        assert len(data_variable.dimensions) == 2, '%s is not 2D' % data_variable.name
-        dimension_variable = [netcdf_dataset.variables[data_variable.dimensions[dim_index]] for dim_index in range(2)]
-        nodata_value = data_variable._FillValue
-        
-        point_list = [] # Complete list of edge points (unknown length)
-        for piece_array, array_offset in array_pieces(data_variable):
-            dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:piece_array.shape[dim_index]] for dim_index in range(2)]
-            
-            if type(piece_array) == np.ma.core.MaskedArray:
-                piece_array = piece_array.data
-#            print 'piece_array.shape = %s, piece_array.size = %s' % (piece_array.shape, piece_array.size)
-            piece_array = (piece_array != nodata_value)
-            
-            # Detect edges
-            edges = np.where(ndimage.filters.maximum_filter(piece_array, size=2) != 
-                             ndimage.filters.minimum_filter(piece_array, size=2))
-    
-            if edges[0].size:
-                piece_points = np.zeros((edges[0].size, 2), dtype=netcdf_dataset.variables[data_variable.dimensions[0]].dtype)
-                #TODO: Do something more general here to account for YX or XY dimension order
-                piece_points[:,1] = dimension_subset[0][edges[0]]
-                piece_points[:,0] = dimension_subset[1][edges[1]]
-                point_list += list(piece_points)
-#                print '%s edge points found' % piece_points.shape[0]
-#            else:
-#                print 'No edge points found'
-
-            del piece_array
-            del piece_points
-            gc.collect()
-            
-        return point_list
-        
     # Start of netcdf2convex_hull function
     # Find variable with "GeoTransform" attribute - assumed to be grid mapping variable
     try:
