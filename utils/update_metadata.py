@@ -1,10 +1,10 @@
 '''
+Utility to updated ACDD global attributes in NetCDF file using metadata sourced from GeoNetwork
 Created on Apr 7, 2016
 
 @author: Alex Ip, Geoscience Australia
 '''
 import sys
-import netCDF4
 import subprocess
 import re
 from geophys2netcdf import ERS2NetCDF

@@ -45,11 +45,11 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
             piece_points[:,0] = dimension_subset[1][edges[1]]
             point_list += list(piece_points)
 #            print '%s edge points found' % piece_points.shape[0]
+            del piece_points
 #        else:
 #            print 'No edge points found'
 
         del piece_array
-        del piece_points
         gc.collect()
         
     return point_list
