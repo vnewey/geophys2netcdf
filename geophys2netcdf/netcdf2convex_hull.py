@@ -6,14 +6,19 @@ Created on 12Sep.,2016
 @author: Alex Ip
 '''
 import numpy as np
+import math
 #import netCDF4
 from scipy import ndimage
 import shapely.geometry as geometry
+from shapely.ops import cascaded_union, polygonize
+from scipy.spatial import Delaunay
 from geophys2netcdf.array_pieces import array_pieces
 
 def get_edge_points(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of coordinates corresponding to pixels on the edge of data-containing areas of the NetCDF dataset
+    @param netcdf_dataset: netCDF4.Dataset object
+    @param max_bytes: Maximum number of bytes to retrieve in each array piece
     '''
     # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
     try:
@@ -57,25 +62,23 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
 def points2convex_hull(point_list, dilation=0, tolerance=0):
     '''
     Function to return a list of vertex coordinates in the convex hull around data-containing areas of a point list
-    Parameters:
-        point_list: Iterable containing points from which to compute convex hull
-        dilation: distance to dilate convex hull
-        tolerance: distance tolerance for the simplification of the convex hull
+    @param point_list: Iterable containing points from which to compute convex hull
+    @param dilation: distance to dilate convex hull
+    @param tolerance: distance tolerance for the simplification of the convex hull
     '''
     convex_hull = geometry.MultiPoint(point_list).convex_hull
     
-    # Offset outward by a full pixel width (instead of half) and simplify with one pixel width tolerance
+    # Offset outward by specified dilation and simplify with specified tolerance
     convex_hull = convex_hull.buffer(dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
     
-    return [coordinates for coordinates in convex_hull.exterior.coords] # Convert generator to list
+    return [coordinates for coordinates in convex_hull.exterior.coords] # Convert polygon to list
     
     
 def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of vertex coordinates in the convex hull around data-containing areas of the NetCDF dataset
-    Parameters:
-        netcdf_dataset: netCDF4.Dataset object
-        max_bytes: Maximum number of bytes to retrieve in each array piece
+    @param netcdf_dataset: netCDF4.Dataset object
+    @param max_bytes: Maximum number of bytes to retrieve in each array piece
     '''
     # Find variable with "GeoTransform" attribute - assumed to be grid mapping variable
     try:
@@ -86,4 +89,96 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     avg_pixel_size = (abs(GeoTransform[1]) + abs(GeoTransform[5])) / 2.0
    
     return points2convex_hull(get_edge_points(netcdf_dataset, max_bytes), avg_pixel_size, avg_pixel_size) 
+
+
+#===============================================================================
+# def netcdf2concave_hull(netcdf_dataset, max_bytes=None):
+#     '''
+#     Function to return a list of vertex coordinates in the convex hull around data-containing areas of the NetCDF dataset
+#     @param netcdf_dataset: netCDF4.Dataset object
+#     @param max_bytes: Maximum number of bytes to retrieve in each array piece
+#     '''
+#     # Find variable with "GeoTransform" attribute - assumed to be grid mapping variable
+#     try:
+#         grid_mapping_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'GeoTransform')][0]
+#     except:
+#         raise Exception('Unable to determine grid mapping variable (must have "GeoTransform" attribute')
+#     GeoTransform = [float(number) for number in grid_mapping_variable.GeoTransform.strip().split(' ')]
+#     avg_pixel_size = (abs(GeoTransform[1]) + abs(GeoTransform[5])) / 2.0
+#
+#     edge_points = get_edge_points(netcdf_dataset, max_bytes)
+#
+#     #TODO: Compute alpha value dynamically from point density
+#     alpha = 1
+#    
+#     return points2alpha_shape(edge_points, alpha, avg_pixel_size, avg_pixel_size) 
+#===============================================================================
+
+
+def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
+    """
+    Compute the alpha shape (concave hull) of a set of points.
+    source: http://blog.thehumangeo.com/2014/05/12/drawing-boundaries-in-python/
+    @param points: Iterable container of points.
+    @param alpha: alpha value to influence the gooeyness of the border. Smaller numbers don't fall inward as much as larger numbers. Too large, and you lose everything!
+    @param dilation: distance to dilate convex hull
+    @param tolerance: distance tolerance for the simplification of the convex hull
+    """
+    if len(points) < 4:
+        # When you have a triangle, there is no sense
+        # in computing an alpha shape.
+        return geometry.MultiPoint(list(points)).convex_hull
     
+    def add_edge(edges, edge_points, coords, i, j):
+        """
+        Add a line between the i-th and j-th points,
+        if not in the list already
+        """
+        if (i, j) in edges or (j, i) in edges:
+            # already added
+            return
+        edges.add( (i, j) )
+        edge_points.append(coords[ [i, j] ])
+        
+    coords = np.array([point.coords[0]
+                       for point in points])
+    tri = Delaunay(coords)
+    edges = set()
+    edge_points = []
+    # loop over triangles:
+    # ia, ib, ic = indices of corner points of the
+    # triangle
+    for ia, ib, ic in tri.vertices:
+        pa = coords[ia]
+        pb = coords[ib]
+        pc = coords[ic]
+        # Lengths of sides of triangle
+        a = math.sqrt((pa[0]-pb[0])**2 + (pa[1]-pb[1])**2)
+        b = math.sqrt((pb[0]-pc[0])**2 + (pb[1]-pc[1])**2)
+        c = math.sqrt((pc[0]-pa[0])**2 + (pc[1]-pa[1])**2)
+        # Semiperimeter of triangle
+        s = (a + b + c)/2.0
+        try:
+            # Area of triangle by Heron's formula
+            area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+            try:
+                circum_r = a*b*c/(4.0*area)
+                # Here's the radius filter.
+                #print circum_r
+                if circum_r < 1.0/alpha:
+                    add_edge(edges, edge_points, coords, ia, ib)
+                    add_edge(edges, edge_points, coords, ib, ic)
+                    add_edge(edges, edge_points, coords, ic, ia)
+            except ZeroDivisionError:
+                pass
+        except ValueError:
+            pass
+        
+    m = geometry.MultiLineString(edge_points)
+    triangles = list(polygonize(m))
+    concave_hull = cascaded_union(triangles)
+    
+    # Offset outward by specified dilation and simplify with specified tolerance
+    concave_hull = concave_hull.buffer(dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
+    
+    return [coordinates for coordinates in concave_hull.exterior.coords] # Convert polygon to list
