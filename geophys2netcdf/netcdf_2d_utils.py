@@ -225,7 +225,7 @@ class NetCDF2DUtils(object):
             result_array[mask_array] = value_array
             
             # Mask out any coordinates falling in no-data areas. Need to do this to stop no-data value from being interpolated
-            result_array[self.get_value_at_coords(self, coordinates, crs, max_bytes, variable_name) == no_data_value] = no_data_value
+            # result_array[np.array(self.get_value_at_coords(coordinates, crs, max_bytes, variable_name)) == no_data_value] = no_data_value
             
             return list(result_array)
         except:
