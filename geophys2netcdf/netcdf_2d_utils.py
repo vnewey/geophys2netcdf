@@ -176,8 +176,9 @@ class NetCDF2DUtils(object):
         max_points = max(int(math.sqrt(max_bytes / data_variable.dtype.itemsize)), 1)
         try:
             # Make this a vectorised operation for speed (one query for as many points as possible)
-            mask_array = np.array([(index_pair is not None) for index_pair in indices]) # Boolean mask indicating which index pairs are valid
             index_array = np.array([index_pair for index_pair in indices if index_pair is not None]) # Array of valid index pairs only
+            assert len(index_array.shape) == 2 and index_array.shape[1] == 2, 'Not an iterable containing index pairs'
+            mask_array = np.array([(index_pair is not None) for index_pair in indices]) # Boolean mask indicating which index pairs are valid
             value_array = np.ones(shape=(len(index_array)), dtype=data_variable.dtype) * no_data_value # Array of values read from variable
             result_array = np.ones(shape=(len(mask_array)), dtype=data_variable.dtype) * no_data_value # Final result array including no-data for invalid index pairs
             start_index = 0
@@ -203,6 +204,7 @@ class NetCDF2DUtils(object):
         Returns interpolated array values at specified fractional coordinates
         '''
         #TODO: Check behaviour of scipy.ndimage.map_coordinates adjacent to no-data areas. Should not interpolate no-data value
+        #TODO: Make this work for arrays > memory
         max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
         
         if variable_name:
@@ -215,8 +217,9 @@ class NetCDF2DUtils(object):
         fractional_indices = self.get_fractional_indices_from_coords(coordinates, crs)
         
         try:  # Make this a vectorised operation for speed (one query for as many points as possible)
-            mask_array = np.array([(index_pair is not None) for index_pair in fractional_indices]) # Boolean mask indicating which index pairs are valid
             index_array = np.array([index_pair for index_pair in fractional_indices if index_pair is not None]) # Array of valid index pairs only
+            assert len(index_array.shape) == 2 and index_array.shape[1] == 2, 'Not an iterable containing index pairs'
+            mask_array = np.array([(index_pair is not None) for index_pair in fractional_indices]) # Boolean mask indicating which index pairs are valid
             value_array = np.ones(shape=(len(index_array)), dtype=data_variable.dtype) * no_data_value # Array of values read from variable
             result_array = np.ones(shape=(len(mask_array)), dtype=data_variable.dtype) * no_data_value # Final result array including no-data for invalid index pairs
 
@@ -229,6 +232,6 @@ class NetCDF2DUtils(object):
             
             return list(result_array)
         except:
-            return scipy.ndimage.map_coordinates(data_variable, fractional_indices, cval=no_data_value)
+            return scipy.ndimage.map_coordinates(data_variable, np.array([[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
         
         
