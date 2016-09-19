@@ -202,6 +202,7 @@ class NetCDF2DUtils(object):
         '''
         Returns interpolated array values at specified fractional coordinates
         '''
+        #TODO: Check behaviour of scipy.ndimage.map_coordinates adjacent to no-data areas. Should not interpolate no-data value
         max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
         
         if variable_name:
@@ -222,6 +223,10 @@ class NetCDF2DUtils(object):
             value_array = scipy.ndimage.map_coordinates(data_variable, index_array.transpose(), cval=no_data_value)
 
             result_array[mask_array] = value_array
+            
+            # Mask out any coordinates falling in no-data areas. Need to do this to stop no-data value from being interpolated
+            result_array[self.get_value_at_coords(self, coordinates, crs, max_bytes, variable_name) == no_data_value] = no_data_value
+            
             return list(result_array)
         except:
             return scipy.ndimage.map_coordinates(data_variable, fractional_indices, cval=no_data_value)
