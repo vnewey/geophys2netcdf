@@ -7,6 +7,7 @@ import re
 import numpy as np
 import netCDF4
 import math
+import scipy.ndimage
 from osgeo.osr import SpatialReference, CoordinateTransformation
 
 
@@ -97,6 +98,7 @@ class NetCDF2DUtils(object):
     
     def get_indices_from_coords(self, coordinates, crs=None):
         '''
+        Returns array indices corresponding to coordinates to support nearest neighbour queries
         '''
         native_coordinates = self.get_native_coords(coordinates, crs)
         
@@ -123,9 +125,41 @@ class NetCDF2DUtils(object):
         return indices
         
         
+    def get_fractional_indices_from_coords(self, coordinates, crs=None):
+        '''
+        Returns fractional array indices corresponding to coordinates to support interpolation
+        '''
+        native_coordinates = self.get_native_coords(coordinates, crs)
+        
+        self.pixel_size
+        
+        # Convert coordinates to same order as array
+        if self.YX_order:
+            try:
+                for coord_index in range(len(native_coordinates)):
+                    if native_coordinates[coord_index] is not None:
+                        native_coordinates[coord_index] = list(native_coordinates[coord_index])
+                        native_coordinates[coord_index].reverse()
+            except:
+                native_coordinates = list(native_coordinates)            
+                native_coordinates.reverse()
+        #TODO: Make sure this still works with Southwards-positive datasets
+        try: # Multiple coordinates
+            fractional_indices = [[(coordinate[dim_index] - min(self.dimension_arrays[dim_index])) / self.pixel_size[dim_index] for dim_index in range(2)]
+                       if not ([True for dim_index in range(2) if coordinate[dim_index] < self.min_extent[dim_index] or coordinate[dim_index] > self.max_extent[dim_index]])
+                       else None
+                       for coordinate in native_coordinates]
+        except: # Single coordinate pair
+            fractional_indices = ([(native_coordinates[dim_index] - min(self.dimension_arrays[dim_index])) / self.pixel_size[dim_index] for dim_index in range(2)]
+                       if not [True for dim_index in range(2) if native_coordinates[dim_index] < self.min_extent[dim_index] or native_coordinates[dim_index] > self.max_extent[dim_index]]
+                       else None)
+            
+        return fractional_indices
+        
+        
     def get_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
         '''
-        Get array values at specified coordinates
+        Returns array values at specified coordinates
         '''
         max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
         
@@ -162,4 +196,34 @@ class NetCDF2DUtils(object):
             return list(result_array)
         except:
             return data_variable[indices[0], indices[1]]
+        
+        
+    def get_interpolated_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
+        '''
+        Returns interpolated array values at specified fractional coordinates
+        '''
+        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
+        
+        if variable_name:
+            data_variable = self.netcdf_dataset.variables[variable_name]
+        else:
+            data_variable = self.data_variable
+            
+        no_data_value = data_variable._FillValue
+
+        fractional_indices = self.get_fractional_indices_from_coords(coordinates, crs)
+        
+        try:  # Make this a vectorised operation for speed (one query for as many points as possible)
+            mask_array = np.array([(index_pair is not None) for index_pair in fractional_indices]) # Boolean mask indicating which index pairs are valid
+            index_array = np.array([index_pair for index_pair in fractional_indices if index_pair is not None]) # Array of valid index pairs only
+            value_array = np.ones(shape=(len(index_array)), dtype=data_variable.dtype) * no_data_value # Array of values read from variable
+            result_array = np.ones(shape=(len(mask_array)), dtype=data_variable.dtype) * no_data_value # Final result array including no-data for invalid index pairs
+
+            value_array = scipy.ndimage.map_coordinates(data_variable, index_array.transpose(), cval=no_data_value)
+
+            result_array[mask_array] = value_array
+            return list(result_array)
+        except:
+            return scipy.ndimage.map_coordinates(data_variable, fractional_indices, cval=no_data_value)
+        
         
