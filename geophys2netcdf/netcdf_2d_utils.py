@@ -6,20 +6,21 @@ Created on 14Sep.,2016
 import re
 import numpy as np
 import netCDF4
+import math
 from osgeo.osr import SpatialReference, CoordinateTransformation
 
 
 class NetCDF2DUtils(object):
     '''
-    classdocs
+    NetCDF2DUtils class to do various fiddly things with NetCDF geophysics files.
     '''
     # Assume WGS84 lat/lon if no CRS is provided
     DEFAULT_CRS = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
     HORIZONTAL_VARIABLE_NAMES = ['lon', 'Easting', 'x', 'longitude']
-    
+    DEFAULT_MAX_BYTES = 500000000 # Default to 500,000,000 bytes for NCI's OPeNDAP
     def __init__(self, netcdf_dataset):
         '''
-        NetCDF2DUtils Constructor
+        NetCDF2DUtils Constructor - wraps a NetCDF dataset
         '''
         self.netcdf_dataset = netcdf_dataset
         
@@ -51,6 +52,9 @@ class NetCDF2DUtils(object):
         
     
     def get_coordinate_transformation(self, crs=None, to_native=True):
+        '''
+        Use GDAL to obtain a CoordinateTransformation object to transform to/from native NetCDF CRS
+        '''
         # Assume native coordinates if no crs given
         if not crs:
             return None
@@ -77,6 +81,9 @@ class NetCDF2DUtils(object):
     
         
     def get_native_coords(self, coordinates, crs=None):
+        '''
+        Convert coordinates from specified CRS to native NetCDF CRS
+        '''
         coord_trans = self.get_coordinate_transformation(crs, to_native=True)
         
         if not coord_trans:
@@ -116,9 +123,12 @@ class NetCDF2DUtils(object):
         return indices
         
         
-    def get_value_at_coords(self, coordinates, crs=None, variable_name=None):
+    def get_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
         '''
+        Get array values at specified coordinates
         '''
+        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
+        
         if variable_name:
             data_variable = self.netcdf_dataset.variables[variable_name]
         else:
@@ -128,20 +138,26 @@ class NetCDF2DUtils(object):
 
         indices = self.get_indices_from_coords(coordinates, crs)
         
-        if not indices:
-            return None
-                
+        # Allow for the fact that the NetCDF advanced indexing will pull back n^2 cells rather than n
+        max_points = max(int(math.sqrt(max_bytes / data_variable.dtype.itemsize)), 1)
         try:
-            # Make this a vectorised operation for speed (one query for all points)
+            # Make this a vectorised operation for speed (one query for as many points as possible)
             mask_array = np.array([(index_pair is not None) for index_pair in indices]) # Boolean mask indicating which index pairs are valid
             index_array = np.array([index_pair for index_pair in indices if index_pair is not None]) # Array of valid index pairs only
-        
-            # N.B: ".diagonal()" is required because NetCDF doesn't do advanced indexing exactly like numpy
-            # Ugly hack is required to take values from leading diagonal. Requires n^2 elements retrieved instead of n. Not good
-            #TODO: Think of a better way of doing this
-            value_array = data_variable[(index_array[:,0], index_array[:,1])].diagonal()
-            print value_array
-            result_array = np.ones(shape=(len(indices)), dtype=value_array.dtype) * no_data_value
+            value_array = np.ones(shape=(len(index_array)), dtype=data_variable.dtype) * no_data_value # Array of values read from variable
+            result_array = np.ones(shape=(len(mask_array)), dtype=data_variable.dtype) * no_data_value # Final result array including no-data for invalid index pairs
+            start_index = 0
+            end_index = min(max_points, len(index_array))
+            while True:
+                # N.B: ".diagonal()" is required because NetCDF doesn't do advanced indexing exactly like numpy
+                # Hack is required to take values from leading diagonal. Requires n^2 elements retrieved instead of n. Not good, but better than whole array
+                #TODO: Think of a better way of doing this
+                value_array[start_index:end_index] = data_variable[(index_array[start_index:end_index,0], index_array[start_index:end_index,1])].diagonal()
+                if end_index == len(index_array): # Finished
+                    break
+                start_index = end_index
+                end_index = min(start_index + max_points, len(index_array))
+
             result_array[mask_array] = value_array
             return list(result_array)
         except:
