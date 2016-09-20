@@ -92,7 +92,7 @@ class NetCDF2DUtils(object):
         
         try: # Multiple coordinates
             return [coordinate[0:2] for coordinate in coord_trans.TransformPoints(coordinates)]
-        except: # Single coordinate
+        except TypeError: # Single coordinate
             return coord_trans.TransformPoint(*coordinates)[0:2]
         
     
@@ -109,7 +109,7 @@ class NetCDF2DUtils(object):
                     if native_coordinates[coord_index] is not None:
                         native_coordinates[coord_index] = list(native_coordinates[coord_index])
                         native_coordinates[coord_index].reverse()
-            except:
+            except TypeError:
                 native_coordinates = list(native_coordinates)            
                 native_coordinates.reverse()
         try: # Multiple coordinates
@@ -117,7 +117,7 @@ class NetCDF2DUtils(object):
                        if not ([True for dim_index in range(2) if coordinate[dim_index] < self.min_extent[dim_index] or coordinate[dim_index] > self.max_extent[dim_index]])
                        else None
                        for coordinate in native_coordinates]
-        except: # Single coordinate pair
+        except TypeError: # Single coordinate pair
             indices = ([np.where(abs(self.dimension_arrays[dim_index] - native_coordinates[dim_index]) <= (self.pixel_size[dim_index] / 2.0))[0][0] for dim_index in range(2)]
                        if not [True for dim_index in range(2) if native_coordinates[dim_index] < self.min_extent[dim_index] or native_coordinates[dim_index] > self.max_extent[dim_index]]
                        else None)
@@ -231,7 +231,7 @@ class NetCDF2DUtils(object):
             result_array[np.array(self.get_value_at_coords(coordinates, crs, max_bytes, variable_name)) == no_data_value] = no_data_value
             
             return list(result_array)
-        except:
+        except AssertionError:
             return scipy.ndimage.map_coordinates(data_variable, np.array([[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
         
         
