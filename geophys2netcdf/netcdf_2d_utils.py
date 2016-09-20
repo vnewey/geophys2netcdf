@@ -54,9 +54,9 @@ class NetCDF2DUtils(object):
     
     def get_coordinate_transformation(self, from_crs=None, to_crs=None):
         '''
-        Use GDAL to obtain a CoordinateTransformation object to transform to/from native NetCDF CRS
-        @parameter from_crs: WKT or "EPSG:nnnn" string from which to transform
-        @parameter from_crs: WKT or "EPSG:nnnn" string to which to transform
+        Use GDAL to obtain a CoordinateTransformation object to transform coordinates between CRSs or None if no transformation required.
+        @parameter from_crs: WKT or "EPSG:nnnn" string from which to transform. Defaults to native NetCDF CRS
+        @parameter to_crs: WKT or "EPSG:nnnn" string to which to transform. Defaults to native NetCDF CRS
         '''
         from_crs = from_crs or self.grid_mapping_variable.spatial_ref
         to_crs = to_crs or self.grid_mapping_variable.spatial_ref
@@ -68,7 +68,7 @@ class NetCDF2DUtils(object):
         def get_spatial_ref_from_crs(crs):
             spatial_ref = SpatialReference()
             # Check for EPSG then Well Known Text
-            epsg_match = re.match('^EPSG:(\d+)$', from_crs)
+            epsg_match = re.match('^EPSG:(\d+)$', crs)
             if epsg_match:
                 spatial_ref.ImportFromEPSG(int(epsg_match.group(1)))
             else: # Assume valid WKT definition
@@ -84,15 +84,38 @@ class NetCDF2DUtils(object):
                    
         return CoordinateTransformation(from_spatial_ref, to_spatial_ref)
         
-    
+    def get_utm_crs(self, coordinate, from_crs=None):
+        '''
+        Function to return CRS for UTM zone of specified coordinates.
+        Used to transform coords to metres
+        '''
+        def utm_getZone(longitude):
+            return (int(1+(longitude+180.0)/6.0))
         
-    def get_native_coords(self, coordinates, crs=None):
+        def utm_isNorthern(latitude):
+            return (latitude >= 0.0)    
+        
+        latlon_coord_trans = self.get_coordinate_transformation(from_crs, 'EPSG:4326')
+        latlon_coord = coordinate if latlon_coord_trans is None else latlon_coord_trans.TransformPoint(*coordinate)[0:2]
+      
+        # Set UTM coordinate reference system
+        utm_spatial_ref = SpatialReference()
+        utm_spatial_ref.SetWellKnownGeogCS('WGS84')
+        utm_spatial_ref.SetUTM(utm_getZone(latlon_coord[0]), utm_isNorthern(latlon_coord[1]));
+        
+        return utm_spatial_ref.ExportToPrettyWkt()
+
+    def transform_coords(self, coordinates, from_crs=None, to_crs=None):
         '''
-        Convert coordinates from specified CRS to native NetCDF CRS
+        Convert coordinates between specified coordinate reference systems
         @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
-        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
+        @parameter from_crs: WKT or "EPSG:nnnn" string from which to transform. Defaults to native NetCDF CRS
+        @parameter to_crs: WKT or "EPSG:nnnn" string to which to transform. Defaults to native NetCDF CRS
         '''
-        coord_trans = self.get_coordinate_transformation(crs) # Transform from specified CRS to native CRS
+        from_crs = from_crs or self.grid_mapping_variable.spatial_ref
+        to_crs = to_crs or self.grid_mapping_variable.spatial_ref
+
+        coord_trans = self.get_coordinate_transformation(from_crs, to_crs) # Transform from specified CRS to native CRS
         
         if not coord_trans: # No transformation required
             return list(coordinates)
@@ -109,7 +132,7 @@ class NetCDF2DUtils(object):
         @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
         @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
         '''
-        native_coordinates = self.get_native_coords(coordinates, crs)
+        native_coordinates = self.transform_coords(coordinates, crs)
         
         # Convert coordinates to same order as array
         if self.YX_order:
@@ -140,7 +163,7 @@ class NetCDF2DUtils(object):
         @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
         @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
         '''
-        native_coordinates = self.get_native_coords(coordinates, crs)
+        native_coordinates = self.transform_coords(coordinates, crs)
         
         self.pixel_size
         
