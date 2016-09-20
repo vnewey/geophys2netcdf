@@ -19,6 +19,8 @@ class NetCDF2DUtils(object):
     DEFAULT_CRS = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
     HORIZONTAL_VARIABLE_NAMES = ['lon', 'Easting', 'x', 'longitude']
     DEFAULT_MAX_BYTES = 500000000 # Default to 500,000,000 bytes for NCI's OPeNDAP
+    FLOAT_TOLERANCE = 0.000001
+    
     def __init__(self, netcdf_dataset):
         '''
         NetCDF2DUtils Constructor - wraps a NetCDF dataset
@@ -93,7 +95,10 @@ class NetCDF2DUtils(object):
             return (int(1+(longitude+180.0)/6.0))
         
         def utm_isNorthern(latitude):
-            return (latitude >= 0.0)    
+            if (latitude < 0.0):
+                return 0
+            else:
+                return 1
         
         latlon_coord_trans = self.get_coordinate_transformation(from_crs, 'EPSG:4326')
         latlon_coord = coordinate if latlon_coord_trans is None else latlon_coord_trans.TransformPoint(*coordinate)[0:2]
@@ -101,7 +106,7 @@ class NetCDF2DUtils(object):
         # Set UTM coordinate reference system
         utm_spatial_ref = SpatialReference()
         utm_spatial_ref.SetWellKnownGeogCS('WGS84')
-        utm_spatial_ref.SetUTM(utm_getZone(latlon_coord[0]), utm_isNorthern(latlon_coord[1]));
+        utm_spatial_ref.SetUTM(utm_getZone(latlon_coord[0]), utm_isNorthern(latlon_coord[1]))
         
         return utm_spatial_ref.ExportToPrettyWkt()
 
@@ -277,4 +282,84 @@ class NetCDF2DUtils(object):
         except AssertionError:
             return scipy.ndimage.map_coordinates(data_variable, np.array([[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
         
+        
+    def sample_transect(self, transect_vertices, crs=None, sample_metres=1000.0):
+        '''
+        Function to return a list of sample points sample_metres apart along lines between transect vertices
+        @param transect_vertices: list of transect verticex points
+        @param crs: coordinate reference system for transect_vertices
+        @param sample_metres: distance between sample points in metresw
+        '''
+        def line_length(line):
+            '''
+            Function to return length of line
+            '''
+            return math.sqrt(math.pow(line[1][0] - line[0][0], 2.0) + math.pow(line[1][0] - line[0][0], 2.0))
+        
+        def point_along_line(line, distance):
+            '''
+            Function to return a point the specified distance along the line
+            '''
+            length = line_length(line)
+            proportion = distance / length
+            
+            if proportion < 0 or proportion > 1:
+                return None
+            
+            return tuple([line[0][dim_index] + proportion*(line[1][dim_index] - line[0][dim_index]) for dim_index in range(2)])
+        
+        transect_vertex_array = np.array(transect_vertices)
+        print 'transect_vertex_array = %s' % transect_vertex_array
+        average_coord = [np.average(transect_vertex_array[:,dim_index][transect_vertex_array[:,dim_index] != float('inf')]) for dim_index in range(2)]
+        print 'average_coord = %s' % average_coord
+        nominal_utm_crs = self.get_utm_crs(average_coord, crs)
+        print 'nominal_utm_crs = %s' % nominal_utm_crs
+        utm_transect_vertices = self.transform_coords(transect_vertices, crs, nominal_utm_crs)
+        print 'utm_transect_vertices = %s' % utm_transect_vertices
+        
+        sample_points=[]
+        residual = 0
+        for vertex_index in range(len(utm_transect_vertices)-1):
+            utm_line = (utm_transect_vertices[vertex_index], utm_transect_vertices[vertex_index+1])
+            print 'utm_line = %s' % (utm_line,)
+            utm_line_length = line_length(utm_line)
+            print 'utm_line_length = %s' % utm_line_length
+            
+            # Skip lines of infinite length
+            if utm_line_length == float('inf'):
+                continue
+
+            sample_count = (utm_line_length + residual) // sample_metres
+            print 'sample_count = %s' % sample_count
+            if not sample_count:
+                residual += utm_line_length
+                continue
+                
+            if residual: # Use un-sampled distance from last line
+                start_point = point_along_line(utm_line, sample_metres-residual)
+            else:
+                start_point = utm_line[0] # Start at beginning
+            print 'start_point = %s' % (start_point,)
+            
+            residual = (utm_line_length + residual) % sample_metres # Calculate new residual
+            print 'residual = %s' % residual
+            
+            end_point = point_along_line(utm_line, utm_line_length-residual)
+            print 'end_point = %s' % (end_point,)
+            
+            try:
+                sample_point_array = np.stack([np.linspace(start_point[dim_index], end_point[dim_index], sample_count + 1) for dim_index in range(2)]).transpose()
+                print 'sample_point_array.shape = %s' % (sample_point_array.shape,)
+            except Exception, e:
+                print 'Line sampling failed: %s' % e.message
+                residual = 0
+                continue
+            
+            sample_points += list(sample_point_array)
+            
+            # Don't double up end point with next start point
+            if (not residual) and (vertex_index < len(utm_transect_vertices)-1): 
+                sample_points.pop()
+                
+        return self.transform_coords(sample_points, nominal_utm_crs, crs)
         
