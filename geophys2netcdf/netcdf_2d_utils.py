@@ -309,28 +309,28 @@ class NetCDF2DUtils(object):
             return tuple([line[0][dim_index] + proportion*(line[1][dim_index] - line[0][dim_index]) for dim_index in range(2)])
         
         transect_vertex_array = np.array(transect_vertices)
-        print 'transect_vertex_array = %s' % transect_vertex_array
+        #print 'transect_vertex_array = %s' % transect_vertex_array
         average_coord = [np.average(transect_vertex_array[:,dim_index][transect_vertex_array[:,dim_index] != float('inf')]) for dim_index in range(2)]
-        print 'average_coord = %s' % average_coord
+        #print 'average_coord = %s' % average_coord
         nominal_utm_crs = self.get_utm_crs(average_coord, crs)
-        print 'nominal_utm_crs = %s' % nominal_utm_crs
+        #print 'nominal_utm_crs = %s' % nominal_utm_crs
         utm_transect_vertices = self.transform_coords(transect_vertices, crs, nominal_utm_crs)
-        print 'utm_transect_vertices = %s' % utm_transect_vertices
+        #print 'utm_transect_vertices = %s' % utm_transect_vertices
         
         sample_points=[]
         residual = 0
         for vertex_index in range(len(utm_transect_vertices)-1):
             utm_line = (utm_transect_vertices[vertex_index], utm_transect_vertices[vertex_index+1])
-            print 'utm_line = %s' % (utm_line,)
+            #print 'utm_line = %s' % (utm_line,)
             utm_line_length = line_length(utm_line)
-            print 'utm_line_length = %s' % utm_line_length
+            #print 'utm_line_length = %s' % utm_line_length
             
             # Skip lines of infinite length
             if utm_line_length == float('inf'):
                 continue
 
             sample_count = (utm_line_length + residual) // sample_metres
-            print 'sample_count = %s' % sample_count
+            #print 'sample_count = %s' % sample_count
             if not sample_count:
                 residual += utm_line_length
                 continue
@@ -339,17 +339,17 @@ class NetCDF2DUtils(object):
                 start_point = point_along_line(utm_line, sample_metres-residual)
             else:
                 start_point = utm_line[0] # Start at beginning
-            print 'start_point = %s' % (start_point,)
+            #print 'start_point = %s' % (start_point,)
             
             residual = (utm_line_length + residual) % sample_metres # Calculate new residual
-            print 'residual = %s' % residual
+            #print 'residual = %s' % residual
             
             end_point = point_along_line(utm_line, utm_line_length-residual)
-            print 'end_point = %s' % (end_point,)
+            #print 'end_point = %s' % (end_point,)
             
             try:
                 sample_point_array = np.stack([np.linspace(start_point[dim_index], end_point[dim_index], sample_count + 1) for dim_index in range(2)]).transpose()
-                print 'sample_point_array.shape = %s' % (sample_point_array.shape,)
+                #print 'sample_point_array.shape = %s' % (sample_point_array.shape,)
             except Exception, e:
                 print 'Line sampling failed: %s' % e.message
                 residual = 0
