@@ -52,42 +52,49 @@ class NetCDF2DUtils(object):
         self.max_extent = tuple([max(self.dimension_arrays[dim_index]) + self.pixel_size[dim_index]/2.0 for dim_index in range(2)])
         
     
-    def get_coordinate_transformation(self, crs=None, to_native=True):
+    def get_coordinate_transformation(self, from_crs=None, to_crs=None):
         '''
         Use GDAL to obtain a CoordinateTransformation object to transform to/from native NetCDF CRS
+        @parameter from_crs: WKT or "EPSG:nnnn" string from which to transform
+        @parameter from_crs: WKT or "EPSG:nnnn" string to which to transform
         '''
+        from_crs = from_crs or self.grid_mapping_variable.spatial_ref
+        to_crs = to_crs or self.grid_mapping_variable.spatial_ref
+        
         # Assume native coordinates if no crs given
-        if not crs:
+        if from_crs == to_crs:
             return None
         
-        coord_spatial_ref = SpatialReference()
-        # Check for EPSG then Well Known Text
-        epsg_match = re.match('^EPSG:(\d+)$', crs)
-        if epsg_match:
-            coord_spatial_ref.ImportFromEPSG(int(epsg_match.group(1)))
-        else: # Assume valid WKT definition
-            coord_spatial_ref.ImportFromWkt(crs)    
-            
-        native_spatial_ref = SpatialReference()
-        native_spatial_ref.ImportFromWkt(self.grid_mapping_variable.spatial_ref)
+        def get_spatial_ref_from_crs(crs):
+            spatial_ref = SpatialReference()
+            # Check for EPSG then Well Known Text
+            epsg_match = re.match('^EPSG:(\d+)$', from_crs)
+            if epsg_match:
+                spatial_ref.ImportFromEPSG(int(epsg_match.group(1)))
+            else: # Assume valid WKT definition
+                spatial_ref.ImportFromWkt(crs)    
+            return spatial_ref       
         
-        if coord_spatial_ref.ExportToWkt() == native_spatial_ref.ExportToWkt(): 
+        from_spatial_ref = get_spatial_ref_from_crs(from_crs)
+        to_spatial_ref = get_spatial_ref_from_crs(to_crs)
+        
+        # This is probably redundant
+        if from_spatial_ref.ExportToWkt() == to_spatial_ref.ExportToWkt():
             return None
-        
-        if to_native:
-            return CoordinateTransformation(coord_spatial_ref, native_spatial_ref)
-        else:
-            return CoordinateTransformation(native_spatial_ref, coord_spatial_ref)
+                   
+        return CoordinateTransformation(from_spatial_ref, to_spatial_ref)
         
     
         
     def get_native_coords(self, coordinates, crs=None):
         '''
         Convert coordinates from specified CRS to native NetCDF CRS
+        @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
+        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
         '''
-        coord_trans = self.get_coordinate_transformation(crs, to_native=True)
+        coord_trans = self.get_coordinate_transformation(crs) # Transform from specified CRS to native CRS
         
-        if not coord_trans:
+        if not coord_trans: # No transformation required
             return list(coordinates)
         
         try: # Multiple coordinates
@@ -98,7 +105,9 @@ class NetCDF2DUtils(object):
     
     def get_indices_from_coords(self, coordinates, crs=None):
         '''
-        Returns array indices corresponding to coordinates to support nearest neighbour queries
+        Returns list of netCDF array indices corresponding to coordinates to support nearest neighbour queries
+        @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
+        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
         '''
         native_coordinates = self.get_native_coords(coordinates, crs)
         
@@ -127,7 +136,9 @@ class NetCDF2DUtils(object):
         
     def get_fractional_indices_from_coords(self, coordinates, crs=None):
         '''
-        Returns fractional array indices corresponding to coordinates to support interpolation
+        Returns list of fractional array indices corresponding to coordinates to support interpolation
+        @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
+        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
         '''
         native_coordinates = self.get_native_coords(coordinates, crs)
         
@@ -159,7 +170,11 @@ class NetCDF2DUtils(object):
         
     def get_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
         '''
-        Returns array values at specified coordinates
+        Returns list of array values at specified coordinates
+        @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
+        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
+        @parameter max_bytes: Maximum number of bytes to read in a single query. Defaults to NetCDF2DUtils.DEFAULT_MAX_BYTES
+        @parameter variable_name: NetCDF variable_name if not default data variable
         '''
         max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
         
@@ -201,7 +216,11 @@ class NetCDF2DUtils(object):
         
     def get_interpolated_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
         '''
-        Returns interpolated array values at specified fractional coordinates
+        Returns list of interpolated array values at specified coordinates
+        @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
+        @parameter crs: Coordinate Reference System for coordinates. None == native NetCDF CRS
+        @parameter max_bytes: Maximum number of bytes to read in a single query. Defaults to NetCDF2DUtils.DEFAULT_MAX_BYTES
+        @parameter variable_name: NetCDF variable_name if not default data variable
         '''
         #TODO: Check behaviour of scipy.ndimage.map_coordinates adjacent to no-data areas. Should not interpolate no-data value
         #TODO: Make this work for arrays > memory
@@ -228,6 +247,7 @@ class NetCDF2DUtils(object):
             result_array[mask_array] = value_array
             
             # Mask out any coordinates falling in no-data areas. Need to do this to stop no-data value from being interpolated
+            # This is a bit ugly.
             result_array[np.array(self.get_value_at_coords(coordinates, crs, max_bytes, variable_name)) == no_data_value] = no_data_value
             
             return list(result_array)
