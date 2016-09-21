@@ -9,6 +9,7 @@ import netCDF4
 import math
 import scipy.ndimage
 from osgeo.osr import SpatialReference, CoordinateTransformation
+from numpy import average
 
 
 class NetCDF2DUtils(object):
@@ -25,6 +26,36 @@ class NetCDF2DUtils(object):
         '''
         NetCDF2DUtils Constructor - wraps a NetCDF dataset
         '''
+        def get_nominal_pixel_metres():
+            '''
+            Function to return a tuple with the nominal vertical and horizontal sizes of the centre pixel in metres
+            '''
+            centre_pixel_indices = [len(self.dimension_arrays[dim_index]) // 2 for dim_index in range(2)]
+            
+            # Get coordinates of centre pixel and next diagonal pixel
+            centre_pixel_coords = [[self.dimension_arrays[dim_index][centre_pixel_indices[dim_index]] for dim_index in range(2)], 
+                             [self.dimension_arrays[dim_index][centre_pixel_indices[dim_index] + 1] for dim_index in range(2)]
+                             ]
+            
+            if self.YX_order:
+                for coord_index in range(2):
+                    centre_pixel_coords[coord_index].reverse()
+                
+            nominal_utm_crs = self.get_utm_crs(centre_pixel_coords[0])                         
+            centre_pixel_utm_coords = self.transform_coords(centre_pixel_coords, to_crs=nominal_utm_crs)
+            
+            return [abs(centre_pixel_utm_coords[1][dim_index] - centre_pixel_utm_coords[0][dim_index]) for dim_index in range(2)]
+        
+        def get_default_sample_metres():
+            '''
+            Function to return average nominal pixel size in metres rounded down to nearest 10^x or 5*10^x
+            This is to provide a sensible default resolution for the sampling points along a transect by keeping it around the nominal pixel size
+            '''
+            log_10_avg_pixel_metres = math.log((self.nominal_pixel_metres[0] + self.nominal_pixel_metres[1]) / 2.0) / math.log(10.0)
+            log_10_5 = math.log(5.0) / math.log(10.0)
+            
+            return round(math.pow(10.0, math.floor(log_10_avg_pixel_metres) + (log_10_5 if( (log_10_avg_pixel_metres % 1.0) > log_10_5) else 0.0)))            
+        
         self.netcdf_dataset = netcdf_dataset
         
 #        assert len(self.netcdf_dataset.dimensions) == 2, 'NetCDF dataset must be 2D' # This is not valid
@@ -53,7 +84,10 @@ class NetCDF2DUtils(object):
         self.min_extent = tuple([min(self.dimension_arrays[dim_index]) - self.pixel_size[dim_index]/2.0 for dim_index in range(2)])
         self.max_extent = tuple([max(self.dimension_arrays[dim_index]) + self.pixel_size[dim_index]/2.0 for dim_index in range(2)])
         
-    
+        self.nominal_pixel_metres = get_nominal_pixel_metres()
+        
+        self.default_sample_metres = get_default_sample_metres()
+            
     def get_coordinate_transformation(self, from_crs=None, to_crs=None):
         '''
         Use GDAL to obtain a CoordinateTransformation object to transform coordinates between CRSs or None if no transformation required.
@@ -128,9 +162,9 @@ class NetCDF2DUtils(object):
         try: # Multiple coordinates
             return [coordinate[0:2] for coordinate in coord_trans.TransformPoints(coordinates)]
         except TypeError: # Single coordinate
-            return coord_trans.TransformPoint(*coordinates)[0:2]
+            return coord_trans.TransformPoint(*coordinates)[0:2]        
         
-    
+        
     def get_indices_from_coords(self, coordinates, crs=None):
         '''
         Returns list of netCDF array indices corresponding to coordinates to support nearest neighbour queries
@@ -204,7 +238,8 @@ class NetCDF2DUtils(object):
         @parameter max_bytes: Maximum number of bytes to read in a single query. Defaults to NetCDF2DUtils.DEFAULT_MAX_BYTES
         @parameter variable_name: NetCDF variable_name if not default data variable
         '''
-        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
+        # Use arbitrary size of 65356 (for 128 points at a time) instead of NetCDF2DUtils.DEFAULT_MAX_BYTES
+        max_bytes = max_bytes or 65356 
         
         if variable_name:
             data_variable = self.netcdf_dataset.variables[variable_name]
@@ -283,7 +318,7 @@ class NetCDF2DUtils(object):
             return scipy.ndimage.map_coordinates(data_variable, np.array([[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
         
         
-    def sample_transect(self, transect_vertices, crs=None, sample_metres=1000.0):
+    def sample_transect(self, transect_vertices, crs=None, sample_metres=None):
         '''
         Function to return a list of sample points sample_metres apart along lines between transect vertices
         @param transect_vertices: list of transect verticex points
@@ -307,6 +342,8 @@ class NetCDF2DUtils(object):
                 return None
             
             return tuple([line[0][dim_index] + proportion*(line[1][dim_index] - line[0][dim_index]) for dim_index in range(2)])
+        
+        sample_metres = sample_metres or self.default_sample_metres
         
         transect_vertex_array = np.array(transect_vertices)
         #print 'transect_vertex_array = %s' % transect_vertex_array
@@ -361,5 +398,5 @@ class NetCDF2DUtils(object):
             if (not residual) and (vertex_index < len(utm_transect_vertices)-1): 
                 sample_points.pop()
                 
-        return self.transform_coords(sample_points, nominal_utm_crs, crs)
+        return self.transform_coords(sample_points, nominal_utm_crs, crs), sample_metres
         
