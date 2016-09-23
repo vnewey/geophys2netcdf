@@ -48,13 +48,13 @@ class NetCDF2DUtils(object):
         
         def get_default_sample_metres():
             '''
-            Function to return average nominal pixel size in metres rounded down to nearest 10^x or 5*10^x
+            Function to return average nominal pixel size in metres rounded up to nearest 10^x or 5*10^x
             This is to provide a sensible default resolution for the sampling points along a transect by keeping it around the nominal pixel size
             '''
             log_10_avg_pixel_metres = math.log((self.nominal_pixel_metres[0] + self.nominal_pixel_metres[1]) / 2.0) / math.log(10.0)
             log_10_5 = math.log(5.0) / math.log(10.0)
             
-            return round(math.pow(10.0, math.floor(log_10_avg_pixel_metres) + (log_10_5 if( (log_10_avg_pixel_metres % 1.0) > log_10_5) else 0.0)))            
+            return round(math.pow(10.0, math.floor(log_10_avg_pixel_metres) + (log_10_5 if( (log_10_avg_pixel_metres % 1.0) < log_10_5) else 1.0)))            
         
         self.netcdf_dataset = netcdf_dataset
         
@@ -173,7 +173,7 @@ class NetCDF2DUtils(object):
         '''
         native_coordinates = self.transform_coords(coordinates, crs)
         
-        # Convert coordinates to same order as array
+        # Convert coordinates to same dimension ordering as array
         if self.YX_order:
             try:
                 for coord_index in range(len(native_coordinates)):
@@ -238,8 +238,8 @@ class NetCDF2DUtils(object):
         @parameter max_bytes: Maximum number of bytes to read in a single query. Defaults to NetCDF2DUtils.DEFAULT_MAX_BYTES
         @parameter variable_name: NetCDF variable_name if not default data variable
         '''
-        # Use arbitrary size of 65356 (for 128 points at a time) instead of NetCDF2DUtils.DEFAULT_MAX_BYTES
-        max_bytes = max_bytes or 65356 
+        # Use arbitrary maximum request size of  NetCDF2DUtils.DEFAULT_MAX_BYTES (500,000,000 bytes => 11180 points per query)
+        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES 
         
         if variable_name:
             data_variable = self.netcdf_dataset.variables[variable_name]
