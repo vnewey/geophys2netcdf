@@ -238,8 +238,8 @@ class NetCDF2DUtils(object):
         @parameter max_bytes: Maximum number of bytes to read in a single query. Defaults to NetCDF2DUtils.DEFAULT_MAX_BYTES
         @parameter variable_name: NetCDF variable_name if not default data variable
         '''
-        # Use arbitrary maximum request size of  NetCDF2DUtils.DEFAULT_MAX_BYTES (500,000,000 bytes => 11180 points per query)
-        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES 
+        # Use arbitrary maximum request size of NetCDF2DUtils.DEFAULT_MAX_BYTES (500,000,000 bytes => 11180 points per query)
+        max_bytes = max_bytes or 100 #NetCDF2DUtils.DEFAULT_MAX_BYTES 
         
         if variable_name:
             data_variable = self.netcdf_dataset.variables[variable_name]
@@ -287,7 +287,7 @@ class NetCDF2DUtils(object):
         '''
         #TODO: Check behaviour of scipy.ndimage.map_coordinates adjacent to no-data areas. Should not interpolate no-data value
         #TODO: Make this work for arrays > memory
-        max_bytes = max_bytes or NetCDF2DUtils.DEFAULT_MAX_BYTES
+        max_bytes = max_bytes or 100; NetCDF2DUtils.DEFAULT_MAX_BYTES
         
         if variable_name:
             data_variable = self.netcdf_dataset.variables[variable_name]
