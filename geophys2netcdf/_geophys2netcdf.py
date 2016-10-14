@@ -53,7 +53,7 @@ import json
 import urllib
 
 from metadata import XMLMetadata, NetCDFMetadata
-from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
+from geophys2netcdf import netcdf2convex_hull, DataStats
 
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class Geophys2NetCDF(object):
             try:
                 self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r+')
             except Exception, e:
-                logger.error('Unable to open NetCDF file %s', self._output_path)
+                logger.error('Unable to open NetCDF file %s: %s', (self._output_path, e.message))
                 raise
             self.import_metadata()
 
@@ -240,11 +240,12 @@ class Geophys2NetCDF(object):
         return focus_element
         
     
-    def set_netcdf_metadata_attributes(self, to_crs='EPSG:4326'): 
+    def set_netcdf_metadata_attributes(self, to_crs='EPSG:4326', do_stats=False): 
         '''
         Function to set all NetCDF metadata attributes using self.METADATA_MAPPING to map from NetCDF ACDD global attribute name to metadata path (e.g. xpath)
         Parameter:
             to_crs: EPSG or WKT for spatial metadata
+            do_stats: Boolean flag indicating whether minmax stats should be determined (slow)
         '''
         assert self.METADATA_MAPPING, 'No metadata mapping defined'
         assert self._netcdf_dataset, 'NetCDF output dataset not defined.'
@@ -383,6 +384,10 @@ class Geophys2NetCDF(object):
         self._netcdf_dataset.metadata_link = 'https://pid.nci.org.au/dataset/%s' % self.uuid
         
         self._netcdf_dataset.Conventions = 'CF-1.6,ACDD-1.3'
+        
+        if do_stats:
+            datastats = DataStats(netcdf_dataset=self.netcdf_dataset, netcdf_path=None, max_array=2000000000) # 2GB pieces
+            datastats.data_variable.actual_range = np.array([datastats.value('min'), datastats.value('max')], dtype='float32')
         
         # Remove old fields - remove this later
         if hasattr(self._netcdf_dataset, 'id'):
@@ -643,12 +648,6 @@ class Geophys2NetCDF(object):
         else:
             logger.info('File paths and checksums verified OK in %s', dataset_folder)
             
-    def convert_bounding_box(self, minmax_tuple, input_crs, output_crs='EPSG:4326'):
-        '''
-        Function to compute EPSG:4326 bounding box from native bounding box
-        '''
-        xmin0, ymin0, xmax0, ymax0 = minmax_tuple
-
         
     @property
     def metadata_dict(self):

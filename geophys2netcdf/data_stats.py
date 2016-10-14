@@ -4,9 +4,7 @@ Created on 15Aug.,2016
 @author: Alex
 '''
 import sys
-import gc
 import netCDF4
-import math
 import numpy as np
 from geophys2netcdf.array_pieces import array_pieces
 
@@ -16,27 +14,30 @@ class DataStats(object):
     '''
     key_list = ['nc_path', 'data_type', 'nodata_value', 'x_size', 'y_size', 'min', 'max', 'mean'] #, 'median', 'std_dev', 'percentile_1', 'percentile_99']
 
-    def __init__(self, netcdf_path, max_array=500000000):
+    def __init__(self, netcdf_path=None, netcdf_dataset=None, max_array=500000000):
         '''
         DataStats Constructor
         Parameter:
             netcdf_path - string representing path to NetCDF file or URL for an OPeNDAP endpoint
             max_array - maximum number of bytes to pull into memory
         '''
-        netcdf_dataset = netCDF4.Dataset(netcdf_path)
+        assert netcdf_dataset or netcdf_path, 'Either netcdf_dataset or netcdf_path must be defined'
+        assert not (netcdf_dataset and netcdf_path), 'netcdf_dataset and netcdf_path cannot both be defined'
+        
+        netcdf_dataset = netcdf_dataset or netCDF4.Dataset(netcdf_path, 'r')
         
         # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
         try:
-            data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+            self.data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
         except:
             raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
         
         self._data_stats = {}        
-        self._data_stats['nc_path'] = netcdf_path
-        self._data_stats['data_type'] = str(data_variable.dtype)
-        self._data_stats['nodata_value'] = data_variable._FillValue        
+        self._data_stats['nc_path'] = netcdf_dataset.filepath()
+        self._data_stats['data_type'] = str(self.data_variable.dtype)
+        self._data_stats['nodata_value'] = self.data_variable._FillValue        
 
-        shape = data_variable.shape
+        shape = self.data_variable.shape
         # Array is ordered YX
         self._data_stats['x_size'] = shape[1]
         self._data_stats['y_size'] = shape[0]
@@ -44,12 +45,12 @@ class DataStats(object):
         length_read = 0
         weighted_mean = 0.0
         
-        for piece_array, _piece_offsets in array_pieces(data_variable, max_array):
+        for piece_array, _piece_offsets in array_pieces(self.data_variable, max_array):
 
             if type(piece_array) == np.ma.core.MaskedArray:
                 piece_array = piece_array.data
                 
-            piece_array = np.array(piece_array[piece_array != data_variable._FillValue]) # Discard all no-data elements
+            piece_array = np.array(piece_array[piece_array != self.data_variable._FillValue]) # Discard all no-data elements
             
             piece_size = len(piece_array)
             

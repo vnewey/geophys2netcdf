@@ -51,3 +51,4 @@ from _ers2netcdf import ERS2NetCDF
 from _zip2netcdf import Zip2NetCDF
 from thredds_catalog import THREDDSCatalog
 from data_stats import DataStats
+from netcdf2convex_hull import netcdf2convex_hull
