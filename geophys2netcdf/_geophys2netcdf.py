@@ -182,7 +182,7 @@ class Geophys2NetCDF(object):
                 os.remove(temp_path)
                 logger.debug('Removed temporary, un-chunked NetCDF file %s', temp_path)
          
-    def update_nc_metadata(self, output_path=None):
+    def update_nc_metadata(self, output_path=None, do_stats=False):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
         Should be overridden in subclasses for each specific format but called first to perform initialisations
@@ -202,7 +202,7 @@ class Geophys2NetCDF(object):
             self.import_metadata()
 
         assert self._metadata_dict, 'No metadata acquired'
-        self.set_netcdf_metadata_attributes()
+        self.set_netcdf_metadata_attributes(do_stats=do_stats)
         
     def import_metadata(self):
         '''

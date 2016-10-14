@@ -137,12 +137,12 @@ class ERS2NetCDF(Geophys2NetCDF):
         self.update_nc_metadata() # Will close output file for writing and write checksum and uuid files
         logger.info('Finished translating %s to %s', self._input_path, self._output_path)
 
-    def update_nc_metadata(self, output_path=None):
+    def update_nc_metadata(self, output_path=None, do_stats=False):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
         Overrides Geophys2NetCDF.update_nc_metadata
         '''
-        Geophys2NetCDF.update_nc_metadata(self, output_path) # Call inherited method
+        Geophys2NetCDF.update_nc_metadata(self, output_path, do_stats=do_stats) # Call inherited method
         
         self._netcdf_dataset.sync()
         
