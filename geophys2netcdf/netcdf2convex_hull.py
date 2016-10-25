@@ -14,43 +14,54 @@ from shapely.ops import cascaded_union, polygonize
 from scipy.spatial import Delaunay
 from geophys2netcdf.array_pieces import array_pieces
 
+
 def get_edge_points(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of coordinates corresponding to pixels on the edge of data-containing areas of the NetCDF dataset
     @param netcdf_dataset: netCDF4.Dataset object
     @param max_bytes: Maximum number of bytes to retrieve in each array piece
     '''
-    # Find variable with "grid_mapping" attribute - assumed to be 2D data variable
+    # Find variable with "grid_mapping" attribute - assumed to be 2D data
+    # variable
     try:
-        data_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'grid_mapping')][0]
+        data_variable = [variable for variable in netcdf_dataset.variables.values(
+        ) if hasattr(variable, 'grid_mapping')][0]
     except:
-        raise Exception('Unable to determine data variable (must have "grid_mapping" attribute')
-#    print 'Variable %s has shape %s' % (data_variable.name, data_variable.shape)
-    
+        raise Exception(
+            'Unable to determine data variable (must have "grid_mapping" attribute')
+# print 'Variable %s has shape %s' % (data_variable.name,
+# data_variable.shape)
+
     assert len(data_variable.dimensions) == 2, '%s is not 2D' % data_variable.name
-    dimension_variable = [netcdf_dataset.variables[data_variable.dimensions[dim_index]] for dim_index in range(2)]
+    dimension_variable = [netcdf_dataset.variables[
+        data_variable.dimensions[dim_index]] for dim_index in range(2)]
     nodata_value = data_variable._FillValue
-    
-    edge_point_list = [] # Complete list of edge points (unknown length)
+
+    edge_point_list = []  # Complete list of edge points (unknown length)
     for piece_array, array_offset in array_pieces(data_variable, max_bytes):
-        dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:array_offset[dim_index]+piece_array.shape[dim_index]] for dim_index in range(2)]
-        
+        dimension_subset = [dimension_variable[dim_index][array_offset[dim_index]:array_offset[
+            dim_index] + piece_array.shape[dim_index]] for dim_index in range(2)]
+
         # Convert masked array to plain array
         if type(piece_array) == np.ma.core.MaskedArray:
             piece_array = piece_array.data
-#        print 'array_offset = %s, piece_array.shape = %s, piece_array.size = %s' % (array_offset, piece_array.shape, piece_array.size)
+# print 'array_offset = %s, piece_array.shape = %s, piece_array.size = %s'
+# % (array_offset, piece_array.shape, piece_array.size)
 
-        piece_array = (piece_array != nodata_value) # Convert to boolean True=data/False=no-data array
-        
+        # Convert to boolean True=data/False=no-data array
+        piece_array = (piece_array != nodata_value)
+
         # Detect edges
-        edge_ordinates = np.where(ndimage.filters.maximum_filter(piece_array, size=2) != 
-                         ndimage.filters.minimum_filter(piece_array, size=2))
+        edge_ordinates = np.where(ndimage.filters.maximum_filter(piece_array, size=2) !=
+                                  ndimage.filters.minimum_filter(piece_array, size=2))
 
         if edge_ordinates[0].size:
-            piece_edge_points = np.zeros((edge_ordinates[0].size, 2), dtype=netcdf_dataset.variables[data_variable.dimensions[0]].dtype)
-            #TODO: Do something more general here to account for YX or XY dimension order
-            piece_edge_points[:,1] = dimension_subset[0][edge_ordinates[0]]
-            piece_edge_points[:,0] = dimension_subset[1][edge_ordinates[1]]
+            piece_edge_points = np.zeros((edge_ordinates[0].size, 2), dtype=netcdf_dataset.variables[
+                                         data_variable.dimensions[0]].dtype)
+            # TODO: Do something more general here to account for YX or XY
+            # dimension order
+            piece_edge_points[:, 1] = dimension_subset[0][edge_ordinates[0]]
+            piece_edge_points[:, 0] = dimension_subset[1][edge_ordinates[1]]
             edge_point_list += list(piece_edge_points)
 #            print '%s edge points found' % piece_edge_points.shape[0]
 #        else:
@@ -67,31 +78,38 @@ def points2convex_hull(point_list, dilation=0, tolerance=0):
     @param tolerance: distance tolerance for the simplification of the convex hull
     '''
     convex_hull = geometry.MultiPoint(point_list).convex_hull
-    
-    # Offset outward by specified dilation and simplify with specified tolerance
-    convex_hull = convex_hull.buffer(dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
-    
-    return [coordinates for coordinates in convex_hull.exterior.coords] # Convert polygon to list
-    
-    
+
+    # Offset outward by specified dilation and simplify with specified
+    # tolerance
+    convex_hull = convex_hull.buffer(
+        dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
+
+    # Convert polygon to list
+    return [coordinates for coordinates in convex_hull.exterior.coords]
+
+
 def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     '''
     Function to return a list of vertex coordinates in the convex hull around data-containing areas of the NetCDF dataset
     @param netcdf_dataset: netCDF4.Dataset object
     @param max_bytes: Maximum number of bytes to retrieve in each array piece
     '''
-    # Find variable with "GeoTransform" attribute - assumed to be grid mapping variable
+    # Find variable with "GeoTransform" attribute - assumed to be grid mapping
+    # variable
     try:
-        grid_mapping_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'GeoTransform')][0]
+        grid_mapping_variable = [variable for variable in netcdf_dataset.variables.values(
+        ) if hasattr(variable, 'GeoTransform')][0]
     except:
-        raise Exception('Unable to determine grid mapping variable (must have "GeoTransform" attribute)')
-    GeoTransform = [float(number) for number in grid_mapping_variable.GeoTransform.strip().split(' ')]
+        raise Exception(
+            'Unable to determine grid mapping variable (must have "GeoTransform" attribute)')
+    GeoTransform = [float(
+        number) for number in grid_mapping_variable.GeoTransform.strip().split(' ')]
     avg_pixel_size = (abs(GeoTransform[1]) + abs(GeoTransform[5])) / 2.0
-   
-    return points2convex_hull(get_edge_points(netcdf_dataset, max_bytes), avg_pixel_size, avg_pixel_size) 
+
+    return points2convex_hull(get_edge_points(netcdf_dataset, max_bytes), avg_pixel_size, avg_pixel_size)
 
 
-#===============================================================================
+#=========================================================================
 # def netcdf2concave_hull(netcdf_dataset, max_bytes=None):
 #     '''
 #     Function to return a list of vertex coordinates in the convex hull around data-containing areas of the NetCDF dataset
@@ -110,9 +128,9 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
 #
 #     #TODO: Compute alpha value dynamically from point density
 #     alpha = 1
-#    
-#     return points2alpha_shape(edge_points, alpha, avg_pixel_size, avg_pixel_size) 
-#===============================================================================
+#
+#     return points2alpha_shape(edge_points, alpha, avg_pixel_size, avg_pixel_size)
+#=========================================================================
 
 
 def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
@@ -128,7 +146,7 @@ def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
         # When you have a triangle, there is no sense
         # in computing an alpha shape.
         return geometry.MultiPoint(list(points)).convex_hull
-    
+
     def add_edge(edges, edge_points, coords, i, j):
         """
         Add a line between the i-th and j-th points,
@@ -137,9 +155,9 @@ def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
         if (i, j) in edges or (j, i) in edges:
             # already added
             return
-        edges.add( (i, j) )
-        edge_points.append(coords[ [i, j] ])
-        
+        edges.add((i, j))
+        edge_points.append(coords[[i, j]])
+
     coords = np.array([point.coords[0]
                        for point in points])
     tri = Delaunay(coords)
@@ -153,19 +171,19 @@ def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
         pb = coords[ib]
         pc = coords[ic]
         # Lengths of sides of triangle
-        a = math.sqrt((pa[0]-pb[0])**2 + (pa[1]-pb[1])**2)
-        b = math.sqrt((pb[0]-pc[0])**2 + (pb[1]-pc[1])**2)
-        c = math.sqrt((pc[0]-pa[0])**2 + (pc[1]-pa[1])**2)
+        a = math.sqrt((pa[0] - pb[0])**2 + (pa[1] - pb[1])**2)
+        b = math.sqrt((pb[0] - pc[0])**2 + (pb[1] - pc[1])**2)
+        c = math.sqrt((pc[0] - pa[0])**2 + (pc[1] - pa[1])**2)
         # Semiperimeter of triangle
-        s = (a + b + c)/2.0
+        s = (a + b + c) / 2.0
         try:
             # Area of triangle by Heron's formula
-            area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+            area = math.sqrt(s * (s - a) * (s - b) * (s - c))
             try:
-                circum_r = a*b*c/(4.0*area)
+                circum_r = a * b * c / (4.0 * area)
                 # Here's the radius filter.
-                #print circum_r
-                if circum_r < 1.0/alpha:
+                # print circum_r
+                if circum_r < 1.0 / alpha:
                     add_edge(edges, edge_points, coords, ia, ib)
                     add_edge(edges, edge_points, coords, ib, ic)
                     add_edge(edges, edge_points, coords, ic, ia)
@@ -173,12 +191,15 @@ def points2alpha_shape(points, alpha, dilation=0, tolerance=0):
                 pass
         except ValueError:
             pass
-        
+
     m = geometry.MultiLineString(edge_points)
     triangles = list(polygonize(m))
     concave_hull = cascaded_union(triangles)
-    
-    # Offset outward by specified dilation and simplify with specified tolerance
-    concave_hull = concave_hull.buffer(dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
-    
-    return [coordinates for coordinates in concave_hull.exterior.coords] # Convert polygon to list
+
+    # Offset outward by specified dilation and simplify with specified
+    # tolerance
+    concave_hull = concave_hull.buffer(
+        dilation, cap_style=2, join_style=2, mitre_limit=tolerance).simplify(tolerance)
+
+    # Convert polygon to list
+    return [coordinates for coordinates in concave_hull.exterior.coords]

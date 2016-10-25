@@ -13,31 +13,35 @@ import unicodedata
 from _metadata import Metadata
 
 logger = logging.getLogger('root.' + __name__)
-logger.setLevel(logging.DEBUG) # Initial logging level for this module
+logger.setLevel(logging.DEBUG)  # Initial logging level for this module
+
 
 class XMLMetadata(Metadata):
     """Subclass of Metadata to manage XML data
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'XML'
-    _filename_pattern = '.*\.xml' # Default RegEx for finding metadata file.
+    _filename_pattern = '.*\.xml'  # Default RegEx for finding metadata file.
 
-    def unicode_to_ascii(self, instring): 
+    def unicode_to_ascii(self, instring):
         """Convert unicode to char string if required and strip any leading/trailing whitespaces 
         ToDO: Investigate whether we can just change the encoding of the DOM tree 
-        """ 
-        result = instring 
-        if type(result) == unicode: 
-            result = unicodedata.normalize('NFKD', result).encode('ascii','ignore').strip(""" "'\n\t""") 
-            return result 
-        
-    def __init__(self, source = None, uses_attributes=False):
+        """
+        result = instring
+        if type(result) == unicode:
+            result = unicodedata.normalize('NFKD', result).encode(
+                'ascii', 'ignore').strip(""" "'\n\t""")
+            return result
+
+    def __init__(self, source=None, uses_attributes=False):
         """Instantiates XMLMetadata object. Overrides Metadata method
         """
-        self._uses_attributes = uses_attributes # Boolean flag indicating whether values are stored as tag attributes
-        self.processing_instruction = {} # Dict containing processing instruction name and value
-        self.document_attributes = {} # Dict containing any attributes when not self._uses_attributes
-        Metadata.__init__(self, source); # Call inherited constructor
+        self._uses_attributes = uses_attributes  # Boolean flag indicating whether values are stored as tag attributes
+        # Dict containing processing instruction name and value
+        self.processing_instruction = {}
+        # Dict containing any attributes when not self._uses_attributes
+        self.document_attributes = {}
+        Metadata.__init__(self, source)  # Call inherited constructor
 
     def _populate_dict_from_node(self, node, tree_dict, level=0):
         """Private recursive function to populate a nested dict from DOM tree or element node
@@ -49,14 +53,16 @@ class XMLMetadata(Metadata):
         def set_node_value(node_dict, key, value):
             '''Sets node_dict[key] to value when node_dict[key] doesn't already exist, otherwise appends comma-separated value
             '''
-            #TODO: Do something better than comma-separated text - one-way translation only: will break if text contains commas
+            # TODO: Do something better than comma-separated text - one-way
+            # translation only: will break if text contains commas
             existing_value = node_dict.get(key)
-            if existing_value: # Existing leaf node found - repeated xpath
+            if existing_value:  # Existing leaf node found - repeated xpath
                 if value:
-                    node_dict[key] = existing_value + ', ' + value # Append new value to comma-separated list
-            else: # No existing leaf node - new xpath
-                node_dict[key] = value            
-            
+                    # Append new value to comma-separated list
+                    node_dict[key] = existing_value + ', ' + value
+            else:  # No existing leaf node - new xpath
+                node_dict[key] = value
+
         # Traverse all non-text nodes
         for child_node in [x for x in node.childNodes if x.nodeType == xml.dom.minidom.Node.ELEMENT_NODE]:
             nodeName = child_node.nodeName
@@ -67,39 +73,50 @@ class XMLMetadata(Metadata):
                              '  ' * level, nodeName, child_node.nodeType, child_node.childNodes, child_node.attributes)
 
                 subtree_dict = tree_dict.get(nodeName) or {}
-                if child_node.childNodes: # Recursive call to check for non-text child nodes
-                    self._populate_dict_from_node(child_node, subtree_dict, level + 1)
+                if child_node.childNodes:  # Recursive call to check for non-text child nodes
+                    self._populate_dict_from_node(
+                        child_node, subtree_dict, level + 1)
 
-                logger.debug('%s  subtree_dict = %s', '  ' * level, subtree_dict)
+                logger.debug('%s  subtree_dict = %s',
+                             '  ' * level, subtree_dict)
                 if child_node.attributes:
-                    logger.debug('%s  Child node attribute count = %s', '  ' * level, len(child_node.attributes))
+                    logger.debug('%s  Child node attribute count = %s',
+                                 '  ' * level, len(child_node.attributes))
 
-                if subtree_dict and not tree_dict.get(nodeName): # Not a leaf node - sub-nodes found
+                # Not a leaf node - sub-nodes found
+                if subtree_dict and not tree_dict.get(nodeName):
                     tree_dict[nodeName] = subtree_dict
 
-                elif child_node.attributes: # Leaf node - values held in attributes
-                    self._uses_attributes = True # Remember that attributes are being used for this file
+                elif child_node.attributes:  # Leaf node - values held in attributes
+                    self._uses_attributes = True  # Remember that attributes are being used for this file
 
                     subtree_dict = tree_dict.get(nodeName) or {}
                     tree_dict[nodeName] = subtree_dict
                     level += 1
                     for attr_index in range(len(child_node.attributes)):
                         attribute = child_node.attributes.item(attr_index)
-                        logger.debug('%s  Attribute: %s = %s', '  ' * level, attribute.name, attribute.value)
-                        set_node_value(subtree_dict, self.unicode_to_ascii(attribute.name), self.unicode_to_ascii(attribute.value))
-                    
-                    if child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE: # Leaf node - value held in child text node
-                        node_value = self.unicode_to_ascii(child_node.childNodes[0].nodeValue)
-                        #TODO: Do something better than using 'TEXT' as key
+                        logger.debug('%s  Attribute: %s = %s', '  ' *
+                                     level, attribute.name, attribute.value)
+                        set_node_value(subtree_dict, self.unicode_to_ascii(
+                            attribute.name), self.unicode_to_ascii(attribute.value))
+
+                    # Leaf node - value held in child text node
+                    if child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE:
+                        node_value = self.unicode_to_ascii(
+                            child_node.childNodes[0].nodeValue)
+                        # TODO: Do something better than using 'TEXT' as key
                         set_node_value(subtree_dict, 'TEXT', node_value)
                     level -= 1
 
-                elif child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE: # Leaf node - value held in child text node
+                # Leaf node - value held in child text node
+                elif child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE:
                     # Take value of first text child node
-                    node_value = self.unicode_to_ascii(child_node.childNodes[0].nodeValue)
-                    logger.debug('%s  Node value = %s from text child node', '  ' * level, node_value)
+                    node_value = self.unicode_to_ascii(
+                        child_node.childNodes[0].nodeValue)
+                    logger.debug(
+                        '%s  Node value = %s from text child node', '  ' * level, node_value)
                     set_node_value(tree_dict, nodeName, node_value)
-                elif not child_node.childNodes: # Empty leaf node
+                elif not child_node.childNodes:  # Empty leaf node
                     tree_dict[nodeName] = ''
 
     def _populate_node_from_dict(self, tree_dict, node, uses_attributes, owner_document=None, level=0):
@@ -110,29 +127,34 @@ class XMLMetadata(Metadata):
             node: xml.dom.Node object to hold result
             uses_attributes: Boolean flag indicating whether to write values to tag attributes
         """
-        #TODO: Handle delimited lists as repeated xpaths
+        # TODO: Handle delimited lists as repeated xpaths
         owner_document = owner_document or node
 
         for node_name in sorted(tree_dict.keys()):
             child_item = tree_dict[node_name]
-            assert child_item is not None, node_name + ' node is empty - must hold either a string or subtree dict'
-            if type(child_item) == dict: # Subtree - descend to next level
+            assert child_item is not None, node_name + \
+                ' node is empty - must hold either a string or subtree dict'
+            if type(child_item) == dict:  # Subtree - descend to next level
                 logger.debug('%sElement Node %s', '  ' * level, node_name)
                 child_node = xml.dom.minidom.Element(node_name)
                 child_node.ownerDocument = owner_document
                 node.appendChild(child_node)
 
-                self._populate_node_from_dict(child_item, child_node, uses_attributes, owner_document, level + 1)
+                self._populate_node_from_dict(
+                    child_item, child_node, uses_attributes, owner_document, level + 1)
 
-            else: # Leaf node - store node value
+            else:  # Leaf node - store node value
                 if child_item is None:
                     child_item = ''
-                assert type(child_item) == str, node_name + ' node is not a string'
-                if uses_attributes: # Store value in attribute
-                    logger.debug('%sAttribute for %s = %s', '  ' * level, node_name, repr(child_item))
+                assert type(child_item) == str, node_name + \
+                    ' node is not a string'
+                if uses_attributes:  # Store value in attribute
+                    logger.debug('%sAttribute for %s = %s', '  ' *
+                                 level, node_name, repr(child_item))
                     node.setAttribute(node_name, child_item)
-                else: # Store value in child text node
-                    logger.debug('%sText Child Node for %s = %s', '  ' * level, node_name, repr(child_item))
+                else:  # Store value in child text node
+                    logger.debug('%sText Child Node for %s = %s',
+                                 '  ' * level, node_name, repr(child_item))
 
                     child_node = xml.dom.minidom.Element(node_name)
                     child_node.ownerDocument = owner_document
@@ -144,7 +166,6 @@ class XMLMetadata(Metadata):
                         text_node.ownerDocument = owner_document
                         text_node.nodeValue = child_item
                         child_node.appendChild(text_node)
-
 
     def read_file(self, filename=None):
         """Function to parse an XML metadata file and store the results in self._metadata_dict
@@ -167,14 +188,19 @@ class XMLMetadata(Metadata):
         for node in dom_tree.childNodes:
             if node.nodeType == xml.dom.minidom.Node.PROCESSING_INSTRUCTION_NODE:
                 processing_instruction_node = node
-                logger.debug('Processing Instruction Node found: Name = %s, Value = %s', processing_instruction_node.nodeName, processing_instruction_node.nodeValue)
-                self.processing_instruction['name'] = processing_instruction_node.nodeName
-                self.processing_instruction['value'] = processing_instruction_node.nodeValue
-            elif node.nodeType == xml.dom.minidom.Node.ELEMENT_NODE: # Root node has attributes
+                logger.debug('Processing Instruction Node found: Name = %s, Value = %s',
+                             processing_instruction_node.nodeName, processing_instruction_node.nodeValue)
+                self.processing_instruction[
+                    'name'] = processing_instruction_node.nodeName
+                self.processing_instruction[
+                    'value'] = processing_instruction_node.nodeValue
+            elif node.nodeType == xml.dom.minidom.Node.ELEMENT_NODE:  # Root node has attributes
                 for attr_index in range(len(node.attributes)):
                     attribute = node.attributes.item(attr_index)
-                    logger.debug('Document Attribute: %s = %s', attribute.name, attribute.value)
-                    self.document_attributes[self.unicode_to_ascii(attribute.name)] = self.unicode_to_ascii(attribute.value)
+                    logger.debug('Document Attribute: %s = %s',
+                                 attribute.name, attribute.value)
+                    self.document_attributes[self.unicode_to_ascii(
+                        attribute.name)] = self.unicode_to_ascii(attribute.value)
 
         # Create nested dict from DOM tree
         self._populate_dict_from_node(dom_tree, self._metadata_dict)
@@ -217,33 +243,39 @@ class XMLMetadata(Metadata):
 
             # Write any processing instruction node
             if self.processing_instruction:
-                processing_instruction_node = xml.dom.minidom.ProcessingInstruction(self.processing_instruction['name'], self.processing_instruction['value'])
+                processing_instruction_node = xml.dom.minidom.ProcessingInstruction(
+                    self.processing_instruction['name'], self.processing_instruction['value'])
                 processing_instruction_node.ownerDocument = dom_tree
                 dom_tree.appendChild(processing_instruction_node)
 
             # Open XML document using minidom parser
-            self._populate_node_from_dict(self._metadata_dict, dom_tree, uses_attributes)
+            self._populate_node_from_dict(
+                self._metadata_dict, dom_tree, uses_attributes)
 
             # Set root node attributes if required
             if self.document_attributes:
-                root_node = [node for node in dom_tree.childNodes if node.nodeType == xml.dom.minidom.Node.ELEMENT_NODE][0]
+                root_node = [node for node in dom_tree.childNodes if node.nodeType ==
+                             xml.dom.minidom.Node.ELEMENT_NODE][0]
                 for attribute_name in self.document_attributes.keys():
-                    root_node.setAttribute(attribute_name, self.document_attributes[attribute_name])
+                    root_node.setAttribute(
+                        attribute_name, self.document_attributes[attribute_name])
 
 #            outfile.write(dom_tree.toxml(encoding='utf-8'))
 #            outfile.write(dom_tree.toprettyxml(encoding='utf-8'))
-#            outfile.write(self.toprettyxml_fixed(node, encoding='utf-8')) # PyXML required
+# outfile.write(self.toprettyxml_fixed(node, encoding='utf-8')) # PyXML
+# required
 
-            #===================================================================
+            #==================================================================
             # # Strip all tabs and EOLs from around values
             # outfile.write(re.sub('(\<\w*[^/]\>)\n(\t+\n)*(\t*)([^<>\n]*)\n\t*\n*(\t+)(\</\w+\>)',
             #                      '\\1\\4\\6',
             #                      dom_tree.toprettyxml(encoding='utf-8')
             #                      )
             #               )
-            #===================================================================
+            #==================================================================
 
-            # Strip all tabs and EOLs from around values, remove all empty lines
+            # Strip all tabs and EOLs from around values, remove all empty
+            # lines
             outfile.write(re.sub('\>(\s+)(\n\t*)\<',
                                  '>\\2<',
                                  re.sub('(\<\w*[^/]\>)\n(\t*\n)*(\t*)([^<>\n]*)\n\t*\n*(\t+)(\</\w+\>)',
@@ -257,7 +289,8 @@ class XMLMetadata(Metadata):
             outfile.close()
 
     def read_string(self, xml_string):
-        self._populate_dict_from_node(xml.dom.minidom.parseString(xml_string.translate(None, '\n')), self._metadata_dict)
+        self._populate_dict_from_node(xml.dom.minidom.parseString(
+            xml_string.translate(None, '\n')), self._metadata_dict)
 
     @property
     def uses_attributes(self):
@@ -267,7 +300,8 @@ class XMLMetadata(Metadata):
 
 
 def main():
-    # Test data from file LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/LE7_20100315_092_085_L1T.xml
+    # Test data from file
+    # LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/LE7_20100315_092_085_L1T.xml
     TESTXML = """<mdb:MD_Metadata xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/1.0" xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/1.0" xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0" xmlns:gcx="http://standards.iso.org/iso/19115/-3/gcx/1.0" xmlns:gex="http://standards.iso.org/iso/19115/-3/gex/1.0" xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0" xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0" xmlns:mco="http://standards.iso.org/iso/19115/-3/mco/1.0" xmlns:mmi="http://standards.iso.org/iso/19115/-3/mmi/1.0" xmlns:mrd="http://standards.iso.org/iso/19115/-3/mrd/1.0" xmlns:mri="http://standards.iso.org/iso/19115/-3/mri/1.0" xmlns:mrl="http://standards.iso.org/iso/19115/-3/mrl/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:geonet="http://www.fao.org/geonetwork" xsi:schemaLocation="http://standards.iso.org/iso/19115/-3/cat/1.0 http://standards.iso.org/iso/19115/-3/cat/1.0/cat.xsd http://standards.iso.org/iso/19115/-3/cit/1.0 http://standards.iso.org/iso/19115/-3/cit/1.0/cit.xsd http://standards.iso.org/iso/19115/-3/gcx/1.0 http://standards.iso.org/iso/19115/-3/gcx/1.0/gcx.xsd http://standards.iso.org/iso/19115/-3/gex/1.0 http://standards.iso.org/iso/19115/-3/gex/1.0/gex.xsd http://standards.iso.org/iso/19115/-3/lan/1.0 http://standards.iso.org/iso/19115/-3/lan/1.0/lan.xsd http://standards.iso.org/iso/19115/-3/srv/2.0 http://standards.iso.org/iso/19115/-3/srv/2.0/srv.xsd http://standards.iso.org/iso/19115/-3/mas/1.0 http://standards.iso.org/iso/19115/-3/mas/1.0/mas.xsd http://standards.iso.org/iso/19115/-3/mcc/1.0 http://standards.iso.org/iso/19115/-3/mcc/1.0/mcc.xsd http://standards.iso.org/iso/19115/-3/mco/1.0 http://standards.iso.org/iso/19115/-3/mco/1.0/mco.xsd http://standards.iso.org/iso/19115/-3/mda/1.0 http://standards.iso.org/iso/19115/-3/mda/1.0/mda.xsd http://standards.iso.org/iso/19115/-3/mdb/1.0 http://standards.iso.org/iso/19115/-3/mdb/1.0/mdb.xsd http://standards.iso.org/iso/19115/-3/mds/1.0 http://standards.iso.org/iso/19115/-3/mds/1.0/mds.xsd http://standards.iso.org/iso/19115/-3/mdt/1.0 http://standards.iso.org/iso/19115/-3/mdt/1.0/mdt.xsd http://standards.iso.org/iso/19115/-3/mex/1.0 http://standards.iso.org/iso/19115/-3/mex/1.0/mex.xsd http://standards.iso.org/iso/19115/-3/mmi/1.0 http://standards.iso.org/iso/19115/-3/mmi/1.0/mmi.xsd http://standards.iso.org/iso/19115/-3/mpc/1.0 http://standards.iso.org/iso/19115/-3/mpc/1.0/mpc.xsd http://standards.iso.org/iso/19115/-3/mrc/1.0 http://standards.iso.org/iso/19115/-3/mrc/1.0/mrc.xsd http://standards.iso.org/iso/19115/-3/mrd/1.0 http://standards.iso.org/iso/19115/-3/mrd/1.0/mrd.xsd http://standards.iso.org/iso/19115/-3/mri/1.0 http://standards.iso.org/iso/19115/-3/mri/1.0/mri.xsd http://standards.iso.org/iso/19115/-3/mrl/1.0 http://standards.iso.org/iso/19115/-3/mrl/1.0/mrl.xsd http://standards.iso.org/iso/19115/-3/mrs/1.0 http://standards.iso.org/iso/19115/-3/mrs/1.0/mrs.xsd http://standards.iso.org/iso/19115/-3/msr/1.0 http://standards.iso.org/iso/19115/-3/msr/1.0/msr.xsd http://standards.iso.org/iso/19157/-2/mdq/1.0 http://standards.iso.org/iso/19157/-2/mdq/1.0/mdq.xsd http://standards.iso.org/iso/19115/-3/mac/1.0 http://standards.iso.org/iso/19115/-3/mac/1.0/mac.xsd http://standards.iso.org/iso/19115/-3/gco/1.0 http://standards.iso.org/iso/19115/-3/gco/1.0/gco.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd http://www.w3.org/1999/xlink http://www.w3.org/1999/xlink.xsd">
   <mdb:metadataIdentifier>
     <mcc:MD_Identifier>
@@ -1836,13 +1870,14 @@ Whiteway, T.G., 2009. Australian Bathymetry and Topography Grid: Geoscience Aust
   </mdb:metadataConstraints>
 </mdb:MD_Metadata>"""
 
-    # Instantiate empty MTLMetadata object and parse test string (strip all EOLs first)
+    # Instantiate empty MTLMetadata object and parse test string (strip all
+    # EOLs first)
     xml_object = XMLMetadata()
     xml_object.read_string(TESTXML)
-    
+
     assert xml_object.metadata_dict, 'No metadata_dict created'
     assert xml_object.tree_to_list(), 'Unable to create list from metadata_dict'
-    #===========================================================================
+    #=========================================================================
     # assert xml_object.get_metadata('EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(',')), 'Unable to find value for key L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
     # assert xml_object.get_metadata('...,PLATFORMNAME'.split(',')), 'Unable to find value for key ...,SPACECRAFT_ID'
     # assert not xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found nonexistent key RUBBERCHICKEN'
@@ -1852,8 +1887,8 @@ Whiteway, T.G., 2009. Australian Bathymetry and Topography Grid: Geoscience Aust
     # assert xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Unable to find value for key RUBBERCHICKEN'
     # xml_object.delete_metadata('RUBBERCHICKEN'.split(','))
     # assert not xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found value for key RUBBERCHICKEN'
-    #===========================================================================
+    #=========================================================================
     print xml_object.tree_to_list()
-    
+
 if __name__ == '__main__':
     main()

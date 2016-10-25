@@ -14,34 +14,38 @@ from . import XMLMetadata
 
 logger = logging.getLogger('root.' + __name__)
 
+
 class CSWMetadata(XMLMetadata):
     """Subclass of XMLMetadata to manage XML data pulled from a CSW source
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'XML'
-    _filename_pattern = '.*\.xml' # Default RegEx for finding metadata file.
+    _filename_pattern = '.*\.xml'  # Default RegEx for finding metadata file.
 
-    def unicode_to_ascii(self, instring): 
+    def unicode_to_ascii(self, instring):
         """Convert unicode to char string if required and strip any leading/trailing whitespaces 
         ToDO: Investigate whether we can just change the encoding of the DOM tree 
-        """ 
-        result = instring 
-        if type(result) == unicode: 
-            result = unicodedata.normalize('NFKD', result).encode('ascii','ignore').strip(""" "'\n\t""") 
-            return result 
-        
-    def __init__(self, source = None, uses_attributes=False):
+        """
+        result = instring
+        if type(result) == unicode:
+            result = unicodedata.normalize('NFKD', result).encode(
+                'ascii', 'ignore').strip(""" "'\n\t""")
+            return result
+
+    def __init__(self, source=None, uses_attributes=False):
         """Instantiates CSWMetadata object. Overrides Metadata method
         """
-        self._uses_attributes = uses_attributes # Boolean flag indicating whether values are stored as tag attributes
-        self.processing_instruction = {} # Dict containing processing instruction name and value
-        self.document_attributes = {} # Dict containing any attributes when not self._uses_attributes
-        XMLMetadata.__init__(self); # Call inherited constructor
-        
+        self._uses_attributes = uses_attributes  # Boolean flag indicating whether values are stored as tag attributes
+        # Dict containing processing instruction name and value
+        self.processing_instruction = {}
+        # Dict containing any attributes when not self._uses_attributes
+        self.document_attributes = {}
+        XMLMetadata.__init__(self)  # Call inherited constructor
+
         if source:
             pass
 
-    #===========================================================================
+    #=========================================================================
     # # Attempted fix for whitespace issue using PyXML. Caused problems with SceneDataset config XML
     # def toprettyxml_fixed (self, node, encoding='utf-8'):
     #     """
@@ -50,15 +54,17 @@ class CSWMetadata(XMLMetadata):
     #     tmpStream = StringIO()
     #     PrettyPrint(node, stream=tmpStream, encoding=encoding)
     #     return tmpStream.getvalue()
-    #===========================================================================
+    #=========================================================================
 
 #    def _populate_dict_from_node(self, node, tree_dict, level=0):
 
-#    def _populate_node_from_dict(self, tree_dict, node, uses_attributes, owner_document=None, level=0):
+# def _populate_node_from_dict(self, tree_dict, node, uses_attributes,
+# owner_document=None, level=0):
 
 #    def read_file(self, filename=None):
 
-#    def write_file(self, filename=None, uses_attributes=None, save_backup=False):
+# def write_file(self, filename=None, uses_attributes=None,
+# save_backup=False):
 
     def get_csw_metadata(self, csw_url):
         pass
@@ -71,7 +77,8 @@ class CSWMetadata(XMLMetadata):
 
 
 def main():
-    # Test data from file LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/LE7_20100315_092_085_L1T.xml
+    # Test data from file
+    # LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/LE7_20100315_092_085_L1T.xml
     TESTXML = """<?xml version="1.0" encoding="UTF-8" ?>
 <EODS_DATASET>
     <MDRESOURCE>
@@ -280,21 +287,30 @@ def main():
     </GRIDSPATIALREPRESENTATION>
 </EODS_DATASET>"""
 
-    # Instantiate empty MTLMetadata object and parse test string (strip all EOLs first)
+    # Instantiate empty MTLMetadata object and parse test string (strip all
+    # EOLs first)
     xml_object = CSWMetadata()
     xml_object._populate_dict_from_node(xml.dom.minidom.parseString(TESTXML.translate(None, '\n')),
                                         xml_object.metadata_dict)
     assert xml_object.metadata_dict, 'No metadata_dict created'
     assert xml_object.tree_to_list(), 'Unable to create list from metadata_dict'
-    assert xml_object.get_metadata('EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(',')), 'Unable to find value for key L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
-    assert xml_object.get_metadata('...,PLATFORMNAME'.split(',')), 'Unable to find value for key ...,SPACECRAFT_ID'
-    assert not xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found nonexistent key RUBBERCHICKEN'
-    xml_object.set_metadata_node('EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(','), 'Rubber Chicken')
-    assert xml_object.get_metadata('...,PLATFORMNAME'.split(',')), 'Unable to change ...,SPACECRAFT_ID to "Rubber Chicken"'
-    xml_object.merge_metadata_dicts({'RUBBERCHICKEN': 'Rubber Chicken'}, xml_object.metadata_dict)
-    assert xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Unable to find value for key RUBBERCHICKEN'
+    assert xml_object.get_metadata('EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(
+        ',')), 'Unable to find value for key L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
+    assert xml_object.get_metadata('...,PLATFORMNAME'.split(
+        ',')), 'Unable to find value for key ...,SPACECRAFT_ID'
+    assert not xml_object.get_metadata('RUBBERCHICKEN'.split(
+        ',')), 'Found nonexistent key RUBBERCHICKEN'
+    xml_object.set_metadata_node(
+        'EODS_DATASET,ACQUISITIONINFORMATION,PLATFORMNAME'.split(','), 'Rubber Chicken')
+    assert xml_object.get_metadata('...,PLATFORMNAME'.split(
+        ',')), 'Unable to change ...,SPACECRAFT_ID to "Rubber Chicken"'
+    xml_object.merge_metadata_dicts(
+        {'RUBBERCHICKEN': 'Rubber Chicken'}, xml_object.metadata_dict)
+    assert xml_object.get_metadata('RUBBERCHICKEN'.split(
+        ',')), 'Unable to find value for key RUBBERCHICKEN'
     xml_object.delete_metadata('RUBBERCHICKEN'.split(','))
-    assert not xml_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found value for key RUBBERCHICKEN'
+    assert not xml_object.get_metadata('RUBBERCHICKEN'.split(
+        ',')), 'Found value for key RUBBERCHICKEN'
     print xml_object.tree_to_list()
 if __name__ == '__main__':
     main()

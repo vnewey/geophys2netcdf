@@ -10,12 +10,13 @@ from . import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 
+
 class MTLMetadata(Metadata):
     """Subclass of Metadata to manage MTL data
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'MTL'
-    _filename_pattern = '.*\.mtl' # Default RegEx for finding metadata file.
+    _filename_pattern = '.*\.mtl'  # Default RegEx for finding metadata file.
 
     def _parse_mtl_string(self, mtl_string, tree_dict=None):
         """Private function to parse a block of MTL text into a nested dict
@@ -49,10 +50,10 @@ class MTLMetadata(Metadata):
         tree_dict = tree_dict or self._metadata_dict
 
         # Build nested dictionaries by group.
-        parse_mtl_lines([line for line in mtl_string.splitlines() if line], tree_dict)
+        parse_mtl_lines(
+            [line for line in mtl_string.splitlines() if line], tree_dict)
 
-
-    def read_file(self, filename = None):
+    def read_file(self, filename=None):
         """Function to parse an MTL metadata file and store the results in self._metadata_dict
         Argument:
             filename: MTL Metadata file to be parsed and stored
@@ -74,7 +75,7 @@ class MTLMetadata(Metadata):
 
         return self._metadata_dict
 
-    def write_file(self, filename = None):
+    def write_file(self, filename=None):
         """Function write the metadata contained in self._metadata_dict to an MTL file
         Argument:
             filename: Metadata file to be written
@@ -86,7 +87,8 @@ class MTLMetadata(Metadata):
 
 
 def main():
-    # Test data from file LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/L71092085_08520100315_MTL.txt
+    # Test data from file
+    # LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/L71092085_08520100315_MTL.txt
     TESTMTL = """GROUP = L1_METADATA_FILE
   GROUP = METADATA_FILE_INFO
     ORIGIN = "Image courtesy of the U.S. Geological Survey"
@@ -274,15 +276,21 @@ END"""
 
     assert mtl_object.metadata_dict, 'No metadata_dict created'
     assert mtl_object.tree_to_list(), 'Unable to create list from metadata_dict'
-    assert mtl_object.get_metadata('L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'.split(',')), 'Unable to find value L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
-    assert mtl_object.get_metadata('...,SPACECRAFT_ID'.split(',')), 'Unable to find value ...,SPACECRAFT_ID'
-    assert not mtl_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found nonexistent key RUBBERCHICKEN'
-    mtl_object.set_metadata_node('L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'.split(','), 'Rubber Chicken')
-    assert mtl_object.get_metadata('...,SPACECRAFT_ID'.split(',')), 'Unable to change ...,SPACECRAFT_ID to "Rubber Chicken"'
-    mtl_object.merge_metadata_dicts({'RUBBERCHICKEN': 'Rubber Chicken'}, mtl_object.metadata_dict)
-    assert mtl_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Unable to find value for key RUBBERCHICKEN'
+    assert mtl_object.get_metadata('L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'.split(
+        ',')), 'Unable to find value L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'
+    assert mtl_object.get_metadata('...,SPACECRAFT_ID'.split(
+        ',')), 'Unable to find value ...,SPACECRAFT_ID'
+    assert not mtl_object.get_metadata('RUBBERCHICKEN'.split(
+        ',')), 'Found nonexistent key RUBBERCHICKEN'
+    mtl_object.set_metadata_node(
+        'L1_METADATA_FILE,PRODUCT_METADATA,SPACECRAFT_ID'.split(','), 'Rubber Chicken')
+    assert mtl_object.get_metadata('...,SPACECRAFT_ID'.split(
+        ',')), 'Unable to change ...,SPACECRAFT_ID to "Rubber Chicken"'
+    mtl_object.merge_metadata_dicts(
+        {'RUBBERCHICKEN': 'Rubber Chicken'}, mtl_object.metadata_dict)
+    assert mtl_object.get_metadata('RUBBERCHICKEN'.split(
+        ',')), 'Unable to find value for key RUBBERCHICKEN'
 #    print mtl_object.tree_to_list()
 
 if __name__ == '__main__':
     main()
-

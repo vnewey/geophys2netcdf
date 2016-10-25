@@ -5,7 +5,7 @@
 Author: Alex Ip (alex.ip@ga.gov.au)
 Written: 5/7/2016
 """
-#TODO: Check potential issues with unicode vs str
+# TODO: Check potential issues with unicode vs str
 
 import logging
 import os
@@ -17,30 +17,31 @@ from . import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 
+
 class NetCDFMetadata(Metadata):
     """Subclass of Metadata to manage NetCDF data
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'NetCDF'
-    _filename_pattern = '.*\.nc$' # Default RegEx for finding metadata file.
+    _filename_pattern = '.*\.nc$'  # Default RegEx for finding metadata file.
 
-    def __init__(self, source = None):
+    def __init__(self, source=None):
         """Instantiates NetCDFMetadata object. Overrides Metadata method
         """
         if source:
             if type(source) == netCDF4.Dataset:
                 self.read_netcdf_metadata(source)
             else:
-                Metadata.__init__(self, source); # Call inherited constructor
+                Metadata.__init__(self, source)  # Call inherited constructor
 
     def read_netcdf_metadata(self, nc):
         '''Read metadata from an open NetCDF Dataset object
         '''
         self._metadata_dict = {}
-        
+
         # Copy all global attributes
         self._metadata_dict = dict(nc.__dict__)
-        
+
         # Read all variable attributes
         for variable_name in nc.variables.keys():
             variable_dict = {}
@@ -55,7 +56,7 @@ class NetCDFMetadata(Metadata):
             filename: NetCDF file to be parsed and stored
         Returns:
             nested dict containing metadata
-        
+
         '''
         logger.debug('read_file(%s) called', filename)
 
@@ -63,31 +64,32 @@ class NetCDFMetadata(Metadata):
         assert filename, 'Filename must be specified'
 
         logger.debug('Reading metadata from NetCDF file %s', filename)
-        
+
         try:
             nc = netCDF4.Dataset(filename)
             self.read_netcdf_metadata(nc)
             self._filename = filename
         finally:
             nc.close()
-        
-        return self._metadata_dict
 
+        return self._metadata_dict
 
     def write_netcdf_metadata(self, nc):
         '''Write metadata to an open NetCDF Dataset object
         '''
         for key, value in self._metadata_dict.items():
             if type(value) in [str, unicode]:
-                setattr(nc, key, value) # Set global attribute
+                setattr(nc, key, value)  # Set global attribute
             elif type(value) == dict:
                 try:
-                    assert nc.variables.get(key), 'Variable %s does not exist' % key
+                    assert nc.variables.get(
+                        key), 'Variable %s does not exist' % key
                     for varattr_key, varattr_value in value.items():
-                        setattr(nc.variables[key], varattr_key, varattr_value) # Set variable attribute
+                        # Set variable attribute
+                        setattr(nc.variables[key], varattr_key, varattr_value)
                 except Exception, e:
                     logger.warning(e.message)
-    
+
     def write_file(self, filename=None, save_backup=False):
         """Function write the metadata contained in self._metadata_dict to an NetCDF file
         Argument:
@@ -113,6 +115,7 @@ class NetCDFMetadata(Metadata):
             self.write_netcdf_metadata(nc)
         finally:
             nc.close()
+
 
 def main():
     pass

@@ -6,24 +6,27 @@ Author: Alex Ip (alex.ip@ga.gov.au)
 Written: 2/3/2016
 """
 
-import logging, os, re
+import logging
+import os
+import re
 
 from . import Metadata
 
 logger = logging.getLogger('root.' + __name__)
+
 
 class ERSMetadata(Metadata):
     """Subclass of Metadata to manage ERS data
     """
     # Class variable holding metadata type string
     _metadata_type_id = 'ERS'
-    _filename_pattern = '.*\.(ers|isi)' # Default RegEx for finding metadata file.
+    # Default RegEx for finding metadata file.
+    _filename_pattern = '.*\.(ers|isi)'
 
-    def __init__(self, source = None):
+    def __init__(self, source=None):
         """Instantiates ERSMetadata object. Overrides Metadata method
         """
-        Metadata.__init__(self, source); # Call inherited constructor
-
+        Metadata.__init__(self, source)  # Call inherited constructor
 
     def read_file(self, filename=None):
         '''
@@ -32,7 +35,7 @@ class ERSMetadata(Metadata):
             filename: ERS Metadata file to be parsed and stored
         Returns:
             nested dict containing metadata
-        
+
         .isi file will be formatted as follows:
             MetaData Begin
             Name    = IR_gravity_anomaly_Australia_V1.ers
@@ -66,7 +69,7 @@ class ERSMetadata(Metadata):
                 JetStream End
             Extensions End
         MetaData End
-        
+
     .ers file format is as follows:
         DatasetHeader Begin
                 LastUpdated     = Tue Feb 28 05:16:57 GMT 2012
@@ -110,13 +113,13 @@ class ERSMetadata(Metadata):
         assert filename, 'Filename must be specified'
 
         logger.debug('Parsing ERS/ISI file %s', filename)
-        
+
         self._metadata_dict = {}
         section_list = []
         section_dict = self._metadata_dict
         parent_dict = None
         infile = open(filename, 'r')
-    
+
         try:
             for line in infile:
                 line = line.strip()
@@ -143,10 +146,12 @@ class ERSMetadata(Metadata):
                         section_dict = parent_dict
                     else:
                         try:
-                            key, value = [element.strip() for element in line.split('=')]
-                            
-                            value = value.replace('"', '') # Strip quotes from string
-                            #===================================================
+                            key, value = [element.strip()
+                                          for element in line.split('=')]
+
+                            # Strip quotes from string
+                            value = value.replace('"', '')
+                            #==================================================
                             # # Change numeric types to either integer or float
                             # try:
                             #     assert '.' not in value, 'Decimal point or period found'
@@ -156,19 +161,18 @@ class ERSMetadata(Metadata):
                             #         value = float(value)
                             #     except:
                             #         value = value.replace('"', '') # Strip quotes from string
-                            #===================================================
-                            
+                            #==================================================
+
                             logger.debug('key = %s, value = %s' % (key, value))
                             section_dict[key] = value
                         except:
-                            pass # Ignore any line not of format "key = value"
+                            pass  # Ignore any line not of format "key = value"
 
             self._filename = filename
         finally:
             infile.close()
-        
-        return self._metadata_dict
 
+        return self._metadata_dict
 
     def write_file(self, filename=None, save_backup=False):
         """Function write the metadata contained in self._metadata_dict to an ERS file
@@ -180,15 +184,16 @@ class ERSMetadata(Metadata):
             Recursive function to write
             '''
             for key in sorted(metadata_dict.keys()):
-        #        print 'key=%s' % (parent_keys + [key])
-                if type(metadata_dict[key]) == dict: 
-                    outstring = '\t' * indent + key + ' Begin'      
-                    outfile.write(outstring) 
-                    write_ers_section(metadata_dict[key], outfile, indent+1)
-                else:
-                    outstring = '\t' * indent + key + ' = ' + str(metadata_dict[key])
+                #        print 'key=%s' % (parent_keys + [key])
+                if type(metadata_dict[key]) == dict:
+                    outstring = '\t' * indent + key + ' Begin'
                     outfile.write(outstring)
-        
+                    write_ers_section(metadata_dict[key], outfile, indent + 1)
+                else:
+                    outstring = '\t' * indent + key + \
+                        ' = ' + str(metadata_dict[key])
+                    outfile.write(outstring)
+
         logger.debug('write_file(%s) called', filename)
 
         filename = filename or self._filename
@@ -209,16 +214,17 @@ class ERSMetadata(Metadata):
             assert outfile is not None, 'Unable to open ERS/ISI file ' + filename + ' for writing'
 
             logger.debug('Writing ERS file %s', filename)
-            
+
             write_ers_section(self._metadata_dict, outfile)
 
         finally:
             outfile.close()
 
+
 def main():
     pass
     # Test data from file LS7_ETM_OTH_P51_GALPGS01_092_085_20100315/scene01/LE7_20100315_092_085_L1T.ers
-    #===========================================================================
+    #=========================================================================
     # TESTERS = ''''MetaData Begin
     #         Name    = IR_gravity_anomaly_Australia_V1.ers
     #         Version    = "Intrepid v4.3.0 default for SunOS (sparc) by lee optimised build 567b22b07dd7 (Free Version)"
@@ -269,6 +275,6 @@ def main():
     # ers_object.delete_metadata('RUBBERCHICKEN'.split(','))
     # assert not ers_object.get_metadata('RUBBERCHICKEN'.split(',')), 'Found value for key RUBBERCHICKEN'
     # print ers_object.tree_to_list()
-    #===========================================================================
+    #=========================================================================
 if __name__ == '__main__':
     main()

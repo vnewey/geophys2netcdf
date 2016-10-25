@@ -4,28 +4,33 @@
 
 Author: Alex Ip (alex.ip@ga.gov.au)
 """
-import pickle, logging, os
+import pickle
+import logging
+import os
 
 logger = logging.getLogger('root.' + __name__)
 
+
 class MetadataException(Exception):
     pass
+
 
 class Metadata(object):
     """Superclass of all metadata types
     Manages master dict containing all metadata trees
     """
-    # Class variable holding metadata type string (e.g. 'XML', 'MTL', 'REPORT', 'TIF', 'FST')
-    _metadata_type_id = None # Not set for the master metadata class
-    _filename_pattern = '.*\.dat' # Default RegEx for finding metadata file.
+    # Class variable holding metadata type string (e.g. 'XML', 'MTL',
+    # 'REPORT', 'TIF', 'FST')
+    _metadata_type_id = None  # Not set for the master metadata class
+    _filename_pattern = '.*\.dat'  # Default RegEx for finding metadata file.
 
-    def __init__(self, source = None):
+    def __init__(self, source=None):
         """Instantiates Metadata object
         Argument:
             source: either a dict containing existing metadata or a string representing an input file to read
         """
         self._metadata_dict = {}
-        self._filename=None
+        self._filename = None
 
         if source:
             if type(source) == dict:
@@ -46,7 +51,8 @@ class Metadata(object):
             """Recursive helper function to find the first value or sub-dict for the specified
             search key when an ellipsis is used in a key path.
             """
-            logger.debug('  find_first_key(%s, %s) called', repr(search_key), repr(search_dict))
+            logger.debug('  find_first_key(%s, %s) called',
+                         repr(search_key), repr(search_dict))
             if type(search_dict) != dict:
                 return None
 
@@ -58,7 +64,8 @@ class Metadata(object):
                     if found_item:
                         return found_item
 
-        logger.debug('get_metadata(%s, %s) called', repr(key_path_list), repr(subtree))
+        logger.debug('get_metadata(%s, %s) called',
+                     repr(key_path_list), repr(subtree))
 
         subtree = subtree or self._metadata_dict
 #        assert subtree, 'Subtree must be specified'
@@ -67,32 +74,33 @@ class Metadata(object):
         if type(key_path_list) == str:
             key_path_list = key_path_list.split(',')
 
-        key_path_list = list(key_path_list) # Do not modify original list (is this necessary?)
+        # Do not modify original list (is this necessary?)
+        key_path_list = list(key_path_list)
         while subtree and key_path_list:
             key = key_path_list.pop(0)
-            if key == '...': # Ellipsis means skip to next key
-                while key_path_list and key == '...': # Skip to next non-ellipsis key
-                    key = key_path_list.pop(0) # Skip to next key
-                if key == '...': # Bad input - ends in ellipsis
+            if key == '...':  # Ellipsis means skip to next key
+                while key_path_list and key == '...':  # Skip to next non-ellipsis key
+                    key = key_path_list.pop(0)  # Skip to next key
+                if key == '...':  # Bad input - ends in ellipsis
                     return None
-                subtree = self.get_metadata(key_path_list, find_first_key(key, subtree))
+                subtree = self.get_metadata(
+                    key_path_list, find_first_key(key, subtree))
             elif key:
                 subtree = subtree.get(key)
                 logger.debug('key = %s, value = %s', key, subtree)
 
         return subtree
 
-
     def delete_metadata(self, key_path_list, subtree=None):
-        logger.debug('delete_metadata(%s, %s) called', repr(key_path_list), repr(subtree))
+        logger.debug('delete_metadata(%s, %s) called',
+                     repr(key_path_list), repr(subtree))
         assert key_path_list, "Key path list must be non-empty"
-        _key_path_list = list(key_path_list) # Copy list to avoid side effects
+        _key_path_list = list(key_path_list)  # Copy list to avoid side effects
         key = _key_path_list.pop()
         subtree = self.get_metadata(_key_path_list, subtree)
         assert subtree and key in subtree.keys(), repr(key_path_list) + " not found"
         del subtree[key]
         logger.debug('%s deleted', repr(key_path_list))
-
 
     def tree_to_tuples(self, subtree=None, node_name=''):
         """Recursive function to return all leaf node (key, value) pairs as a flat (un-sorted) list of tuples
@@ -102,20 +110,21 @@ class Metadata(object):
         Returns:
             flat list of (<node path>, <value>) tuples
         """
-        logger.debug('tree_to_tuples(%s, %s) called', repr(subtree), repr(node_name))
+        logger.debug('tree_to_tuples(%s, %s) called',
+                     repr(subtree), repr(node_name))
 
         subtree = subtree or self._metadata_dict
 #        assert subtree, 'Subtree must be specified'
 
         result_list = []
         while subtree:
-            subtree = subtree.copy() # Do not modify original top-level dict
+            subtree = subtree.copy()  # Do not modify original top-level dict
             key, value = subtree.popitem()
             if node_name:
                 key = node_name + ',' + key
-            if type(value) == dict: # not a leaf node
+            if type(value) == dict:  # not a leaf node
                 result_list += self.tree_to_tuples(value, key)
-            else: # Leaf node - add key=value string to list
+            else:  # Leaf node - add key=value string to list
                 result_list.append((str(key), str(value)))
 
         return result_list
@@ -128,7 +137,8 @@ class Metadata(object):
         Returns:
             flat list of <node path>=<value> strings
         """
-        logger.debug('tree_to_list(%s, %s) called', repr(subtree), repr(node_name))
+        logger.debug('tree_to_list(%s, %s) called',
+                     repr(subtree), repr(node_name))
 
         subtree = subtree or self._metadata_dict
 #        assert subtree, 'Subtree must be specified'
@@ -173,16 +183,20 @@ class Metadata(object):
         """Function to add the metadata belonging to another metadata object to the internal metadata dict
         Argument: Metadata object
         """
-        # ToDo: Implement type checking to ensure that metadata_object is a Metadata instance
-        self._metadata_dict[metadata_object.metadata_type_id] = metadata_object.metadata_dict
+        # ToDo: Implement type checking to ensure that metadata_object is a
+        # Metadata instance
+        self._metadata_dict[
+            metadata_object.metadata_type_id] = metadata_object.metadata_dict
         return self._metadata_dict
 
     def merge_root_metadata_from_object(self, metadata_object, overwrite=True):
         """Function to merge the metadata belonging to another metadata object to the internal metadata dict
         Argument: Metadata object
         """
-        # ToDo: Implement type checking to ensure that metadata_object is a Metadata instance
-        self.merge_root_metadata(metadata_object.metadata_type_id, metadata_object.metadata_dict, overwrite)
+        # ToDo: Implement type checking to ensure that metadata_object is a
+        # Metadata instance
+        self.merge_root_metadata(
+            metadata_object.metadata_type_id, metadata_object.metadata_dict, overwrite)
         return self._metadata_dict
 
     def set_root_metadata(self, metadata, root_key=None):
@@ -221,7 +235,8 @@ class Metadata(object):
             metadata: Value or nested dict to graft into _metadata_dict
             overwrite: Boolean flag to enable overwriting of existing values
         """
-        logger.debug('merge_metadata_node(%s, %s, %s) called', repr(key_path_list), repr(metadata), repr(overwrite))
+        logger.debug('merge_metadata_node(%s, %s, %s) called', repr(
+            key_path_list), repr(metadata), repr(overwrite))
 
         # Convert comma-delimited string to list if necessary
         if type(key_path_list) == str:
@@ -245,7 +260,8 @@ class Metadata(object):
             overwrite: Boolean flag to enable overwriting of existing values
         N.B: Key path may NOT contain ellipses ('...')
         """
-        logger.debug('set_metadata_node(%s, %s, %s) called', repr(key_path_list), repr(metadata), repr(overwrite))
+        logger.debug('set_metadata_node(%s, %s, %s) called', repr(
+            key_path_list), repr(metadata), repr(overwrite))
 
         # Convert comma-delimited string to list if necessary
         if type(key_path_list) == str:
@@ -259,27 +275,29 @@ class Metadata(object):
 
         assert '...' not in key_path_list, 'Key path must be specified explicitly (no ellipses allowed)'
         subtree = self._metadata_dict
-        key_path_list = list(key_path_list) # Do not modify original list
+        key_path_list = list(key_path_list)  # Do not modify original list
         while type(subtree) == dict and key_path_list:
             key = key_path_list.pop(0)
             logger.debug('key = %s', key)
             if key:
-                if not key_path_list: # No more levels to descend
-                    if key in subtree.keys() and subtree[key] and not overwrite: # Metadata for key already exists in subtree
+                if not key_path_list:  # No more levels to descend
+                    # Metadata for key already exists in subtree
+                    if key in subtree.keys() and subtree[key] and not overwrite:
                         raise Exception('Unable to overwrite key ' + key)
                     else:
-#                        logger.debug('  Setting subtree[key] = %s', metadata)
-                        subtree[key] = metadata # Overwrite previous node
-                else: # still more levels to descend
-                    if key in subtree.keys(): # Existing node found (dict or value)
+                        #                        logger.debug('  Setting subtree[key] = %s', metadata)
+                        subtree[key] = metadata  # Overwrite previous node
+                else:  # still more levels to descend
+                    if key in subtree.keys():  # Existing node found (dict or value)
                         if type(subtree[key]) != dict and subtree[key] and not overwrite:
-                            raise Exception('Unable to overwrite subtree ' + key)
+                            raise Exception(
+                                'Unable to overwrite subtree ' + key)
                         else:
-#                            logger.debug('  Setting subtree = %s', subtree.get(key))
-                            subtree = subtree.get(key) # Descend to next level
-                    else: # Key doesn't exist in subtree
+                            #                            logger.debug('  Setting subtree = %s', subtree.get(key))
+                            subtree = subtree.get(key)  # Descend to next level
+                    else:  # Key doesn't exist in subtree
                         logger.debug('  Setting subtree[key] = {}')
-                        subtree[key] = {} # Create new subtree
+                        subtree[key] = {}  # Create new subtree
                         subtree = subtree[key]
 
     def merge_metadata_dicts(self, source_tree, destination_tree, overwrite=True,
@@ -300,26 +318,28 @@ class Metadata(object):
         for key in source_tree.keys():
             source_metadata = source_tree[key]
             dest_metadata = destination_tree.get(key)
-            if type(source_metadata) == dict: # Source metadata is not a leaf node
-                if dest_metadata is None: # Key doesn't exist in destination - create sub-dict
+            if type(source_metadata) == dict:  # Source metadata is not a leaf node
+                if dest_metadata is None:  # Key doesn't exist in destination - create sub-dict
                     if not add_new_nodes:
                         logger.debug('Unable to create new node %s', key)
                         continue
                     dest_metadata = {}
                     destination_tree[key] = dest_metadata
-                elif type(dest_metadata) != dict: # Destination metadata is a leaf node
+                elif type(dest_metadata) != dict:  # Destination metadata is a leaf node
                     # Overwrite leaf node with new sub-dict if possible
                     if not overwrite:
-                        logger.debug('Unable to overwrite existing leaf node %s', key)
+                        logger.debug(
+                            'Unable to overwrite existing leaf node %s', key)
                         continue
                     dest_metadata = {}
                     destination_tree[key] = dest_metadata
                 # Recursive call to copy source subtree to destination subtree
                 self.merge_metadata_dicts(source_metadata, dest_metadata, overwrite,
                                           add_new_nodes, keep_existing_data)
-            else: # source metadata is a leaf node
+            else:  # source metadata is a leaf node
                 if dest_metadata and not overwrite:
-                    logger.debug('Unable to overwrite existing destination metadata for %s', key)
+                    logger.debug(
+                        'Unable to overwrite existing destination metadata for %s', key)
                     continue
                 elif dest_metadata is None and not add_new_nodes:
                     logger.debug('Unable to create new node %s', key)
