@@ -4,7 +4,7 @@ from distutils.core import setup
 
 version = '0.0.0'
 
-setup(name='agdc-v2',
+setup(name='geophys2netcdf',
       version=version,
       packages=[
           'geophys2netcdf',
