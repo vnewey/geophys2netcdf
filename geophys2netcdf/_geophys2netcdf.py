@@ -52,7 +52,7 @@ from glob import glob
 import json
 import urllib
 
-from metadata import XMLMetadata, NetCDFMetadata
+from geophys2netcdf.metadata import XMLMetadata, NetCDFMetadata
 from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
 from geophys2netcdf.data_stats import DataStats
 

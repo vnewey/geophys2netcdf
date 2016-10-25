@@ -84,7 +84,7 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
     try:
         grid_mapping_variable = [variable for variable in netcdf_dataset.variables.values() if hasattr(variable, 'GeoTransform')][0]
     except:
-        raise Exception('Unable to determine grid mapping variable (must have "GeoTransform" attribute')
+        raise Exception('Unable to determine grid mapping variable (must have "GeoTransform" attribute)')
     GeoTransform = [float(number) for number in grid_mapping_variable.GeoTransform.strip().split(' ')]
     avg_pixel_size = (abs(GeoTransform[1]) + abs(GeoTransform[5])) / 2.0
    

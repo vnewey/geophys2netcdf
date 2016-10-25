@@ -7,7 +7,9 @@ version = '0.0.0'
 setup(name='agdc-v2',
       version=version,
       packages=[
-          'geophys2netcdf'
+          'geophys2netcdf',
+          'geophys2netcdf.metadata',
+          'geophys2netcdf.thredds_catalog',
       ],
       package_data={
           'geophys2netcdf': ['uuid.csv']
@@ -15,13 +17,17 @@ setup(name='agdc-v2',
       scripts=[
       ],
       requires=[
-          'gdal',
+          'osgeo',
           'numexpr',
           'numpy',
           'h5py',
           'netcdf4',
           'scipy',
           'pytz',
+          'lxml',
+          'shapely',
+          'owslib',
+          'yaml',
       ],
       url='https://github.com/alex-ip/geophys2netcdf',
       author='Alex Ip - Geoscience Australia',
