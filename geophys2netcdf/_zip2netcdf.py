@@ -121,7 +121,7 @@ class Zip2NetCDF(Geophys2NetCDF):
         logger.debug('file_list = %s', file_list)
         logger.debug('extension_set = %s', extension_set)
 
-        if set(['.ers', '.isi', '']) <= extension_set:
+        if set(['.ers', '']) <= extension_set:
             logger.info('%s contains an ERS dataset', self._zipdir)
             ers_list = [
                 file_path for file_path in file_list if file_path.lower().endswith('.ers')]

@@ -207,8 +207,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         # subtrees
         if self._input_path:
             for extension in ['isi', 'ers']:
-                self._metadata_dict[extension.upper()] = ERSMetadata(
-                    os.path.splitext(self._input_path)[0] + '.' + extension).metadata_dict
+                metadata_path = os.path.splitext(self._input_path)[0] + '.' + extension
+                if os.path.isfile(metadata_path):
+                    self._metadata_dict[extension.upper()] = ERSMetadata(metadata_path).metadata_dict
 
         try:
             # TODO: Make this more robust

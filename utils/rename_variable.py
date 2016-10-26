@@ -50,9 +50,12 @@ def main():
         nc_dataset.close()
         
     
-        g2n_object = ERS2NetCDF()
-        g2n_object.update_nc_metadata(nc_path)
-        g2n_object.check_json_metadata(nc_path) # Kind of redundant, but possibly useful for debugging
+        try:
+            g2n_object = ERS2NetCDF()
+            g2n_object.update_nc_metadata(nc_path)
+            g2n_object.check_json_metadata(nc_path) # Kind of redundant, but possibly useful for debugging
+        except Exception as e:
+            print 'ERROR: %s' % e.message
 
 
 if __name__ == '__main__':
