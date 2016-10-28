@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 
 #=========================================================================
 # Copyright (c)  2014 Geoscience Australia
@@ -46,10 +47,10 @@ def main():
     # If NetCDF path given, then do update_nc_metadata
     if len(sys.argv) == 2 and os.path.splitext(input_path)[1] == '.nc':
         g2n_object = ERS2NetCDF()
-        g2n_object.check_json_metadata(input_path)
+        g2n_object.check_json_metadata(input_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
         g2n_object.update_nc_metadata(input_path)
         # Kind of redundant, but possibly useful for debugging
-        g2n_object.check_json_metadata(input_path)
+        g2n_object.check_json_metadata(input_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
         return
 
     # Default output path is next to input path

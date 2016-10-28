@@ -34,17 +34,16 @@ Created on 29/02/2016
 '''
 import os
 import re
-from collections import OrderedDict
 import logging
 import netCDF4
 import subprocess
 from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
-from glob import glob
+from geophys2netcdf.metadata_json import write_json_metadata
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
-from metadata import ERSMetadata
+from geophys2netcdf.metadata import ERSMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Initial logging level for this module
@@ -185,7 +184,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
         logger.debug('NetCDF file %s reopened as read-only', self._output_path)
 
-        self.write_json_metadata()
+        write_json_metadata(self._uuid, os.path.dirname(self._output_path), Geophys2NetCDF.EXCLUDED_EXTENSIONS)
 
         # Set permissions to group writeable, world readable - ignore errors
         chmod_command = ['chmod', '-R', 'g+rwX,o+rX',

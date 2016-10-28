@@ -43,12 +43,8 @@ import numpy as np
 import netCDF4
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo  # , PropertyIsLike, BBox
-from datetime import datetime
 import tempfile
-import dateutil.parser
-from dateutil import tz
-import pytz
-from glob import glob
+
 import json
 import urllib
 
@@ -125,36 +121,6 @@ class Geophys2NetCDF(object):
         self._input_dataset = None
         self._netcdf_dataset = None
         self._metadata_dict = {}
-
-    def read_iso_datetime_string(self, iso_datetime_string):
-        '''
-        Helper function to convert an ISO datetime string into a Python datetime object
-        '''
-        if not iso_datetime_string:
-            return None
-
-        try:
-            iso_datetime = dateutil.parser.parse(iso_datetime_string)
-        except ValueError, e:
-            logger.warning(
-                'WARNING: Unable to parse "%s" into ISO datetime (%s)', iso_datetime_string, e.message)
-            iso_datetime = None
-
-        return iso_datetime
-
-    def get_iso_utcnow(self, utc_datetime=None):
-        '''
-        Helper function to return an ISO string representing a UTC date/time. Defaults to current datetime.
-        '''
-        return (utc_datetime or datetime.utcnow()).replace(tzinfo=tz.gettz('UTC')).isoformat()
-
-    def get_utc_mtime(self, file_path):
-        '''
-        Helper function to return the UTC modification time for a specified file
-        '''
-        assert file_path and os.path.exists(
-            file_path), 'Invalid file path "%s"' % file_path
-        return datetime.fromtimestamp(os.path.getmtime(file_path), pytz.utc)
 
     def gdal_translate(self, input_path, output_path, chunk_size=None):
         '''
@@ -615,105 +581,6 @@ class Geophys2NetCDF(object):
         xml_metadata = XMLMetadata()
         xml_metadata.read_string(xml_string)
         return xml_metadata.metadata_dict
-
-    def write_json_metadata(self, dataset_folder=None):
-        '''
-        Function to write UUID, file_paths and current timestamp to .metadata.json
-        '''
-        assert self._uuid, 'UUID not set'
-
-        dataset_folder = dataset_folder or os.path.dirname(self._output_path)
-        assert dataset_folder, 'dataset_folder not defined.'
-        dataset_folder = os.path.abspath(dataset_folder)
-
-        json_output_path = os.path.join(dataset_folder, '.metadata.json')
-
-        file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*'))
-                     if os.path.splitext(file_path)[1] not in Geophys2NetCDF.EXCLUDED_EXTENSIONS
-                     and os.path.isfile(file_path)]
-
-        md5_output = subprocess.check_output(['md5sum'] + file_list)
-        md5_dict = {re.search('^(\w+)\s+(.+)$', line).groups()[1]:
-                    re.search('^(\w+)\s+(.+)$', line).groups()[0]
-                    for line in md5_output.split('\n') if line.strip()
-                    }
-
-        metadata_dict = {'uuid': self._uuid,
-                         'time': self.get_iso_utcnow(),
-                         'folder_path': dataset_folder,
-                         'files': [{'file': os.path.basename(filename),
-                                    'md5': md5_dict[filename],
-                                    'mtime': self.get_utc_mtime(filename).isoformat()
-                                    }
-                                   for filename in sorted(md5_dict.keys())
-                                   ]
-                         }
-
-        json_output_file = open(json_output_path, 'w')
-        json.dump(metadata_dict, json_output_file, indent=4)
-        json_output_file.close()
-        logger.info('Finished writing metadata file %s', json_output_path)
-
-    def check_json_metadata(self, output_path=None):
-        '''
-        Function to check UUID, file_paths MD5 checksums from .metadata.json
-        '''
-        output_path = output_path or self._output_path
-        assert output_path, 'No output path defined'
-
-        dataset_folder = os.path.dirname(output_path)
-
-        report_list = []
-
-        dataset_folder = dataset_folder or os.path.dirname(self._output_path)
-        assert dataset_folder, 'dataset_folder not defined.'
-        dataset_folder = os.path.abspath(dataset_folder)
-
-        json_metadata_path = os.path.join(dataset_folder, '.metadata.json')
-        json_metadata_file = open(json_metadata_path, 'r')
-        metadata_dict = json.load(json_metadata_file)
-        json_metadata_file.close()
-
-        if metadata_dict['folder_path'] != dataset_folder:
-            report_list.append('Dataset folder Changed from %s to %s' % (
-                metadata_dict['folder_path'], dataset_folder))
-
-        file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*'))
-                     if os.path.splitext(file_path)[1] not in Geophys2NetCDF.EXCLUDED_EXTENSIONS
-                     and os.path.isfile(file_path)]
-
-        md5_output = subprocess.check_output(['md5sum'] + file_list)
-        calculated_md5_dict = {os.path.basename(re.search('^(\w+)\s+(.+)$', line).groups()[1]):
-                               re.search('^(\w+)\s+(.+)$', line).groups()[0]
-                               for line in md5_output.split('\n') if line.strip()
-                               }
-
-        saved_md5_dict = {file_dict['file']:
-                          file_dict['md5']
-                          for file_dict in metadata_dict['files']
-                          }
-
-        for saved_filename, saved_md5sum in saved_md5_dict.items():
-            calculated_md5sum = calculated_md5_dict.get(saved_filename)
-            if not calculated_md5sum:
-                new_filenames = [new_filename for new_filename, new_md5sum in calculated_md5_dict.items(
-                ) if new_md5sum == saved_md5sum]
-                if new_filenames:
-                    report_list.append('File %s has been renamed to %s' % (
-                        saved_filename, new_filenames[0]))
-                else:
-                    report_list.append(
-                        'File %s does not exist' % saved_filename)
-            else:
-                if saved_md5sum != calculated_md5sum:
-                    report_list.append('MD5 Checksum for file %s has changed from %s to %s' % (
-                        saved_filename, saved_md5sum, calculated_md5sum))
-
-        if report_list:
-            raise Exception('\n'.join(report_list))
-        else:
-            logger.info(
-                'File paths and checksums verified OK in %s', dataset_folder)
 
     @property
     def metadata_dict(self):
