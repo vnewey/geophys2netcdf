@@ -166,10 +166,16 @@ class Geophys2NetCDF(object):
                 logger.debug(
                     'Removed temporary, un-chunked NetCDF file %s', temp_path)
 
+    def write_json_metadata(self):
+        write_json_metadata(
+            self._uuid,
+            os.path.dirname(self._output_path),
+            Geophys2NetCDF.EXCLUDED_EXTENSIONS)
+
     def check_json_metadata(self):
         check_json_metadata(
             self._uuid,
-            self._output_path,
+            os.path.dirname(self._output_path),
             Geophys2NetCDF.EXCLUDED_EXTENSIONS)
 
     def update_nc_metadata(self, output_path=None, do_stats=False):

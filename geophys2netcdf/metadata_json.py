@@ -26,7 +26,7 @@ def write_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
         dataset_folder), 'dataset_folder is not a valid directory.'
     dataset_folder = os.path.abspath(dataset_folder)
 
-    json_output_path = os.path.join(dataset_folder, '.metadata.json')
+    json_metadata_path = os.path.join(dataset_folder, '.metadata.json')
 
     file_list = [file_path for file_path in glob(os.path.join(dataset_folder, '*'))
                  if os.path.splitext(file_path)[1] not in excluded_extensions
@@ -49,28 +49,29 @@ def write_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
                                ]
                      }
 
-    json_output_file = open(json_output_path, 'w')
+    json_output_file = open(json_metadata_path, 'w')
     json.dump(metadata_dict, json_output_file, indent=4)
     json_output_file.close()
-    logger.info('Finished writing metadata file %s', json_output_path)
+    logger.info('Finished writing metadata file %s', json_metadata_path)
 
 
-def check_json_metadata(uuid, output_path, excluded_extensions=[]):
+def check_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
     '''
     Function to check UUID, file_paths MD5 checksums from .metadata.json
     '''
-    assert os.path.isfile(output_path), 'output_path is not a valid file'
+    assert uuid, 'UUID not set'
 
-    dataset_folder = os.path.dirname(output_path)
-
-    report_list = []
-
+    assert os.path.isdir(
+        dataset_folder), 'dataset_folder is not a valid directory.'
     dataset_folder = os.path.abspath(dataset_folder)
 
     json_metadata_path = os.path.join(dataset_folder, '.metadata.json')
+
     json_metadata_file = open(json_metadata_path, 'r')
     metadata_dict = json.load(json_metadata_file)
     json_metadata_file.close()
+
+    report_list = []
 
     if metadata_dict['uuid'] != uuid:
         report_list.append('UUID Changed from %s to %s' % (
