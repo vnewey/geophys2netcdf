@@ -40,12 +40,13 @@ import subprocess
 from osgeo import gdal
 from datetime import datetime
 from dateutil import tz
-from geophys2netcdf.metadata_json import write_json_metadata
 
 from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from geophys2netcdf.metadata import ERSMetadata
-
+from geophys2netcdf.datetime_utils import read_iso_datetime_string
+from geophys2netcdf.metadata_json import write_json_metadata
 logger = logging.getLogger(__name__)
+
 logger.setLevel(logging.DEBUG)  # Initial logging level for this module
 
 
@@ -166,7 +167,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset.sync()
 
         if hasattr(self._netcdf_dataset, 'date_modified'):
-            date_list = [self.read_iso_datetime_string(
+            date_list = [read_iso_datetime_string(
                 date_string) for date_string in self._netcdf_dataset.date_modified.split(', ')]
             self._netcdf_dataset.date_created = min(date_list).isoformat()
             self._netcdf_dataset.date_modified = max(date_list).isoformat()

@@ -51,7 +51,7 @@ import urllib
 from geophys2netcdf.metadata import XMLMetadata, NetCDFMetadata
 from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
 from geophys2netcdf.data_stats import DataStats
-
+from geophys2netcdf.metadata_json import write_json_metadata, check_json_metadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Initial logging level for this module
@@ -165,6 +165,11 @@ class Geophys2NetCDF(object):
                 os.remove(temp_path)
                 logger.debug(
                     'Removed temporary, un-chunked NetCDF file %s', temp_path)
+
+
+    def check_json_metadata(self):
+        check_json_metadata(self._output_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
+
 
     def update_nc_metadata(self, output_path=None, do_stats=False):
         '''

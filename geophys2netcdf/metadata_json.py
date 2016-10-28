@@ -4,7 +4,7 @@ Created on 28Oct.,2016
 @author: Alex Ip
 '''
 import os
-import glob
+from glob import glob
 import subprocess
 import re
 import json

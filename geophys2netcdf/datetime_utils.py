@@ -36,7 +36,7 @@ def get_iso_utcnow(utc_datetime=None):
     '''
     return (utc_datetime or datetime.utcnow()).replace(tzinfo=tz.gettz('UTC')).isoformat()
 
-def get_utc_mtime(self, file_path):
+def get_utc_mtime(file_path):
     '''
     Helper function to return the UTC modification time for a specified file
     '''
