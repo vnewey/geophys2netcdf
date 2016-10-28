@@ -33,9 +33,9 @@ class Metadata(object):
         self._filename = None
 
         if source:
-            if type(source) == dict:
+            if isinstance(source, dict):
                 self._metadata_dict = source
-            elif type(source) == str:
+            elif isinstance(source, str):
                 self.read_file(source)
 
     def get_metadata(self, key_path_list=[], subtree=None):
@@ -53,7 +53,7 @@ class Metadata(object):
             """
             logger.debug('  find_first_key(%s, %s) called',
                          repr(search_key), repr(search_dict))
-            if type(search_dict) != dict:
+            if not isinstance(search_dict, dict):
                 return None
 
             for key in search_dict.keys():
@@ -71,7 +71,7 @@ class Metadata(object):
 #        assert subtree, 'Subtree must be specified'
 
         # Convert comma-delimited string to list if necessary
-        if type(key_path_list) == str:
+        if isinstance(key_path_list, str):
             key_path_list = key_path_list.split(',')
 
         # Do not modify original list (is this necessary?)
@@ -122,7 +122,7 @@ class Metadata(object):
             key, value = subtree.popitem()
             if node_name:
                 key = node_name + ',' + key
-            if type(value) == dict:  # not a leaf node
+            if isinstance(value, dict):  # not a leaf node
                 result_list += self.tree_to_tuples(value, key)
             else:  # Leaf node - add key=value string to list
                 result_list.append((str(key), str(value)))
@@ -143,7 +143,8 @@ class Metadata(object):
         subtree = subtree or self._metadata_dict
 #        assert subtree, 'Subtree must be specified'
 
-        return [name + '=' + value for name, value in self.tree_to_tuples(subtree)]
+        return [name + '=' + value for name,
+                value in self.tree_to_tuples(subtree)]
 
     def read_file(self, filename=None):
         """Abstract function to parse a metadata file and store the results in self._metadata_dict
@@ -239,12 +240,12 @@ class Metadata(object):
             key_path_list), repr(metadata), repr(overwrite))
 
         # Convert comma-delimited string to list if necessary
-        if type(key_path_list) == str:
+        if isinstance(key_path_list, str):
             key_path_list = key_path_list.split(',')
 
         destination_tree = self.get_metadata(key_path_list)
         assert destination_tree, 'Destination subtree dict not found'
-        assert type(destination_tree) == dict, 'Destination is not a dict'
+        assert isinstance(destination_tree, dict), 'Destination is not a dict'
 
         assert '...' not in key_path_list, 'Key path must be specified explicitly (no ellipses allowed)'
 
@@ -264,32 +265,34 @@ class Metadata(object):
             key_path_list), repr(metadata), repr(overwrite))
 
         # Convert comma-delimited string to list if necessary
-        if type(key_path_list) == str:
+        if isinstance(key_path_list, str):
             key_path_list = key_path_list.split(',')
 
         assert key_path_list, 'Key path must be specified with a non-empty list'
 
         # Convert comma-delimited string to list if necessary
-        if type(key_path_list) == str:
+        if isinstance(key_path_list, str):
             key_path_list = key_path_list.split(',')
 
         assert '...' not in key_path_list, 'Key path must be specified explicitly (no ellipses allowed)'
         subtree = self._metadata_dict
         key_path_list = list(key_path_list)  # Do not modify original list
-        while type(subtree) == dict and key_path_list:
+        while isinstance(subtree, dict) and key_path_list:
             key = key_path_list.pop(0)
             logger.debug('key = %s', key)
             if key:
                 if not key_path_list:  # No more levels to descend
                     # Metadata for key already exists in subtree
-                    if key in subtree.keys() and subtree[key] and not overwrite:
+                    if key in subtree.keys() and subtree[
+                            key] and not overwrite:
                         raise Exception('Unable to overwrite key ' + key)
                     else:
                         #                        logger.debug('  Setting subtree[key] = %s', metadata)
                         subtree[key] = metadata  # Overwrite previous node
                 else:  # still more levels to descend
                     if key in subtree.keys():  # Existing node found (dict or value)
-                        if type(subtree[key]) != dict and subtree[key] and not overwrite:
+                        if not isinstance(subtree[key], dict) and subtree[
+                                key] and not overwrite:
                             raise Exception(
                                 'Unable to overwrite subtree ' + key)
                         else:
@@ -313,19 +316,21 @@ class Metadata(object):
         if source_tree is None:
             return
 
-        assert type(source_tree) == dict, 'Source tree must be a dict'
+        assert isinstance(source_tree, dict), 'Source tree must be a dict'
 
         for key in source_tree.keys():
             source_metadata = source_tree[key]
             dest_metadata = destination_tree.get(key)
-            if type(source_metadata) == dict:  # Source metadata is not a leaf node
+            if isinstance(source_metadata,
+                          dict):  # Source metadata is not a leaf node
                 if dest_metadata is None:  # Key doesn't exist in destination - create sub-dict
                     if not add_new_nodes:
                         logger.debug('Unable to create new node %s', key)
                         continue
                     dest_metadata = {}
                     destination_tree[key] = dest_metadata
-                elif type(dest_metadata) != dict:  # Destination metadata is a leaf node
+                # Destination metadata is a leaf node
+                elif not isinstance(dest_metadata, dict):
                     # Overwrite leaf node with new sub-dict if possible
                     if not overwrite:
                         logger.debug(

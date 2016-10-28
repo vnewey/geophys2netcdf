@@ -185,7 +185,7 @@ class ERSMetadata(Metadata):
             '''
             for key in sorted(metadata_dict.keys()):
                 #        print 'key=%s' % (parent_keys + [key])
-                if type(metadata_dict[key]) == dict:
+                if isinstance(metadata_dict[key], dict):
                     outstring = '\t' * indent + key + ' Begin'
                     outfile.write(outstring)
                     write_ers_section(metadata_dict[key], outfile, indent + 1)

@@ -52,8 +52,7 @@ def main():
         g2n_object.check_json_metadata()
         return
 
-    
-    if len(sys.argv) == 3: # output_path specified
+    if len(sys.argv) == 3:  # output_path specified
         output_path = os.path.abspath(sys.argv[2])
     else:
         # Default output path is next to input path

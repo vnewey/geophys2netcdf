@@ -73,7 +73,8 @@ class THREDDSCatalog(object):
     # DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
     DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
 
-    def __init__(self, thredds_catalog_url=None, yaml_path=None, verbose=False):
+    def __init__(self, thredds_catalog_url=None,
+                 yaml_path=None, verbose=False):
         '''
         Constructor for class THREDDSCatalog
         Launches a crawler to examine every THREDDS catalog page underneath the nominated thredds_catalog_url
@@ -95,7 +96,8 @@ class THREDDSCatalog(object):
         '''
         def get_absolute_url(href):
             # Create absolute URL
-            if href.startswith('/'):  # Absolute href - should start with "/thredds/"
+            if href.startswith(
+                    '/'):  # Absolute href - should start with "/thredds/"
                 return re.sub('/thredds/.*', href, thredds_catalog_url)
             else:  # Relative href
                 return re.sub('catalog.html$', href, thredds_catalog_url)
@@ -175,7 +177,7 @@ class THREDDSCatalog(object):
                         try:
                             thredds_catalog_dict[
                                 url] = self.get_thredds_dict(url)
-                        except Exception, e:
+                        except Exception as e:
                             logger.error('ERROR: %s', e.message)
 
                     # Get rid of empty dicts
@@ -199,7 +201,8 @@ class THREDDSCatalog(object):
         yaml_file.close()
         logger.info('THREDDS catalogue loaded from file %s', yaml_path)
 
-    def endpoint_tuple_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
+    def endpoint_tuple_list(self, type_filter='.*',
+                            url_filter='.*', catalog_dict=None):
         '''
         Function to return a list of (protocol, endpoint) tuples contained in the leaf nodes of self.thredds_catalog_dict
         Arguments:
@@ -212,23 +215,26 @@ class THREDDSCatalog(object):
         for key in sorted(catalog_dict.keys()):
             value = catalog_dict[key]
 
-            if type(value) == dict:
+            if isinstance(value, dict):
                 result_list += self.endpoint_tuple_list(
                     type_filter, url_filter, catalog_dict[key])
             else:  # Leaf node
-                if (re.search(type_filter, key) and re.search(url_filter, value)):
+                if (re.search(type_filter, key)
+                        and re.search(url_filter, value)):
                     result_list.append((key, value))
 
         return result_list
 
-    def endpoint_list(self, type_filter='.*', url_filter='.*', catalog_dict=None):
+    def endpoint_list(self, type_filter='.*',
+                      url_filter='.*', catalog_dict=None):
         '''
         Function to return a list of endpoints contained in the leaf nodes of self.thredds_catalog_dict
         Arguments:
             type_filter: regular expression string matching one or more of ['HTTPServer', 'NetcdfSubset', OPENDAP', 'WCS, 'WMS']
             url_filter: regular expression string to restrict URLs returned: e.g. '.*\.nc$' to return all NetCDF endpoints
         '''
-        return [endpoint for _protocol, endpoint in self.endpoint_tuple_list(type_filter=type_filter, url_filter=url_filter, catalog_dict=catalog_dict)]
+        return [endpoint for _protocol, endpoint in self.endpoint_tuple_list(
+            type_filter=type_filter, url_filter=url_filter, catalog_dict=catalog_dict)]
 
     def find_url_list(self, file_path):
         '''
@@ -279,7 +285,8 @@ class THREDDSCatalog(object):
 
         return result_dict
 
-    def find_catalogs(self, file_path, distribution_types=['NetcdfSubset'], catalog_dict=None):
+    def find_catalogs(self, file_path, distribution_types=[
+                      'NetcdfSubset'], catalog_dict=None):
         '''
         Recursive function to return list of catalog URLS containing specified distribution type(s) for specified file_path
         Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
@@ -291,8 +298,9 @@ class THREDDSCatalog(object):
         for key in sorted(catalog_dict.keys()):
             value = catalog_dict[key]
 
-            if type(value) == dict:
-                if re.search(basename + '$', key) and (set(distribution_types) <= set(value.keys())):
+            if isinstance(value, dict):
+                if re.search(
+                        basename + '$', key) and (set(distribution_types) <= set(value.keys())):
                     base_list.append(key)
                 else:
                     base_list += self.find_catalogs(file_path,

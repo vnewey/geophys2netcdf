@@ -16,7 +16,8 @@ class DataStats(object):
     key_list = ['nc_path', 'data_type', 'nodata_value', 'x_size', 'y_size', 'min',
                 'max', 'mean']  # , 'median', 'std_dev', 'percentile_1', 'percentile_99']
 
-    def __init__(self, netcdf_path=None, netcdf_dataset=None, max_array=500000000):
+    def __init__(self, netcdf_path=None, netcdf_dataset=None,
+                 max_array=500000000):
         '''
         DataStats Constructor
         Parameter:
@@ -51,9 +52,10 @@ class DataStats(object):
         length_read = 0
         weighted_mean = 0.0
 
-        for piece_array, _piece_offsets in array_pieces(self.data_variable, max_array):
+        for piece_array, _piece_offsets in array_pieces(
+                self.data_variable, max_array):
 
-            if type(piece_array) == np.ma.core.MaskedArray:
+            if isinstance(piece_array, np.ma.core.MaskedArray):
                 piece_array = piece_array.data
 
             # Discard all no-data elements

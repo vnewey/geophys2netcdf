@@ -14,6 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Initial logging level for this module
 
+
 def read_iso_datetime_string(iso_datetime_string):
     '''
     Helper function to convert an ISO datetime string into a Python datetime object
@@ -23,18 +24,21 @@ def read_iso_datetime_string(iso_datetime_string):
 
     try:
         iso_datetime = dateutil.parser.parse(iso_datetime_string)
-    except ValueError, e:
+    except ValueError as e:
         logger.warning(
             'WARNING: Unable to parse "%s" into ISO datetime (%s)', iso_datetime_string, e.message)
         iso_datetime = None
 
     return iso_datetime
 
+
 def get_iso_utcnow(utc_datetime=None):
     '''
     Helper function to return an ISO string representing a UTC date/time. Defaults to current datetime.
     '''
-    return (utc_datetime or datetime.utcnow()).replace(tzinfo=tz.gettz('UTC')).isoformat()
+    return (utc_datetime or datetime.utcnow()).replace(
+        tzinfo=tz.gettz('UTC')).isoformat()
+
 
 def get_utc_mtime(file_path):
     '''

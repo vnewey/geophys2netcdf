@@ -22,7 +22,8 @@ def write_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
     '''
     assert uuid, 'UUID not set'
 
-    assert os.path.isdir(dataset_folder), 'dataset_folder is not a valid directory.'
+    assert os.path.isdir(
+        dataset_folder), 'dataset_folder is not a valid directory.'
     dataset_folder = os.path.abspath(dataset_folder)
 
     json_output_path = os.path.join(dataset_folder, '.metadata.json')
@@ -52,6 +53,7 @@ def write_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
     json.dump(metadata_dict, json_output_file, indent=4)
     json_output_file.close()
     logger.info('Finished writing metadata file %s', json_output_path)
+
 
 def check_json_metadata(uuid, output_path, excluded_extensions=[]):
     '''
@@ -114,4 +116,3 @@ def check_json_metadata(uuid, output_path, excluded_extensions=[]):
     else:
         logger.info(
             'File paths and checksums verified OK in %s', dataset_folder)
-

@@ -102,8 +102,9 @@ class Zip2NetCDF(Geophys2NetCDF):
 
         try:
             os.makedirs(self._zipdir)
-        except OSError, exception:
-            if exception.errno != errno.EEXIST or not os.path.isdir(self._zipdir):
+        except OSError as exception:
+            if exception.errno != errno.EEXIST or not os.path.isdir(
+                    self._zipdir):
                 raise exception
 
         unzip_command = ['unzip',

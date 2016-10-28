@@ -259,7 +259,8 @@ Product Extent:
                 self._value_dict[name] = value
 
             # Convert "NUP" orientation to "0.0 deg"
-            if 'ORIENTATION' in self._value_dict.keys() and self._value_dict['ORIENTATION'] in ReportMetadata._orient_map.keys():
+            if 'ORIENTATION' in self._value_dict.keys() and self._value_dict[
+                    'ORIENTATION'] in ReportMetadata._orient_map.keys():
                 self._value_dict['ORIENTATION'] = '%.1f deg' % ReportMetadata._orient_map[
                     self._value_dict['ORIENTATION']]
 

@@ -43,7 +43,7 @@ def get_edge_points(netcdf_dataset, max_bytes=None):
             dim_index] + piece_array.shape[dim_index]] for dim_index in range(2)]
 
         # Convert masked array to plain array
-        if type(piece_array) == np.ma.core.MaskedArray:
+        if isinstance(piece_array, np.ma.core.MaskedArray):
             piece_array = piece_array.data
 # print 'array_offset = %s, piece_array.shape = %s, piece_array.size = %s'
 # % (array_offset, piece_array.shape, piece_array.size)
@@ -106,7 +106,8 @@ def netcdf2convex_hull(netcdf_dataset, max_bytes=None):
         number) for number in grid_mapping_variable.GeoTransform.strip().split(' ')]
     avg_pixel_size = (abs(GeoTransform[1]) + abs(GeoTransform[5])) / 2.0
 
-    return points2convex_hull(get_edge_points(netcdf_dataset, max_bytes), avg_pixel_size, avg_pixel_size)
+    return points2convex_hull(get_edge_points(
+        netcdf_dataset, max_bytes), avg_pixel_size, avg_pixel_size)
 
 
 #=========================================================================

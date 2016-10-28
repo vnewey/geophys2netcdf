@@ -166,10 +166,11 @@ class Geophys2NetCDF(object):
                 logger.debug(
                     'Removed temporary, un-chunked NetCDF file %s', temp_path)
 
-
     def check_json_metadata(self):
-        check_json_metadata(self._output_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
-
+        check_json_metadata(
+            self._uuid,
+            self._output_path,
+            Geophys2NetCDF.EXCLUDED_EXTENSIONS)
 
     def update_nc_metadata(self, output_path=None, do_stats=False):
         '''
@@ -177,7 +178,7 @@ class Geophys2NetCDF(object):
         Should be overridden in subclasses for each specific format but called first to perform initialisations
         '''
         output_path = output_path or self._output_path
-        
+
         assert output_path, 'Output NetCDF path not defined'
 
         assert os.path.exists(
@@ -188,7 +189,7 @@ class Geophys2NetCDF(object):
         try:
             self._netcdf_dataset = netCDF4.Dataset(
                 self._output_path, mode='r+')
-        except Exception, e:
+        except Exception as e:
             logger.error('Unable to open NetCDF file %s: %s',
                          (self._output_path, e.message))
             raise
@@ -199,7 +200,7 @@ class Geophys2NetCDF(object):
 
     def import_metadata(self):
         '''
-        Virtual function to read metadata from all available sources and set self._metadata_dict. 
+        Virtual function to read metadata from all available sources and set self._metadata_dict.
         Should be overridden for each specific format
         '''
         if self._input_dataset:
@@ -236,7 +237,8 @@ class Geophys2NetCDF(object):
 
         return focus_element
 
-    def set_netcdf_metadata_attributes(self, to_crs='EPSG:4326', do_stats=False):
+    def set_netcdf_metadata_attributes(
+            self, to_crs='EPSG:4326', do_stats=False):
         '''
         Function to set all NetCDF metadata attributes using self.METADATA_MAPPING to map from NetCDF ACDD global attribute name to metadata path (e.g. xpath)
         Parameter:
@@ -505,7 +507,8 @@ class Geophys2NetCDF(object):
             assert csw.identification.type == 'CSW', '%s is not a valid CSW service' % csw_url
 
             search_title = title.replace('_', '%')
-            while search_title and len(title) - len(search_title) < 10 and not uuid:
+            while search_title and len(
+                    title) - len(search_title) < 10 and not uuid:
                 title_query = PropertyIsEqualTo(
                     'csw:Title', '%' + search_title + '%')
                 csw.getrecords2(

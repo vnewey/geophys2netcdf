@@ -47,7 +47,8 @@ class NetCDF2DUtils(object):
             centre_pixel_utm_coords = self.transform_coords(
                 centre_pixel_coords, to_crs=nominal_utm_crs)
 
-            return [abs(centre_pixel_utm_coords[1][dim_index] - centre_pixel_utm_coords[0][dim_index]) for dim_index in range(2)]
+            return [abs(centre_pixel_utm_coords[1][
+                        dim_index] - centre_pixel_utm_coords[0][dim_index]) for dim_index in range(2)]
 
         def get_default_sample_metres():
             '''
@@ -58,7 +59,8 @@ class NetCDF2DUtils(object):
                                                0] + self.nominal_pixel_metres[1]) / 2.0) / math.log(10.0)
             log_10_5 = math.log(5.0) / math.log(10.0)
 
-            return round(math.pow(10.0, math.floor(log_10_avg_pixel_metres) + (log_10_5 if((log_10_avg_pixel_metres % 1.0) < log_10_5) else 1.0)))
+            return round(math.pow(10.0, math.floor(log_10_avg_pixel_metres) +
+                                  (log_10_5 if((log_10_avg_pixel_metres % 1.0) < log_10_5) else 1.0)))
 
         self.netcdf_dataset = netcdf_dataset
 
@@ -179,7 +181,8 @@ class NetCDF2DUtils(object):
             return list(coordinates)
 
         try:  # Multiple coordinates
-            return [coordinate[0:2] for coordinate in coord_trans.TransformPoints(coordinates)]
+            return [coordinate[0:2]
+                    for coordinate in coord_trans.TransformPoints(coordinates)]
         except TypeError:  # Single coordinate
             return coord_trans.TransformPoint(*coordinates)[0:2]
 
@@ -248,7 +251,8 @@ class NetCDF2DUtils(object):
 
         return fractional_indices
 
-    def get_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
+    def get_value_at_coords(self, coordinates, crs=None,
+                            max_bytes=None, variable_name=None):
         '''
         Returns list of array values at specified coordinates
         @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
@@ -308,7 +312,8 @@ class NetCDF2DUtils(object):
         except:
             return data_variable[indices[0], indices[1]]
 
-    def get_interpolated_value_at_coords(self, coordinates, crs=None, max_bytes=None, variable_name=None):
+    def get_interpolated_value_at_coords(
+            self, coordinates, crs=None, max_bytes=None, variable_name=None):
         '''
         Returns list of interpolated array values at specified coordinates
         @parameter coordinates: iterable collection of coordinate pairs or single coordinate pair
@@ -361,7 +366,8 @@ class NetCDF2DUtils(object):
 
             return list(result_array)
         except AssertionError:
-            return scipy.ndimage.map_coordinates(data_variable, np.array([[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
+            return scipy.ndimage.map_coordinates(data_variable, np.array(
+                [[fractional_indices[0]], [fractional_indices[1]]]), cval=no_data_value)
 
     def sample_transect(self, transect_vertices, crs=None, sample_metres=None):
         '''
@@ -374,7 +380,8 @@ class NetCDF2DUtils(object):
             '''
             Function to return length of line
             '''
-            return math.sqrt(math.pow(line[1][0] - line[0][0], 2.0) + math.pow(line[1][0] - line[0][0], 2.0))
+            return math.sqrt(math.pow(
+                line[1][0] - line[0][0], 2.0) + math.pow(line[1][0] - line[0][0], 2.0))
 
         def point_along_line(line, distance):
             '''
@@ -386,7 +393,8 @@ class NetCDF2DUtils(object):
             if proportion < 0 or proportion > 1:
                 return None
 
-            return tuple([line[0][dim_index] + proportion * (line[1][dim_index] - line[0][dim_index]) for dim_index in range(2)])
+            return tuple([line[0][dim_index] + proportion * (line[1]
+                                                             [dim_index] - line[0][dim_index]) for dim_index in range(2)])
 
         sample_metres = sample_metres or self.default_sample_metres
 
@@ -439,7 +447,7 @@ class NetCDF2DUtils(object):
                                               dim_index], sample_count + 1) for dim_index in range(2)]).transpose()
                 # print 'sample_point_array.shape = %s' %
                 # (sample_point_array.shape,)
-            except Exception, e:
+            except Exception as e:
                 print 'Line sampling failed: %s' % e.message
                 residual = 0
                 continue
@@ -447,7 +455,9 @@ class NetCDF2DUtils(object):
             sample_points += list(sample_point_array)
 
             # Don't double up end point with next start point
-            if (not residual) and (vertex_index < len(utm_transect_vertices) - 1):
+            if (not residual) and (vertex_index <
+                                   len(utm_transect_vertices) - 1):
                 sample_points.pop()
 
-        return self.transform_coords(sample_points, nominal_utm_crs, crs), sample_metres
+        return self.transform_coords(
+            sample_points, nominal_utm_crs, crs), sample_metres

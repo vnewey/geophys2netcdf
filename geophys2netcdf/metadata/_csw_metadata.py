@@ -23,11 +23,11 @@ class CSWMetadata(XMLMetadata):
     _filename_pattern = '.*\.xml'  # Default RegEx for finding metadata file.
 
     def unicode_to_ascii(self, instring):
-        """Convert unicode to char string if required and strip any leading/trailing whitespaces 
-        ToDO: Investigate whether we can just change the encoding of the DOM tree 
+        """Convert unicode to char string if required and strip any leading/trailing whitespaces
+        ToDO: Investigate whether we can just change the encoding of the DOM tree
         """
         result = instring
-        if type(result) == unicode:
+        if isinstance(result, unicode):
             result = unicodedata.normalize('NFKD', result).encode(
                 'ascii', 'ignore').strip(""" "'\n\t""")
             return result

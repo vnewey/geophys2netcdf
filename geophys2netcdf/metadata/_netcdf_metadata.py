@@ -29,7 +29,7 @@ class NetCDFMetadata(Metadata):
         """Instantiates NetCDFMetadata object. Overrides Metadata method
         """
         if source:
-            if type(source) == netCDF4.Dataset:
+            if isinstance(source, netCDF4.Dataset):
                 self.read_netcdf_metadata(source)
             else:
                 Metadata.__init__(self, source)  # Call inherited constructor
@@ -80,14 +80,14 @@ class NetCDFMetadata(Metadata):
         for key, value in self._metadata_dict.items():
             if type(value) in [str, unicode]:
                 setattr(nc, key, value)  # Set global attribute
-            elif type(value) == dict:
+            elif isinstance(value, dict):
                 try:
                     assert nc.variables.get(
                         key), 'Variable %s does not exist' % key
                     for varattr_key, varattr_value in value.items():
                         # Set variable attribute
                         setattr(nc.variables[key], varattr_key, varattr_value)
-                except Exception, e:
+                except Exception as e:
                     logger.warning(e.message)
 
     def write_file(self, filename=None, save_backup=False):

@@ -52,7 +52,7 @@ logger.setLevel(logging.DEBUG)  # Initial logging level for this module
 
 class ERS2NetCDF(Geophys2NetCDF):
     '''
-    Class definition for ERS2NetCDF to handle ERS gridded datasets 
+    Class definition for ERS2NetCDF to handle ERS gridded datasets
     '''
     FILE_EXTENSION = 'ers'
 
@@ -94,7 +94,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             # following hack
             ers_datetime = ers_datetime.replace(tzinfo=tz.gettz(ers_datetime_string.split(
                 ' ')[4]))  # This should always work if strptime didn't fail
-        except ValueError, e:
+        except ValueError as e:
             logger.warning(
                 'WARNING: Unable to parse "%s" into ERS datetime (%s)', ers_datetime_string, e.message)
             ers_datetime = None
@@ -109,7 +109,7 @@ class ERS2NetCDF(Geophys2NetCDF):
 
         if input_path:
             self.translate(input_path, output_path)
-        else: # NetCDF path provided
+        else:  # NetCDF path provided
             self._output_path = output_path
 
     def translate(self, input_path, output_path=None):
@@ -187,7 +187,9 @@ class ERS2NetCDF(Geophys2NetCDF):
         self._netcdf_dataset = netCDF4.Dataset(self._output_path, mode='r')
         logger.debug('NetCDF file %s reopened as read-only', self._output_path)
 
-        write_json_metadata(self._uuid, os.path.dirname(self._output_path), Geophys2NetCDF.EXCLUDED_EXTENSIONS)
+        write_json_metadata(self._uuid,
+                            os.path.dirname(self._output_path),
+                            Geophys2NetCDF.EXCLUDED_EXTENSIONS)
 
         # Set permissions to group writeable, world readable - ignore errors
         chmod_command = ['chmod', '-R', 'g+rwX,o+rX',
@@ -199,7 +201,7 @@ class ERS2NetCDF(Geophys2NetCDF):
 
     def import_metadata(self):
         '''
-        Function to read metadata from all available sources and set self._metadata_dict. 
+        Function to read metadata from all available sources and set self._metadata_dict.
         Overrides Geophys2NetCDF.import_metadata()
         '''
         Geophys2NetCDF.import_metadata(
@@ -209,9 +211,11 @@ class ERS2NetCDF(Geophys2NetCDF):
         # subtrees
         if self._input_path:
             for extension in ['isi', 'ers']:
-                metadata_path = os.path.splitext(self._input_path)[0] + '.' + extension
+                metadata_path = os.path.splitext(self._input_path)[
+                    0] + '.' + extension
                 if os.path.isfile(metadata_path):
-                    self._metadata_dict[extension.upper()] = ERSMetadata(metadata_path).metadata_dict
+                    self._metadata_dict[extension.upper()] = ERSMetadata(
+                        metadata_path).metadata_dict
 
         try:
             # TODO: Make this more robust
@@ -233,7 +237,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             #self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
             self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
                 Geophys2NetCDF.GA_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
-        except Exception, e:
+        except Exception as e:
             raise Exception('ERROR: Unable to retrieve CSW record %s from %s: %s' % (
                 self._uuid, Geophys2NetCDF.GA_CSW, e.message))
 
@@ -244,7 +248,7 @@ class ERS2NetCDF(Geophys2NetCDF):
             #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
             self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
                 Geophys2NetCDF.NCI_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
-        except Exception, e:
+        except Exception as e:
             logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (
                 self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
 

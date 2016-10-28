@@ -8,6 +8,7 @@ import sys
 import netCDF4
 import math
 import itertools
+from functools import reduce
 
 
 def array_pieces(ndarray, max_bytes=None):
@@ -53,7 +54,8 @@ def array_pieces(ndarray, max_bytes=None):
                        for index in range(array_dimensions)]
 
         # Iterate over every piece of array
-        for piece_indices in itertools.product(*[range(axis_pieces[dimension_index]) for dimension_index in range(array_dimensions)]):
+        for piece_indices in itertools.product(
+                *[range(axis_pieces[dimension_index]) for dimension_index in range(array_dimensions)]):
             start_indices = [piece_indices[dimension_index] * piece_shape[dimension_index]
                              for dimension_index in range(array_dimensions)]
             end_indices = [min(start_indices[dimension_index] + piece_shape[dimension_index],

@@ -24,11 +24,11 @@ class XMLMetadata(Metadata):
     _filename_pattern = '.*\.xml'  # Default RegEx for finding metadata file.
 
     def unicode_to_ascii(self, instring):
-        """Convert unicode to char string if required and strip any leading/trailing whitespaces 
-        ToDO: Investigate whether we can just change the encoding of the DOM tree 
+        """Convert unicode to char string if required and strip any leading/trailing whitespaces
+        ToDO: Investigate whether we can just change the encoding of the DOM tree
         """
         result = instring
-        if type(result) == unicode:
+        if isinstance(result, unicode):
             result = unicodedata.normalize('NFKD', result).encode(
                 'ascii', 'ignore').strip(""" "'\n\t""")
             return result
@@ -64,7 +64,8 @@ class XMLMetadata(Metadata):
                 node_dict[key] = value
 
         # Traverse all non-text nodes
-        for child_node in [x for x in node.childNodes if x.nodeType == xml.dom.minidom.Node.ELEMENT_NODE]:
+        for child_node in [
+                x for x in node.childNodes if x.nodeType == xml.dom.minidom.Node.ELEMENT_NODE]:
             nodeName = child_node.nodeName
             if nodeName:
                 nodeName = self.unicode_to_ascii(nodeName)
@@ -101,7 +102,8 @@ class XMLMetadata(Metadata):
                             attribute.name), self.unicode_to_ascii(attribute.value))
 
                     # Leaf node - value held in child text node
-                    if child_node.childNodes and child_node.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE:
+                    if child_node.childNodes and child_node.childNodes[
+                            0].nodeType == xml.dom.minidom.Node.TEXT_NODE:
                         node_value = self.unicode_to_ascii(
                             child_node.childNodes[0].nodeValue)
                         # TODO: Do something better than using 'TEXT' as key
@@ -119,7 +121,8 @@ class XMLMetadata(Metadata):
                 elif not child_node.childNodes:  # Empty leaf node
                     tree_dict[nodeName] = ''
 
-    def _populate_node_from_dict(self, tree_dict, node, uses_attributes, owner_document=None, level=0):
+    def _populate_node_from_dict(
+            self, tree_dict, node, uses_attributes, owner_document=None, level=0):
         """Private recursive function to populate a nested dict from DOM tree or element node
         Exposed to allow unit testing using a DOM tree constructed from a string
         Arguments:
@@ -134,7 +137,7 @@ class XMLMetadata(Metadata):
             child_item = tree_dict[node_name]
             assert child_item is not None, node_name + \
                 ' node is empty - must hold either a string or subtree dict'
-            if type(child_item) == dict:  # Subtree - descend to next level
+            if isinstance(child_item, dict):  # Subtree - descend to next level
                 logger.debug('%sElement Node %s', '  ' * level, node_name)
                 child_node = xml.dom.minidom.Element(node_name)
                 child_node.ownerDocument = owner_document
@@ -146,7 +149,7 @@ class XMLMetadata(Metadata):
             else:  # Leaf node - store node value
                 if child_item is None:
                     child_item = ''
-                assert type(child_item) == str, node_name + \
+                assert isinstance(child_item, str), node_name + \
                     ' node is not a string'
                 if uses_attributes:  # Store value in attribute
                     logger.debug('%sAttribute for %s = %s', '  ' *
@@ -208,7 +211,8 @@ class XMLMetadata(Metadata):
 
         return self._metadata_dict
 
-    def write_file(self, filename=None, uses_attributes=None, save_backup=False):
+    def write_file(self, filename=None, uses_attributes=None,
+                   save_backup=False):
         """Function write the metadata contained in self._metadata_dict to an XML file
         Argument:
             filename: Metadata file to be written
@@ -1837,12 +1841,12 @@ def main():
         <gco:CharacterString>The gravity data set of onshore Australia contains more than 1.57 million reliable onshore stations gathered during more than 1800 surveys and held in the Australian National Gravity Database (ANGD). Continental Australia has a basic station spacing coverage of 11 km, with South Australia, Tasmania and part of New South Wales covered at a spacing of 7 km. Victoria has station coverage of approximately 1.5 km. Some areas of scientific or economic interest have been infilled with station spacings between 2 km and 4 km by recent Commonwealth, State and Territory Government initiatives. Other areas of detailed coverage have been surveyed by private companies for exploration purposes. Only open file data as held in the ANGD at March 2011 were used in the creation of the grid.
 The data values contained in the grid are Isostatic Residual Gravity anomalies over Continental Australia. A depth to mantle model and subsequent isostatic corrections were produced using a modified version of the USGS program AIRYROOT (Simpson et al., 1983) provided by Intrepid Geophysics. Geoscience Australia's 2009 Bathymetry and Topography Grid (Whiteway, 2009) was used to calculate the depth to crustal bottom following the Airy-Heiskanen crustal-root model. The isostatic corrections were then applied to the complete Bouguer anomalies (Tracey and Nakamura, 2010) to produce the Isostatic Residual Gravity Anomaly Grid of Australia. The gravity anomalies are based on the Australian Absolute Gravity Datum 2007 and 1994 Geodetic Datum of Australia (Tracey et al., 2008).
 A crustal density of 2.67 tonnes per cubic meter was used for the calculation, with an assumed density contrast between the crust and mantle of 0.4 tonnes per cubic meter. A depth to mantle at sea level of 37 km was used in the calculation.  This was derived from the average Australian depth to the Mohorovi&#191;i&#191; discontinuity (Moho) at sea level using data from seismic studies around Australia (Goncharov et al., 2007).
-The original grid was converted from ERMapper (.ers) format to netCDF4_classic format using GDAL1.11.1. The main purpose of this conversion is to enable access to the data by relevant open source tools and software. The netCDF grid was created on 2016-03-29. 
+The original grid was converted from ERMapper (.ers) format to netCDF4_classic format using GDAL1.11.1. The main purpose of this conversion is to enable access to the data by relevant open source tools and software. The netCDF grid was created on 2016-03-29.
 References
-Goncharov, A., Deighton, I., Tischer, M. and Collins, C., 2007. Crustal thickness in Australia: where, how and what for?: ASEG Extended Abstracts, vol. 2007, pp. 1-4, ASEG2007 19th Geophysical Conference. 
+Goncharov, A., Deighton, I., Tischer, M. and Collins, C., 2007. Crustal thickness in Australia: where, how and what for?: ASEG Extended Abstracts, vol. 2007, pp. 1-4, ASEG2007 19th Geophysical Conference.
 Simpson, R.W., Jachens, R.C. and Blakely, R.J., 1983. AIRYROOT: A FORTRAN program for calculating the gravitational attraction of an Airy isostatic root out to 166.7 km: US Geological Survey Open File Report 83-883.
-Tracey, R., Bacchin, M., and Wynne, P., 2008. AAGD07: A new absolute gravity datum for Australian gravity and new standards for the Australian National Gravity Database: ASEG Extended Abstracts, vol. 2007, No.1, pp. 1-3, ASEG2007 19th Geophysical Conference. 
-Tracey, R. and Nakamura, A., 2010. Complete Bouguer Anomalies for the Australian National Gravity Database: ASEG Extended Abstracts, vol. 2010, pp. 1-3, ASEG2010 21st Geophysical Conference. 
+Tracey, R., Bacchin, M., and Wynne, P., 2008. AAGD07: A new absolute gravity datum for Australian gravity and new standards for the Australian National Gravity Database: ASEG Extended Abstracts, vol. 2007, No.1, pp. 1-3, ASEG2007 19th Geophysical Conference.
+Tracey, R. and Nakamura, A., 2010. Complete Bouguer Anomalies for the Australian National Gravity Database: ASEG Extended Abstracts, vol. 2010, pp. 1-3, ASEG2010 21st Geophysical Conference.
 Whiteway, T.G., 2009. Australian Bathymetry and Topography Grid: Geoscience Australia Record 2009/21, 46pp.</gco:CharacterString>
       </mrl:statement>
       <mrl:scope>
