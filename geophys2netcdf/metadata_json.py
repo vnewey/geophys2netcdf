@@ -53,7 +53,7 @@ def write_json_metadata(uuid, dataset_folder, excluded_extensions=[]):
     json_output_file.close()
     logger.info('Finished writing metadata file %s', json_output_path)
 
-def check_json_metadata(output_path=None, excluded_extensions=[]):
+def check_json_metadata(uuid, output_path, excluded_extensions=[]):
     '''
     Function to check UUID, file_paths MD5 checksums from .metadata.json
     '''
@@ -69,6 +69,10 @@ def check_json_metadata(output_path=None, excluded_extensions=[]):
     json_metadata_file = open(json_metadata_path, 'r')
     metadata_dict = json.load(json_metadata_file)
     json_metadata_file.close()
+
+    if metadata_dict['uuid'] != uuid:
+        report_list.append('UUID Changed from %s to %s' % (
+            metadata_dict['uuid'], uuid))
 
     if metadata_dict['folder_path'] != dataset_folder:
         report_list.append('Dataset folder Changed from %s to %s' % (

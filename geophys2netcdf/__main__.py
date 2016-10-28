@@ -44,19 +44,19 @@ def main():
         sys.argv) >= 2, 'Must provide input file path and optional output file path'
     input_path = os.path.abspath(sys.argv[1])
 
-    # If NetCDF path given, then do update_nc_metadata
+    # If only NetCDF path given, then do update_nc_metadata
     if len(sys.argv) == 2 and os.path.splitext(input_path)[1] == '.nc':
         g2n_object = ERS2NetCDF()
-        g2n_object.check_json_metadata(input_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
         g2n_object.update_nc_metadata(input_path)
         # Kind of redundant, but possibly useful for debugging
-        g2n_object.check_json_metadata(input_path, Geophys2NetCDF.EXCLUDED_EXTENSIONS)
+        g2n_object.check_json_metadata()
         return
 
-    # Default output path is next to input path
-    if len(sys.argv) == 3:
+    
+    if len(sys.argv) == 3: # output_path specified
         output_path = os.path.abspath(sys.argv[2])
     else:
+        # Default output path is next to input path
         output_path = os.path.abspath(os.path.splitext(input_path)[0] + '.nc')
 
     g2n_object = None

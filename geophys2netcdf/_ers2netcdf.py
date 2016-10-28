@@ -109,6 +109,8 @@ class ERS2NetCDF(Geophys2NetCDF):
 
         if input_path:
             self.translate(input_path, output_path)
+        else: # NetCDF path provided
+            self._output_path = output_path
 
     def translate(self, input_path, output_path=None):
         '''

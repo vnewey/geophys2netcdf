@@ -176,22 +176,23 @@ class Geophys2NetCDF(object):
         Function to import all available metadata and set attributes in NetCDF file.
         Should be overridden in subclasses for each specific format but called first to perform initialisations
         '''
-        assert output_path or self._output_path, 'Output NetCDF path not defined'
+        output_path = output_path or self._output_path
+        
+        assert output_path, 'Output NetCDF path not defined'
 
-        if output_path:  # New output path specified for nc metadata update
-            assert os.path.exists(
-                output_path), 'NetCDF file %s does not exist.' % output_path
-            self._output_path = output_path
-            if self._netcdf_dataset:
-                self._netcdf_dataset.close()
-            try:
-                self._netcdf_dataset = netCDF4.Dataset(
-                    self._output_path, mode='r+')
-            except Exception, e:
-                logger.error('Unable to open NetCDF file %s: %s',
-                             (self._output_path, e.message))
-                raise
-            self.import_metadata()
+        assert os.path.exists(
+            output_path), 'NetCDF file %s does not exist.' % output_path
+        self._output_path = output_path
+        if self._netcdf_dataset:
+            self._netcdf_dataset.close()
+        try:
+            self._netcdf_dataset = netCDF4.Dataset(
+                self._output_path, mode='r+')
+        except Exception, e:
+            logger.error('Unable to open NetCDF file %s: %s',
+                         (self._output_path, e.message))
+            raise
+        self.import_metadata()
 
         assert self._metadata_dict, 'No metadata acquired'
         self.set_netcdf_metadata_attributes(do_stats=do_stats)
