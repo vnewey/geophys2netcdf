@@ -20,7 +20,8 @@ class XMLUpdater(object):
     # externally-facing GeoNetwork - DO NOT USE!!!
     # GA's internal GeoNetwork via port forward. Need to use this to obtain
     # complete metadata
-    GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+    # GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+    GA_GEONETWORK = 'http://intranet.ga.gov.au/geonetwork/srv/eng'
     THREDDS_ROOT_DIR = '/g/data1/rr2/'
 
     THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
