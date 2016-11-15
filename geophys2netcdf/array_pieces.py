@@ -11,11 +11,12 @@ import itertools
 from functools import reduce
 
 
-def array_pieces(ndarray, max_bytes=None):
+def array_pieces(ndarray, overlap=0, max_bytes=None):
     '''
     Generator to return a series of numpy arrays less than max_bytes in size and the offset within the complete data from a NetCDF variable
     Parameters:
         ndarray: Numpy array or NetCDF array variable
+        overlap: number of pixels to add to each edge
         max_bytes: Maximum number of bytes to retrieve. Defaults to 500,000,000 for NCI's OPeNDAP
 
     Yields:
@@ -54,20 +55,31 @@ def array_pieces(ndarray, max_bytes=None):
                        for index in range(array_dimensions)]
 
         # Iterate over every piece of array
-        for piece_indices in itertools.product(
-                *[range(axis_pieces[dimension_index]) for dimension_index in range(array_dimensions)]):
+        for piece_indices in itertools.product(*[range(axis_pieces[dimension_index]) 
+                                                 for dimension_index in range(array_dimensions)]):
+            
+            # Compute base start indices with no overlap
             start_indices = [piece_indices[dimension_index] * piece_shape[dimension_index]
                              for dimension_index in range(array_dimensions)]
-            end_indices = [min(start_indices[dimension_index] + piece_shape[dimension_index],
-                               array_shape[dimension_index]) for dimension_index in range(array_dimensions)]
-            array_slices = [slice(start_indices[dimension_index], end_indices[
-                                  dimension_index]) for dimension_index in range(array_dimensions)]
+            
+            # Compute end indices plus overlap from start indices
+            end_indices = [min(start_indices[dimension_index] + piece_shape[dimension_index] + overlap,
+                               array_shape[dimension_index]) 
+                           for dimension_index in range(array_dimensions)]
+            
+            # Subtract overlap from base start indices 
+            start_indices = [max(0, start_indices[dimension_index] - overlap)
+                             for dimension_index in range(array_dimensions)]
+            
+            array_slices = [slice(start_indices[dimension_index],
+                                  end_indices[dimension_index])
+                            for dimension_index in range(array_dimensions)]
 
             piece_array = ndarray[array_slices]
             yield piece_array, tuple(start_indices)
 
     else:  # Only one piece required
-        yield ndarray[:], (0, 0)
+        yield ndarray[...], (0, 0)
 
 
 def main():
@@ -87,10 +99,10 @@ def main():
             'Unable to determine data variable (must have "grid_mapping" attribute')
 
     piece_count = 0
-    for piece_array, array_offset in array_pieces(data_variable):
+    for piece_array, array_offset in array_pieces(data_variable, overlap=0):
         piece_count += 1
         piece_bytes = data_variable.dtype.itemsize * \
-            reduce(lambda x, y: x * y, data_variable.shape)
+            reduce(lambda x, y: x * y, piece_array.shape)
         print 'piece_array.shape = %s, array_offset = %s, piece_bytes = %d' % (piece_array.shape, array_offset, piece_bytes)
 
     print 'piece_count = %s' % piece_count

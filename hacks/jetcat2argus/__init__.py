@@ -1,3 +1,5 @@
+import os
+import yaml
 import cx_Oracle
 from collections import OrderedDict
 
@@ -89,12 +91,13 @@ order by TO_NUMBER(A.SURVEYS.SURVEYID)'''
               }
 
     
-    def __init__(self, jetcat_path, db_alias, db_user, db_password):
+    def __init__(self, jetcat_path, db_alias, db_user, db_password, output_path):
         '''Constructor for JetCat2Argus
         '''
         self.argus_fields = None
                 
         self.jetcat_path = jetcat_path
+        self.output_path = output_path
         
         self.jetcat_records = self.read_jetcat_file(self.jetcat_path)
         
@@ -165,17 +168,29 @@ order by TO_NUMBER(A.SURVEYS.SURVEYID)'''
         
         
     def get_argus_records(self):
+        '''Function to return a dict of all argus records keyed by survey_id'''
         
-        argus_records = {}
+        argus_path = 'argus.yaml'
         
-        query_result = self.cursor.execute(None)
+        if os.path.isfile(argus_path): # Cache file exists
+            argus_file = open(argus_path, 'r')
+            argus_records = yaml.load(argus_file)
+            argus_file.close()
+        else: # Use DB query
+            argus_records = {}
         
-        if not self.argus_fields:
-            self.argus_fields = [field_desc[0] for field_desc in query_result.description]
+            query_result = self.cursor.execute(None)
             
-        for argus_record in query_result:
-            argus_records[argus_record[self.argus_fields.index('SURVEYID')]] = argus_record
+            if not self.argus_fields:
+                self.argus_fields = [field_desc[0] for field_desc in query_result.description]
+                
+            for argus_record in query_result:
+                argus_records[argus_record[self.argus_fields.index('SURVEYID')]] = argus_record
             
+            argus_file = open(argus_path, 'w')
+            yaml.dump(argus_records, argus_file)
+            argus_file.close()
+
         return argus_records
         
 
