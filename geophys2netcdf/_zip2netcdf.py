@@ -72,7 +72,7 @@ class Zip2NetCDF(Geophys2NetCDF):
             logger.info('Removing temporary directory %s', self._zipdir)
             rmtree(self._zipdir)
 
-    def translate(self, input_path, output_path=None):
+    def translate(self, input_path, output_path=None, force_overwrite=False):
         '''
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
@@ -107,12 +107,18 @@ class Zip2NetCDF(Geophys2NetCDF):
                     self._zipdir):
                 raise exception
 
-        unzip_command = ['unzip',
-                         input_path,
-                         '-d',
-                         self._zipdir
-                         ]
-
+        if os.name == 'nt': # Windows - assume 7zip in use
+            unzip_command = ['"C:\\Program Files\\7-Zip\\7z"', 
+                             'x',
+                             input_path,
+                             '-o' + self._zipdir]
+        else: # *nix
+            unzip_command = ['unzip',
+                             input_path,
+                             '-d',
+                             self._zipdir
+                             ]
+        
         subprocess.check_call(unzip_command)
         logger.info('%s unzipped into %s', input_path, self._zipdir)
 

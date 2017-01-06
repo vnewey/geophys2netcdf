@@ -111,16 +111,17 @@ class ERS2NetCDF(Geophys2NetCDF):
         else:  # NetCDF path provided
             self._output_path = output_path
 
-    def translate(self, input_path, output_path=None):
+    def translate(self, input_path, output_path=None, force_overwrite=False):
         '''
         Function to perform ERS format-specific translation and set self._input_dataset and self._netcdf_dataset
         Overrides Geophys2NetCDF.translate()
         '''
         Geophys2NetCDF.translate(
-            self, input_path, output_path)  # Perform initialisations using base class method
+            self, input_path, output_path, force_overwrite)  # Perform initialisations using base class method
 
-        # Use gdal_translate to create basic NetCDF
-        self.gdal_translate(self._input_path, self._output_path)
+        if force_overwrite or not os.path.exists(self._output_path):
+            # Use gdal_translate to create basic NetCDF
+            self.gdal_translate(self._input_path, self._output_path)
 
         self._input_dataset = gdal.Open(self._input_path)
         assert self._input_dataset, 'Unable to open input file %s' % self._input_path
@@ -227,26 +228,27 @@ class ERS2NetCDF(Geophys2NetCDF):
         if not self._uuid:
             self.get_uuid(title)
 
-        # Get record from GA CSW
-        try:
-            #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
-            #logger.debug('GA csw_record = %s', csw_record)
-            #self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-            self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
-                Geophys2NetCDF.GA_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
-        except Exception as e:
-            raise Exception('ERROR: Unable to retrieve CSW record %s from %s: %s' % (
-                self._uuid, Geophys2NetCDF.GA_CSW, e.message))
-
-        # Get record from NCI CSW (Optional)
-        try:
-            #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
-            #logger.debug('NCI csw_record = %s', csw_record)
-            #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-            self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
-                Geophys2NetCDF.NCI_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
-        except Exception as e:
-            logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (
-                self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
+        if self._uuid:
+            # Get record from GA CSW
+            try:
+                #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
+                #logger.debug('GA csw_record = %s', csw_record)
+                #self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+                self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
+                    Geophys2NetCDF.GA_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
+            except Exception as e:
+                logger.warning('ERROR: Unable to retrieve CSW record %s from %s: %s' % (
+                    self._uuid, Geophys2NetCDF.GA_CSW, e.message))
+    
+            # Get record from NCI CSW (Optional)
+            try:
+                #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
+                #logger.debug('NCI csw_record = %s', csw_record)
+                #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+                self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
+                    Geophys2NetCDF.NCI_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
+            except Exception as e:
+                logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (
+                    self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
 
         logger.debug('self._metadata_dict = %s', self._metadata_dict)

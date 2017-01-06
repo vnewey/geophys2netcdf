@@ -90,7 +90,7 @@ class Geophys2NetCDF(object):
         self._uuid = None  # File identifier - must be unique to dataset
         self._metadata_dict = {}
 
-    def translate(self, input_path, output_path=None):
+    def translate(self, input_path, output_path=None, force_overwrite=False):
         '''
         Virtual function - performs basic initialisation for file translations
         Should be overridden in subclasses for each specific format but called first to perform initialisations
@@ -105,19 +105,27 @@ class Geophys2NetCDF(object):
         if os.path.exists(self._output_path):
             logger.warning(
                 'WARNING: Output NetCDF file %s already exists.', self._output_path)
-            if os.path.exists(self._output_path + '.bck'):
-                logger.warning(
-                    'WARNING: Keeping existing backup file %s.bck', self._output_path)
-            else:
-                logger.warning(
-                    'WARNING: Backing up existing NetCDF file to %s.bck', self._output_path)
-                mv_command = ['mv',
-                              self._output_path,
-                              self._output_path + '.bck'
-                              ]
-                logger.debug('mv_command = %s', mv_command)
-                subprocess.check_call(mv_command)
-
+            if force_overwrite:
+                if os.path.exists(self._output_path + '.bck'):
+                    logger.warning(
+                        'WARNING: Keeping existing backup file %s.bck', self._output_path)
+                    logger.warning(
+                         'WARNING: Removing existing NetCDF file %s', self._output_path)
+                    rm_command = ['rm',
+                                  self._output_path
+                                  ]
+                    logger.debug('rm_command = %s', rm_command)
+                    subprocess.check_call(rm_command)
+                else:
+                    logger.warning(
+                        'WARNING: Backing up existing NetCDF file to %s.bck', self._output_path)
+                    mv_command = ['mv',
+                                  self._output_path,
+                                  self._output_path + '.bck'
+                                  ]
+                    logger.debug('mv_command = %s', mv_command)
+                    subprocess.check_call(mv_command)
+                
         self._input_dataset = None
         self._netcdf_dataset = None
         self._metadata_dict = {}
@@ -223,6 +231,14 @@ class Geophys2NetCDF(object):
             logger.debug('Read NetCDF metadata from %s', self._output_path)
         else:
             logger.debug('No NetCDF-compatible output dataset defined.')
+            
+    def dump_metadata(self):
+        '''
+        Function to print metadata dict
+        '''
+        #TODO: Need something better than just printing.
+        # self.import_metadata()
+        print self._metadata_dict
 
     def get_metadata(self, metadata_path, default_namespace='gmd:'):
         '''
@@ -559,7 +575,9 @@ class Geophys2NetCDF(object):
         if not self._uuid and title:
             get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
 
-        assert self._uuid, 'Unable to determine unique UUID for %s' % self._output_path
+        if not self._uuid:
+            logger.warning('Unable to determine unique UUID for %s' % self._output_path)
+            
         logger.debug('self._uuid = %s', self._uuid)
         return self._uuid
 
