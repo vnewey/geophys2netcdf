@@ -50,5 +50,5 @@ from geophys2netcdf._geophys2netcdf import Geophys2NetCDF
 from geophys2netcdf._ers2netcdf import ERS2NetCDF
 from geophys2netcdf._zip2netcdf import Zip2NetCDF
 from geophys2netcdf.thredds_catalog import THREDDSCatalog
-from geophys2netcdf.data_stats import DataStats
-from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
+#from geophys_utils import DataStats
+#from geophys_utils import netcdf2convex_hull

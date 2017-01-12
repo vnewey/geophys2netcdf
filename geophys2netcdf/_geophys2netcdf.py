@@ -49,8 +49,8 @@ import json
 import urllib
 
 from geophys2netcdf.metadata import XMLMetadata, NetCDFMetadata
-from geophys2netcdf.netcdf2convex_hull import netcdf2convex_hull
-from geophys2netcdf.data_stats import DataStats
+from geophys_utils import netcdf2convex_hull
+from geophys_utils import DataStats
 from geophys2netcdf.metadata_json import write_json_metadata, check_json_metadata
 
 logger = logging.getLogger(__name__)
