@@ -70,12 +70,14 @@ class JetCatMetadata(Metadata):
                   'T': 'TAS'
                  }
     
+    MIN_SURVEY_ID = 20
+
     def decode_state(self, state_tag):
         return (JetCatMetadata.STATE_DICT.get(state_tag[0]) or 
                 JetCatMetadata.STATE_DICT.get(state_tag[0:2]) or 
                 state_tag)
 
-    def __init__(self, source=None):
+    def __init__(self, source=None, theme=None, jetcat_path=None):
         """Instantiates JetCatMetadata object. Overrides Metadata method
         """
         self._metadata_dict = {}
@@ -85,16 +87,29 @@ class JetCatMetadata(Metadata):
         if source:
             if isinstance(source, dict):
                 self._metadata_dict = source
-            elif type(source) == str:
-                self.read_file(source)
-
+            else:
+                survey_ids = None
+                if type(source) == list: # list of survey_ids provided 
+                    survey_ids = source
+                else:
+                    try: # Try to convert comma separated list to list of integers
+                        survey_ids = [int(survey_id) for survey_id in self.list_from_string(source)]
+                    except:
+                        if type(source) == str:
+                            self.read_file(source, jetcat_path) # Parse survey IDs from filename
+                        
+                if survey_ids:
+                    self.read_jetcat_metadata(survey_ids, theme=theme, jetcat_path=jetcat_path)
                 
 
     def list_from_string(self, comma_separated_string):
         '''
         Helper function to return a list of strings from a string containing a comma separated list
         '''
-        return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
+        if comma_separated_string:
+            return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
+        else:
+            return []
     
     def merge_metadata_dict(self, survey_metadata_dict):
         '''
@@ -109,7 +124,7 @@ class JetCatMetadata(Metadata):
                                                  [value for value in values if value not in stored_values]
                                                  )
             
-    def read_JetCat_metadata(self, survey_ids, theme=None, jetcat_path=None):
+    def read_jetcat_metadata(self, survey_ids, theme=None, jetcat_path=None):
         jetcat_path = jetcat_path or JetCatMetadata.JETCAT_PATH
         
         jetcat_file = open(jetcat_path, 'r')
@@ -121,7 +136,6 @@ class JetCatMetadata(Metadata):
             if self.jetcat_fields is None: # First line contains headers
                 self.jetcat_fields = [value.upper() for value in values] # Convert headers to upper case
                 assert self.jetcat_fields == JetCatMetadata.JETCAT_FIELDS, 'Invalid JetCat file format'
-                print self.jetcat_fields
                 continue
             
             jetcat_values = dict(zip(self.jetcat_fields, values))
@@ -135,7 +149,7 @@ class JetCatMetadata(Metadata):
                 self.merge_metadata_dict(jetcat_values)
     
 
-    def read_file(self, filename=None):
+    def read_file(self, filename=None, jetcat_path=None):
         '''
         Function to read JetCat metadata from query and store the results in self._metadata_dict
         using survey_id(s) parsed from filename
@@ -166,7 +180,7 @@ class JetCatMetadata(Metadata):
         
         survey_ids = [int(survey_id) for survey_id in re.sub('\D+', ' ', basename).strip().split(' ')]
 
-        self.read_JetCat_metadata(survey_ids, theme)
+        self.read_jetcat_metadata(survey_ids, theme=theme, jetcat_path=jetcat_path)
         
         self._filename = filename
         
@@ -183,7 +197,7 @@ class JetCatMetadata(Metadata):
         return self._metadata_dict
 
     def write_file(self, filename=None, save_backup=False):
-        """Function write the metadata contained in self._metadata_dict to an JetCat file
+        """Function write the metadata contained in self._metadata_dict to a JetCat file
         Argument:
             filename: Metadata file to be written
         """

@@ -13,7 +13,7 @@ import re
 import netCDF4
 from shutil import copyfile
 
-from . import Metadata
+from _metadata import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 

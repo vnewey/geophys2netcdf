@@ -131,7 +131,10 @@ where TO_NUMBER(regexp_substr(A.SURVEYS.SURVEYID, '^\d+$')) in ({SURVEY_IDS})'''
         '''
         Helper function to return a list of strings from a string containing a comma separated list
         '''
-        return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
+        if comma_separated_string:
+            return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
+        else:
+            return []
     
     def merge_metadata_dict(self, survey_metadata_dict):
         '''

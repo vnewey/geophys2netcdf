@@ -4,6 +4,8 @@ from _report_metadata import ReportMetadata
 from _xml_metadata import XMLMetadata
 from _ers_metadata import ERSMetadata
 from _netcdf_metadata import NetCDFMetadata
+from _jetcat_metadata import JetCatMetadata
+from _survey_metadata import SurveyMetadata
 
 try:
     from _argus_metadata import ArgusMetadata # This needs cx_Oracle - can't run outside GA
@@ -18,6 +20,8 @@ def metadata_class(metadata_type_tag):
                           'ERS': ERSMetadata,
                           'ISI': ERSMetadata,
                           'NetCDF': NetCDFMetadata,
+                          'JetCat': JetCatMetadata,
+                          'Survey': SurveyMetadata
                           }
 
     try:

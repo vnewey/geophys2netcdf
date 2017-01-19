@@ -6,7 +6,7 @@ Author: Alex Ip (alex.ip@ga.gov.au)
 """
 
 import logging
-from . import Metadata
+from _metadata import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 

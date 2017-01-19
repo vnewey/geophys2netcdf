@@ -7,7 +7,7 @@ Created on Jun 22, 2012
 import re
 import os
 import logging
-from . import Metadata
+from _metadata import Metadata
 
 logger = logging.getLogger('root.' + __name__)
 
