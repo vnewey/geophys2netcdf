@@ -5,30 +5,110 @@ Created on Apr 7, 2016
 '''
 import sys
 import netCDF4
-import subprocess
 import re
+import os
+import uuid
 from pprint import pprint
-from geophys2netcdf.metadata import Metadata, JetCatMetadata, SurveyMetadata
+from geophys2netcdf.metadata import Metadata, JetCatMetadata, SurveyMetadata, NetCDFMetadata
+from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
+from geophys_utils._crs_utils import transform_coords
 
+from geophys2netcdf.metadata import MetadataText
 
 def main():
     assert len(
-        sys.argv) == 4, 'Usage: %s <jetcat_path> <netcdf_path> <uuid>' % sys.argv[0]
+        sys.argv) == 4, 'Usage: %s <jetcat_path> <json_text_template_path> <netcdf_path>' % sys.argv[0]
     jetcat_path = sys.argv[1]
-    netcdf_path = sys.argv[2]
-    uuid = sys.argv[3]
+    json_text_template_path = sys.argv[2]
+    netcdf_path = sys.argv[3]
 
     metadata = Metadata()
+
+    netcdf_metadata = NetCDFMetadata(netcdf_path)
+    metadata.merge_root_metadata_from_object(netcdf_metadata)
+
+    nc_dataset = netCDF4.Dataset(netcdf_path, 'r+') # Allow for updating of netCDF attributes like uuid
     
-    jetcat_metadata = JetCatMetadata(netcdf_path, jetcat_path=jetcat_path)
+    # JetCat and Survey metadata can either take a list of survey IDs as source(s) or a filename from which to parse them
+    try:
+        survey_ids = nc_dataset.survey_id
+        print 'Survey ID "%s" found in netCDF attributes' % survey_ids
+        source = [int(value_string.strip()) for value_string in survey_ids.split(',') if value_string.strip()]
+    except:
+        source = netcdf_path
+
+    jetcat_metadata = JetCatMetadata(source, jetcat_path=jetcat_path)
     metadata.merge_root_metadata_from_object(jetcat_metadata)
-    
-    survey_metadata = SurveyMetadata(netcdf_path)
+
+    survey_metadata = SurveyMetadata(source)
     metadata.merge_root_metadata_from_object(survey_metadata)
+
+    nc_grid_utils = NetCDFGridUtils(nc_dataset)
     
+    # Add some calculated values to the metadata
+    calculated_values = {}
+    metadata.metadata_dict['Calculated'] = calculated_values
+    
+    calculated_values['FILENAME'] = os.path.basename(netcdf_path)
+    
+    # Find survey year from end date
+    try:
+        year = int(re.match('.*?(\d+)$', metadata.get_metadata(['Survey', 'ENDDATE'])).group(1))
+        if year < 20:
+            year += 2000
+        elif year < 100:
+            year += 1900
+            
+        calculated_values['YEAR'] = str(year)    
+    except:
+        calculated_values['YEAR'] = 'UNKNOWN'
+        
+   
+    
+    #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
+    calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
+    calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
+    
+    survey_id = metadata.get_metadata(['Survey', 'SURVEYID'])
+    try:
+        dataset_survey_id = nc_dataset.survey_id
+        assert (set([int(value_string.strip()) for value_string in dataset_survey_id.split(',') if value_string.strip()]) == 
+                set([int(value_string.strip()) for value_string in survey_id.split(',') if value_string.strip()])), 'NetCDF survey ID %s is inconsistent with %s' % (dataset_survey_id, survey_id)
+    except:
+        nc_dataset.survey_id = survey_id
+        nc_dataset.sync()
+        print 'Survey ID %s written to netCDF file' % survey_id
+
+    dataset_uuid = metadata.get_metadata(['NetCDF', 'uuid'])
+    if not dataset_uuid: # Create a new UUID and write it to the netCDF file 
+        dataset_uuid = uuid.uuid4()
+        nc_dataset.uuid = dataset_uuid
+        nc_dataset.sync()
+        print 'Fresh UUID %s generated and written to netCDF file' % dataset_uuid
+        
+    calculated_values['UUID'] = str(dataset_uuid)   
+    
+    WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
+    WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
+                     min([coordinate[1] for coordinate in WGS84_bbox]),
+                     max([coordinate[0] for coordinate in WGS84_bbox]),
+                     max([coordinate[1] for coordinate in WGS84_bbox])
+                     ]
+    
+    calculated_values['ELON'] = str(WGS84_extents[0])
+    calculated_values['SLAT'] = str(WGS84_extents[1])
+    calculated_values['WLON'] = str(WGS84_extents[2])
+    calculated_values['NLAT'] = str(WGS84_extents[3])
+    
+    #calculated_values['CELLSIZE_DEG'] = (WGS84_extents[2] - WGS84_extents[0]) / 
+    
+    #template_class = None
+    metadata_text_object = MetadataText(json_text_template_path, metadata)
+    
+    calculated_values.update(metadata_text_object.attributes)
+
     pprint(metadata.metadata_dict)
-    
-    
+
 
 if __name__ == '__main__':
     main()

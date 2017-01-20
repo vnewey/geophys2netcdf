@@ -10,7 +10,7 @@ import logging
 import os
 import re
 import unicodedata
-from _metadata import XMLMetadata
+from _xml_metadata import XMLMetadata
 
 logger = logging.getLogger('root.' + __name__)
 

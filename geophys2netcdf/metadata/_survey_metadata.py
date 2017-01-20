@@ -28,7 +28,7 @@ class SurveyMetadata(Metadata):
     _metadata_type_id = 'Survey'
     _filename_pattern = '.*'  # Default RegEx for finding metadata file.
 
-    SURVEY_URL_PREFIX = 'http://www.ga.gov.au/www/argus.argus_api.survey?pSurveyNo=%d'
+    SURVEY_URL = 'http://www.ga.gov.au/www/argus.argus_api.survey?pSurveyNo=%d'
     
     MIN_SURVEY_ID = 20
 
@@ -101,10 +101,10 @@ class SurveyMetadata(Metadata):
                                                  )
             
     def read_Survey_metadata(self, survey_ids):
-        '''Read metadata from survey query
+        '''Read metadata from survey API
         '''
         def get_survey_xml(survey_id): 
-            return urllib.urlopen(SurveyMetadata.SURVEY_URL_PREFIX % survey_id).read()
+            return urllib.urlopen(SurveyMetadata.SURVEY_URL % survey_id).read()
               
         logger.info('Reading metadata from survey query with survey IDs %s', survey_ids)
 
@@ -130,7 +130,7 @@ class SurveyMetadata(Metadata):
         using survey_id(s) parsed from filename
         Only included for compatibility with file-based metadata
         Argument:
-            filename: survey survey_id to query
+            filename: filename parsed to find survey_ids to query
         Returns:
             nested dict containing metadata
 
