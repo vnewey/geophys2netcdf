@@ -614,16 +614,18 @@
           </mri:type>
         </mri:MD_Keywords>
       </mri:descriptiveKeywords>
+    {% for keyword in keywords %}
       <mri:descriptiveKeywords>
         <mri:MD_Keywords>
           <mri:keyword>
-            <gco:CharacterString>Gravity Digital Data</gco:CharacterString>
+            <gco:CharacterString>{{keyword}}</gco:CharacterString>
           </mri:keyword>
           <mri:type>
             <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
           </mri:type>
         </mri:MD_Keywords>
       </mri:descriptiveKeywords>
+    {% endfor %}
       <mri:resourceConstraints>
         <mco:MD_LegalConstraints>
           <mco:accessConstraints>

@@ -9,18 +9,38 @@ import re
 import os
 import uuid
 from pprint import pprint
-from geophys2netcdf.metadata import Metadata, JetCatMetadata, SurveyMetadata, NetCDFMetadata
+from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
 
 from geophys2netcdf.metadata import TemplateMetadata
 
 def main():
+    '''
+    Main function
+    '''
+    
+    def get_xml_text(xml_template_path, metadata_object):
+        '''Helper function to perform substitutions on XML template text
+        '''
+        #TODO: Replace this with Jinja code
+        xml_template_file = open(xml_template_path)  
+        xml_text = xml_template_file.read()
+        xml_template_file.close()
+        
+        for s in re.finditer('({{.+?}})', xml_text):
+            placeholder = s.group(1)
+            xml_text = xml_text.replace('{{' + placeholder + '}}', metadata_object.get_metadata(placeholder.split('/')) or 'UNKNOWN')
+            
+        return xml_text
+
+    # Start of main function
     assert len(
-        sys.argv) == 4, 'Usage: %s <jetcat_path> <json_text_template_path> <netcdf_path>' % sys.argv[0]
-    jetcat_path = sys.argv[1]
-    json_text_template_path = sys.argv[2]
+        sys.argv) == 4, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path>' % sys.argv[0]
+    json_text_template_path = sys.argv[1]
+    xml_template_path = sys.argv[2]
     netcdf_path = sys.argv[3]
+#    jetcat_path = sys.argv[x]
 
     metadata_object = Metadata()
 
@@ -37,8 +57,8 @@ def main():
     except:
         source = netcdf_path
 
-    jetcat_metadata = JetCatMetadata(source, jetcat_path=jetcat_path)
-    metadata_object.merge_root_metadata_from_object(jetcat_metadata)
+#    jetcat_metadata = JetCatMetadata(source, jetcat_path=jetcat_path)
+#    metadata_object.merge_root_metadata_from_object(jetcat_metadata)
 
     survey_metadata = SurveyMetadata(source)
     metadata_object.merge_root_metadata_from_object(survey_metadata)
@@ -108,7 +128,9 @@ def main():
     metadata_object.merge_root_metadata_from_object(template_metadata_object)
 
     pprint(metadata_object.metadata_dict)
-
+    
+    xml_text = get_xml_text(xml_template_path, metadata_object)
+    print xml_text
 
 if __name__ == '__main__':
     main()

@@ -65,8 +65,8 @@ class NetCDFMetadata(Metadata):
 
         logger.debug('Reading metadata from NetCDF file %s', filename)
 
+        nc = netCDF4.Dataset(filename)
         try:
-            nc = netCDF4.Dataset(filename)
             self.read_netcdf_metadata(nc)
             self._filename = filename
         finally:
