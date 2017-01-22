@@ -9,10 +9,10 @@ import re
 import os
 import uuid
 from pprint import pprint
+from jinja2 import Template
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
-
 from geophys2netcdf.metadata import TemplateMetadata
 
 def main():
@@ -23,16 +23,16 @@ def main():
     def get_xml_text(xml_template_path, metadata_object):
         '''Helper function to perform substitutions on XML template text
         '''
-        #TODO: Replace this with Jinja code
         xml_template_file = open(xml_template_path)  
-        xml_text = xml_template_file.read()
+        xml_template = Template(xml_template_file.read())
         xml_template_file.close()
         
-        for s in re.finditer('({{.+?}})', xml_text):
-            placeholder = s.group(1)
-            xml_text = xml_text.replace('{{' + placeholder + '}}', metadata_object.get_metadata(placeholder.split('/')) or 'UNKNOWN')
-            
-        return xml_text
+        value_dict = dict(metadata_object.metadata_dict['Template'])
+        
+        # Convert comma-separated lists to lists of strings
+        value_dict['keywords'] = [keyword.strip() for keyword in value_dict['KEYWORDS'].split(',')]
+        
+        return xml_template.render(**value_dict)
 
     # Start of main function
     assert len(

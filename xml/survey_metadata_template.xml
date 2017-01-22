@@ -495,127 +495,7 @@
           </mrd:formatDistributor>
         </mrd:MD_Format>
       </mri:resourceFormat>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>National dataset</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>gravity</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>grid</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>NCI</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>Gravimetrics</gco:CharacterString>
-          </mri:keyword>
-          <mri:thesaurusName>
-            <cit:CI_Citation>
-              <cit:title>
-                <gco:CharacterString>Australian and New Zealand Standard Research Classification (ANZSRC)</gco:CharacterString>
-              </cit:title>
-              <cit:date>
-                <cit:CI_Date>
-                  <cit:date>
-                    <gco:DateTime>2011-01-01T00:00:00+11:00</gco:DateTime>
-                  </cit:date>
-                  <cit:dateType>
-                    <cit:CI_DateTypeCode codeList="codeListLocation#CI_DateTypeCode" codeListValue="publication"/>
-                  </cit:dateType>
-                </cit:CI_Date>
-              </cit:date>
-              <cit:citedResponsibleParty>
-                <cit:CI_Responsibility>
-                  <cit:role>
-                    <cit:CI_RoleCode codeList="codeListLocation#CI_RoleCode" codeListValue="owner"/>
-                  </cit:role>
-                  <cit:party>
-                    <cit:CI_Organisation>
-                      <cit:name>
-                        <gco:CharacterString>Australian Bureau of Statistics (ABS)</gco:CharacterString>
-                      </cit:name>
-                      <cit:contactInfo>
-                        <cit:CI_Contact>
-                          <cit:onlineResource>
-                            <cit:CI_OnlineResource>
-                              <cit:linkage>
-                                <gco:CharacterString>http://www.abs.gov.au/ausstats/abs@.nsf/Latestproducts/1297.0Main%20Features32008?opendocument&amp;tabname=Summary&amp;prodno=1297.0&amp;issue=2008&amp;num=&amp;view=</gco:CharacterString>
-                              </cit:linkage>
-                            </cit:CI_OnlineResource>
-                          </cit:onlineResource>
-                        </cit:CI_Contact>
-                      </cit:contactInfo>
-                    </cit:CI_Organisation>
-                  </cit:party>
-                </cit:CI_Responsibility>
-              </cit:citedResponsibleParty>
-              <cit:ISBN>
-                <gco:CharacterString>9780642483584</gco:CharacterString>
-              </cit:ISBN>
-              <cit:onlineResource>
-                <cit:CI_OnlineResource>
-                  <cit:linkage>
-                    <gco:CharacterString>http://www.abs.gov.au/ausstats/abs@.nsf/Latestproducts/1297.0Main%20Features32008?opendocument&amp;tabname=Summary&amp;prodno=1297.0&amp;issue=2008&amp;num=&amp;view=</gco:CharacterString>
-                  </cit:linkage>
-                </cit:CI_OnlineResource>
-              </cit:onlineResource>
-            </cit:CI_Citation>
-          </mri:thesaurusName>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>Isostatic anomaly</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-      <mri:descriptiveKeywords>
-        <mri:MD_Keywords>
-          <mri:keyword>
-            <gco:CharacterString>Geophysical National Coverage</gco:CharacterString>
-          </mri:keyword>
-          <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
-          </mri:type>
-        </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-    {% for keyword in keywords %}
-      <mri:descriptiveKeywords>
+      {% for keyword in keywords %}<mri:descriptiveKeywords>
         <mri:MD_Keywords>
           <mri:keyword>
             <gco:CharacterString>{{keyword}}</gco:CharacterString>
@@ -624,8 +504,7 @@
             <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
           </mri:type>
         </mri:MD_Keywords>
-      </mri:descriptiveKeywords>
-    {% endfor %}
+      </mri:descriptiveKeywords>{% endfor %}
       <mri:resourceConstraints>
         <mco:MD_LegalConstraints>
           <mco:accessConstraints>
@@ -664,8 +543,7 @@
   </mdb:identificationInfo>
   <mdb:distributionInfo>
     <mrd:MD_Distribution>
-    {% for distribution in distributions %}
-      <mrd:distributionFormat>
+      {% for distribution in distributions %}<mrd:distributionFormat>
         <mrd:MD_Format>
           <mrd:formatSpecificationCitation>
             <cit:CI_Citation>
@@ -758,8 +636,7 @@
             </mrd:MD_Distributor>
           </mrd:formatDistributor>
         </mrd:MD_Format>
-      </mrd:distributionFormat>
-    {% endfor %}
+      </mrd:distributionFormat>{% endfor %}
     </mrd:MD_Distribution>
   </mdb:distributionInfo>
   <mdb:resourceLineage>
