@@ -24,7 +24,7 @@ def main():
         '''Helper function to perform substitutions on XML template text
         '''
         jinja_environment = Environment(
-            loader=PackageLoader(__name__, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'xml')),
+            loader=PackageLoader(__name__, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')),
             autoescape=select_autoescape(['html', 'xml']
                                          )
                                         )
