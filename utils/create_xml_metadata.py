@@ -13,7 +13,7 @@ from geophys2netcdf.metadata import Metadata, JetCatMetadata, SurveyMetadata, Ne
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
 
-from geophys2netcdf.metadata import MetadataText
+from geophys2netcdf.metadata import TemplateMetadata
 
 def main():
     assert len(
@@ -22,10 +22,10 @@ def main():
     json_text_template_path = sys.argv[2]
     netcdf_path = sys.argv[3]
 
-    metadata = Metadata()
+    metadata_object = Metadata()
 
     netcdf_metadata = NetCDFMetadata(netcdf_path)
-    metadata.merge_root_metadata_from_object(netcdf_metadata)
+    metadata_object.merge_root_metadata_from_object(netcdf_metadata)
 
     nc_dataset = netCDF4.Dataset(netcdf_path, 'r+') # Allow for updating of netCDF attributes like uuid
     
@@ -38,22 +38,22 @@ def main():
         source = netcdf_path
 
     jetcat_metadata = JetCatMetadata(source, jetcat_path=jetcat_path)
-    metadata.merge_root_metadata_from_object(jetcat_metadata)
+    metadata_object.merge_root_metadata_from_object(jetcat_metadata)
 
     survey_metadata = SurveyMetadata(source)
-    metadata.merge_root_metadata_from_object(survey_metadata)
+    metadata_object.merge_root_metadata_from_object(survey_metadata)
 
     nc_grid_utils = NetCDFGridUtils(nc_dataset)
     
     # Add some calculated values to the metadata
     calculated_values = {}
-    metadata.metadata_dict['Calculated'] = calculated_values
+    metadata_object.metadata_dict['Calculated'] = calculated_values
     
     calculated_values['FILENAME'] = os.path.basename(netcdf_path)
     
     # Find survey year from end date
     try:
-        year = int(re.match('.*?(\d+)$', metadata.get_metadata(['Survey', 'ENDDATE'])).group(1))
+        year = int(re.match('.*?(\d+)$', metadata_object.get_metadata(['Survey', 'ENDDATE'])).group(1))
         if year < 20:
             year += 2000
         elif year < 100:
@@ -69,7 +69,7 @@ def main():
     calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
     calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
     
-    survey_id = metadata.get_metadata(['Survey', 'SURVEYID'])
+    survey_id = metadata_object.get_metadata(['Survey', 'SURVEYID'])
     try:
         dataset_survey_id = nc_dataset.survey_id
         assert (set([int(value_string.strip()) for value_string in dataset_survey_id.split(',') if value_string.strip()]) == 
@@ -79,7 +79,7 @@ def main():
         nc_dataset.sync()
         print 'Survey ID %s written to netCDF file' % survey_id
 
-    dataset_uuid = metadata.get_metadata(['NetCDF', 'uuid'])
+    dataset_uuid = metadata_object.get_metadata(['NetCDF', 'uuid'])
     if not dataset_uuid: # Create a new UUID and write it to the netCDF file 
         dataset_uuid = uuid.uuid4()
         nc_dataset.uuid = dataset_uuid
@@ -103,11 +103,11 @@ def main():
     #calculated_values['CELLSIZE_DEG'] = (WGS84_extents[2] - WGS84_extents[0]) / 
     
     #template_class = None
-    metadata_text_object = MetadataText(json_text_template_path, metadata)
+    template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
     
-    calculated_values.update(metadata_text_object.attributes)
+    metadata_object.merge_root_metadata_from_object(template_metadata_object)
 
-    pprint(metadata.metadata_dict)
+    pprint(metadata_object.metadata_dict)
 
 
 if __name__ == '__main__':
