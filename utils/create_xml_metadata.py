@@ -9,7 +9,7 @@ import re
 import os
 import uuid
 from pprint import pprint
-from jinja2 import Template
+from jinja2 import Environment, PackageLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
@@ -23,10 +23,14 @@ def main():
     def get_xml_text(xml_template_path, metadata_object):
         '''Helper function to perform substitutions on XML template text
         '''
-        xml_template_file = open(xml_template_path)  
-        xml_template = Template(xml_template_file.read())
-        xml_template_file.close()
-        
+        jinja_environment = Environment(
+            loader=PackageLoader(__name__, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'xml')),
+            autoescape=select_autoescape(['html', 'xml']
+                                         )
+                                        )
+            
+        xml_template = jinja_environment.get_template(xml_template_path)
+            
         value_dict = dict(metadata_object.metadata_dict['Template'])
         
         # Convert comma-separated lists to lists of strings
