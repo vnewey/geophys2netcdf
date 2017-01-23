@@ -47,6 +47,8 @@ def main():
     netcdf_path = sys.argv[3]
 #    jetcat_path = sys.argv[x]
 
+    xml_path = os.path.abspath(os.path.splitext(os.path.basename(netcdf_path))[0] + '.xml')
+
     metadata_object = Metadata()
 
     netcdf_metadata = NetCDFMetadata(netcdf_path)
@@ -132,10 +134,14 @@ def main():
     
     metadata_object.merge_root_metadata_from_object(template_metadata_object)
 
-    pprint(metadata_object.metadata_dict)
+    #pprint(metadata_object.metadata_dict)
     
     xml_text = get_xml_text(xml_template_path, metadata_object)
-    print xml_text
+    #print xml_text
+    xml_file = open(xml_path, 'w')
+    xml_file.write(xml_text)
+    xml_file.close()
+    print 'XML written to %s' % xml_path
 
 if __name__ == '__main__':
     main()
