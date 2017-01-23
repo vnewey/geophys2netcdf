@@ -542,9 +542,9 @@
       </mri:defaultLocale>
     </mri:MD_DataIdentification>
   </mdb:identificationInfo>
-  <mdb:distributionInfo>
+  {% if False %}<mdb:distributionInfo>
     <mrd:MD_Distribution>
-      {% if False %}{% for distribution in distributions %}<mrd:distributionFormat>
+      {% for distribution in distributions %}<mrd:distributionFormat>
         <mrd:MD_Format>
           <mrd:formatSpecificationCitation>
             <cit:CI_Citation>
@@ -637,9 +637,9 @@
             </mrd:MD_Distributor>
           </mrd:formatDistributor>
         </mrd:MD_Format>
-      </mrd:distributionFormat>{% endfor %}{% endif %}
+      </mrd:distributionFormat>{% endfor %}
     </mrd:MD_Distribution>
-  </mdb:distributionInfo>
+  </mdb:distributionInfo>{% endif %}
   <mdb:resourceLineage>
     <mrl:LI_Lineage>
       <mrl:statement>
