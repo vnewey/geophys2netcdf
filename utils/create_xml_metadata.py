@@ -9,7 +9,7 @@ import re
 import os
 import uuid
 from pprint import pprint
-from jinja2 import Environment, PackageLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
@@ -25,7 +25,7 @@ def main():
         '''
         template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'templates')
         jinja_environment = Environment(
-            loader=PackageLoader(__name__, template_dir),
+            loader=FileSystemLoader(template_dir or './'),
             autoescape=select_autoescape(['html', 'xml']
                                          )
                                         )
