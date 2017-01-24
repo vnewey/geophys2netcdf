@@ -9,7 +9,7 @@
 	"MAX_LATITUDE": "%%Calculated/NLAT%%",
 	"MAX_LONGITUDE": "%%Calculated/ELON%%",
 	"METADATA_ABSTRACT": "Total magnetic intensity (TMI) data measures variations in the intensity of the Earth magnetic field caused by the contrasting content of rock-forming minerals in the Earth crust. Magnetic anomalies can be either positive (field stronger than normal) or negative (field weaker) depending on the susceptibility of the rock. The data are processed via standard methods to ensure the response recorded is that due only to the rocks in the ground. The results produce datasets that can be interpreted to reveal the geological structure of the sub-surface. The processed data is checked for quality by GA geophysicists to ensure that the final data released by GA are fit-for-purpose.\nThis magnetic grid has a cell size of %%Calculated/CELLSIZE_DEG%% degrees (approximately %%Calculated/CELLSIZE_M%%m).  The data used to produce this grid was acquired in %%Calculated/YEAR%% by the %%Survey/STATE%% Government, and consisted of %%Survey/TOTAL_KM%% line-kilometres of data at %%Survey/LINE_SPACING%%m line spacing and %%Survey/AGL%%m terrain clearance.",
-	"METADATA_LINKAGE": "http://rhe-ecat-prod01.prod.lan:8080/geonetwork/srv/eng/search?uuid={{UUID}}",
+	"METADATA_LINKAGE": "http://rhe-ecat-prod01.prod.lan:8080/geonetwork/srv/eng/search?uuid=%%Calculated/UUID%%",
 	"MIN_LATITUDE": "%%Calculated/SLAT%%",
 	"MIN_LONGITUDE": "%%Calculated/WLON%%",
 	"PARENT_COLLECTION_ECAT_ID": "74514",

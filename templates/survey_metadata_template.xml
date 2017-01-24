@@ -179,7 +179,7 @@
   <mdb:alternativeMetadataReference>
     <cit:CI_Citation>
       <cit:title>
-        <gco:CharacterString>Geoscience Australia - short identifier for metadata record with uuid</gco:CharacterString>
+        <gco:CharacterString>Geoscience Australia - short identifier for metadata record with uuid {{UUID}}</gco:CharacterString>
       </cit:title>
       <cit:identifier>
         <mcc:MD_Identifier>
