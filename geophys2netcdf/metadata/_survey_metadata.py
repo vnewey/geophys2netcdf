@@ -109,20 +109,25 @@ class SurveyMetadata(Metadata):
         logger.info('Reading metadata from survey query with survey IDs %s', survey_ids)
 
         for survey_id in survey_ids:
-            survey_metadata_dict = {}
-            
-            xml_text = get_survey_xml(survey_id)
             try:
-                xml_tree = etree.fromstring(xml_text)
-            except Exception as e:
-                print xml_text
-                raise e
+                survey_metadata_dict = {}
                 
-            row_tree = xml_tree.find('ROW')
-            for field_element in row_tree.iterchildren():
-                survey_metadata_dict[field_element.tag] = field_element.text
-
-            self.merge_metadata_dict(survey_metadata_dict)
+                xml_text = get_survey_xml(survey_id)
+                try:
+                    xml_tree = etree.fromstring(xml_text)
+                except Exception as e:
+                    print xml_text
+                    raise e
+                    
+                row_tree = xml_tree.find('ROW')
+                for field_element in row_tree.iterchildren():
+                    survey_metadata_dict[field_element.tag] = field_element.text
+    
+                self.merge_metadata_dict(survey_metadata_dict)
+            except Exception as e:
+                logger.warning('Unable to retrieve survey metadata for survey ID %d: %s' % (survey_id, e.message))
+        
+        assert self._metadata_dict, 'No survey metadata retrieved'        
 
     def read_file(self, filename=None):
         '''

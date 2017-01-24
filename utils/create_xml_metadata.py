@@ -34,16 +34,19 @@ def main():
             
         value_dict = dict(metadata_object.metadata_dict['Template']) # Copy template values
         
-        # Convert comma-separated lists to lists of strings
+        # Convert multiple sets of comma-separated lists to lists of strings to a list of dicts
         #TODO: Make this slicker
-        keywords = [keyword.strip() for keyword in value_dict['KEYWORDS'].split(',')]
-        keyword_codes = [keyword_code.strip() for keyword_code in value_dict['KEYWORD_CODES'].split(',')]
-        assert len(keywords) == len(keyword_codes), 'Mismatch between the number of keywords and their associated codes'
+        value_dict['keywords'] = []
+        for keyword_list_key in [key for key in value_dict.keys() if re.match('^KEYWORD_\w+_LIST$', key)]:
+            keywords = [keyword.strip() for keyword in value_dict[keyword_list_key].split(',')]
+            keyword_code = value_dict[re.sub('_LIST$', '_CODE', keyword_list_key)]
+            
+            print keyword_list_key, keywords, keyword_code
+            value_dict['keywords'] += [{'value': keyword,
+                                        'code': keyword_code
+                                        } for keyword in keywords]
         
-        value_dict['keywords'] = [{'value': keywords[index],
-                                   'code': keyword_codes[index]
-                                   } for index in range(len(keywords))]
-        
+        pprint(value_dict)
         return xml_template.render(**value_dict)
 
     # Start of main function

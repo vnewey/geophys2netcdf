@@ -41,7 +41,7 @@
       <cit:identifier>
         <mcc:MD_Identifier>
           <mcc:code>
-            <gcx:FileName src="{{PARENT_COLLECTION_SOURCE}}?uuid={{PARENT_COLLECTION_UUID}}&fname={{PARENT_COLLECTION_UUID}}&access=private">{{PARENT_COLLECTION_UUID}}</gcx:FileName>
+            <gcx:FileName src="{{PARENT_COLLECTION_SOURCE}}?uuid={{UUID}}&fname={{PARENT_COLLECTION_UUID}}&access=private">{{PARENT_COLLECTION_UUID}}</gcx:FileName>
           </mcc:code>
           <mcc:description>
             <gco:CharacterString>UUID</gco:CharacterString>
@@ -51,7 +51,7 @@
       <cit:identifier>
         <mcc:MD_Identifier>
           <mcc:code>
-            <gcx:FileName src="{{PARENT_COLLECTION_SOURCE}}?uuid={{PARENT_COLLECTION_UUID}}&fname={{PARENT_COLLECTION_ECAT_ID}}&access=private">{{PARENT_COLLECTION_ECAT_ID}}</gcx:FileName>
+            <gcx:FileName src="{{PARENT_COLLECTION_SOURCE}}?uuid={{UUID}}&fname={{PARENT_COLLECTION_ECAT_ID}}&access=private">{{PARENT_COLLECTION_ECAT_ID}}</gcx:FileName>
           </mcc:code>
           <mcc:description>
             <gco:CharacterString>eCat ID</gco:CharacterString>
