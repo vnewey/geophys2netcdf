@@ -105,6 +105,16 @@ def main():
     calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
     calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
     
+    try:
+        calculated_values['START_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'STARTDATE'])), '%d-%b-%y').date().isoformat()
+    except:
+        calculated_values['START_DATE'] = 'UNKNOWN'    
+    
+    try:
+        calculated_values['END_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'ENDDATE'])), '%d-%b-%y').date().isoformat()
+    except:
+        calculated_values['END_DATE'] = 'UNKNOWN'    
+    
     #history = "Wed Oct 26 14:34:42 2016: GDAL CreateCopy( /local/el8/axi547/tmp/mWA0769_770_772_773.nc, ... )"
     try:
         conversion_datetime_string = re.match('^(.+):.*', str(metadata_object.get_metadata(['NetCDF', 'history']))).group(1)
