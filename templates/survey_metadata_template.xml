@@ -385,7 +385,7 @@
       <mri:extent>
                 <gex:EX_Extent>
                     <gex:description>
-                        <gco:CharacterString>unknown</gco:CharacterString>
+                        <gco:CharacterString>Orthogonal WGS84 bounding box</gco:CharacterString>
                     </gex:description>
                     <gex:geographicElement>
                         <gex:EX_GeographicBoundingBox>
@@ -499,10 +499,10 @@
       {% for keyword in keywords %}<mri:descriptiveKeywords>
         <mri:MD_Keywords>
           <mri:keyword>
-            <gco:CharacterString>{{keyword}}</gco:CharacterString>
+            <gco:CharacterString>{{keyword['value']}}</gco:CharacterString>
           </mri:keyword>
           <mri:type>
-            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="theme"/>
+            <mri:MD_KeywordTypeCode codeList="codeListLocation#MD_KeywordTypeCode" codeListValue="{{keyword['code']}}"/>
           </mri:type>
         </mri:MD_Keywords>
       </mri:descriptiveKeywords>{% endfor %}

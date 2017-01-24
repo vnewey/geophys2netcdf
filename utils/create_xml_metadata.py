@@ -32,10 +32,17 @@ def main():
             
         xml_template = jinja_environment.get_template(xml_template_path, parent=None)
             
-        value_dict = dict(metadata_object.metadata_dict['Template'])
+        value_dict = dict(metadata_object.metadata_dict['Template']) # Copy template values
         
         # Convert comma-separated lists to lists of strings
-        value_dict['keywords'] = [keyword.strip() for keyword in value_dict['KEYWORDS'].split(',')]
+        #TODO: Make this slicker
+        keywords = [keyword.strip() for keyword in value_dict['KEYWORDS'].split(',')]
+        keyword_codes = [keyword_code.strip() for keyword_code in value_dict['KEYWORD_CODES'].split(',')]
+        assert len(keywords) == len(keyword_codes), 'Mismatch between the number of keywords and their associated codes'
+        
+        value_dict['keywords'] = [{'value': keywords[index],
+                                   'code': keyword_codes[index]
+                                   } for index in range(len(keywords))]
         
         return xml_template.render(**value_dict)
 
@@ -131,7 +138,6 @@ def main():
     
     #template_class = None
     template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
-    
     metadata_object.merge_root_metadata_from_object(template_metadata_object)
 
     #pprint(metadata_object.metadata_dict)
