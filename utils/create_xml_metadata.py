@@ -41,12 +41,10 @@ def main():
             keywords = [keyword.strip() for keyword in value_dict[keyword_list_key].split(',')]
             keyword_code = value_dict[re.sub('_LIST$', '_CODE', keyword_list_key)]
             
-            print keyword_list_key, keywords, keyword_code
             value_dict['keywords'] += [{'value': keyword,
                                         'code': keyword_code
                                         } for keyword in keywords]
         
-        pprint(value_dict)
         return xml_template.render(**value_dict)
 
     # Start of main function

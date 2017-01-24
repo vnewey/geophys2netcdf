@@ -45,7 +45,7 @@ class TemplateMetadata(Metadata):
         for attribute_name, attribute_text in self.template.iteritems():
             for s in re.finditer('%%(.+?)%%', attribute_text):
                 element = s.group(1)
-                attribute_text = attribute_text.replace('%%' + element + '%%', self.key_value_dict[element])
+                attribute_text = attribute_text.replace('%%' + element + '%%', str(self.key_value_dict[element]))
             self._metadata_dict[attribute_name.upper()] = attribute_text
 
         
