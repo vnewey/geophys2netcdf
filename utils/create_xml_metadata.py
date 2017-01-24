@@ -9,6 +9,7 @@ import re
 import os
 import uuid
 from pprint import pprint
+from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
@@ -103,6 +104,19 @@ def main():
     #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
     calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
     calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
+    
+    #history = "Wed Oct 26 14:34:42 2016: GDAL CreateCopy( /local/el8/axi547/tmp/mWA0769_770_772_773.nc, ... )"
+    try:
+        conversion_datetime_string = re.match('^(.+):.*', str(metadata_object.get_metadata(['NetCDF', 'history']))).group(1)
+        try:
+            conversion_datetime = datetime.strptime(conversion_datetime_string, '%a %b %d %H:%M:%S %Y')
+            conversion_datetime_string = conversion_datetime.isoformat()
+        except:
+            pass
+    except:
+        conversion_datetime_string = 'UNKNOWN'
+        
+    calculated_values['CONVERSION_DATETIME'] = conversion_datetime_string
     
     survey_id = metadata_object.get_metadata(['Survey', 'SURVEYID'])
     try:
