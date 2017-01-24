@@ -240,7 +240,7 @@
           <cit:identifier>
             <mcc:MD_Identifier>
               <mcc:code>
-                <gco:CharacterString>http://www.ga.gov.au/metadata-gateway/metadata/record/76068/</gco:CharacterString>
+                <gco:CharacterString>http://www.ga.gov.au/metadata-gateway/metadata/record/{{ECAT_ID}}/</gco:CharacterString>
               </mcc:code>
               <mcc:codeSpace>
                 <gco:CharacterString>ga-dataSetURI</gco:CharacterString>
