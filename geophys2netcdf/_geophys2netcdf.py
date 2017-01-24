@@ -466,7 +466,7 @@ class Geophys2NetCDF(object):
             '''
             uuid = None
             try:  # Try to use existing "identifier" attribute in NetCDF file
-                uuid = self._netcdf_dataset.identifier
+                uuid = self._netcdf_dataset.uuid
                 logger.debug('Read UUID %s from NetCDF file', uuid)
             except:
                 logger.debug('Unable to read UUID from NetCDF file')
