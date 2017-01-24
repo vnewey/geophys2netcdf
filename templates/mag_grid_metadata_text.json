@@ -16,7 +16,7 @@
 	"MIN_LATITUDE": "%%Calculated/SLAT%%",
 	"MIN_LONGITUDE": "%%Calculated/WLON%%",
 	"PARENT_COLLECTION_ECAT_ID": "74514",
-	"PARENT_COLLECTION_SOURCE": "http://rhe-ecat-prod01.prod.lan:8080/geonetwork/srv/eng/file.disclaimer",
+	"PARENT_COLLECTION_SOURCE": "http://rhe-ecat-prod01.prod.lan:8080/geonetwork/srv/eng/file.disclaimer - THIS IS NOT USED",
 	"PARENT_COLLECTION_TITLE": "Geophysical Data Collection - magnetics",
 	"PARENT_COLLECTION_UUID": "c6b58f54-102e-19e9-e044-00144fdd4fa6",
 	"START_DATE": "%%Calculated/START_DATE%%",
