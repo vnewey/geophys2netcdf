@@ -119,8 +119,7 @@ def main():
     try:
         conversion_datetime_string = re.match('^(.+):.*', str(metadata_object.get_metadata(['NetCDF', 'history']))).group(1)
         try:
-            conversion_datetime = datetime.strptime(conversion_datetime_string, '%a %b %d %H:%M:%S %Y')
-            conversion_datetime_string = conversion_datetime.isoformat()
+            conversion_datetime_string = datetime.strptime(conversion_datetime_string, '%a %b %d %H:%M:%S %Y').isoformat()
         except:
             pass
     except:
