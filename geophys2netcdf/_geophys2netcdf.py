@@ -426,7 +426,7 @@ class Geophys2NetCDF(object):
 
         if do_stats:
             datastats = DataStats(netcdf_dataset=self.netcdf_dataset,
-                                  netcdf_path=None, max_array=2000000000)  # 2GB pieces
+                                  netcdf_path=None, max_bytes=2000000000)  # 2GB pieces
             datastats.data_variable.actual_range = np.array(
                 [datastats.value('min'), datastats.value('max')], dtype='float32')
 
