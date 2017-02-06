@@ -1,30 +1,13 @@
+import sys
 import re
 import urllib
 from geophys2netcdf.metadata import XMLMetadata
 
-identifier_list = ['dbcc0c59-81e6-4eed-e044-00144fdd4fa6',
-                   '0d99907a-a4b5-d656-e053-12a3070ad7ae',
-                   '0d9a959a-f3f2-cb51-e053-12a3070ab5f9',
-                   '221dcfd8-04f1-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f2-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f4-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f5-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f6-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f7-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f8-5083-e053-10a3070a64e3',
-                   '221dcfd8-04f9-5083-e053-10a3070a64e3',
-                   '221dcfd8-04fa-5083-e053-10a3070a64e3',
-                   '221dcfd8-04fb-5083-e053-10a3070a64e3',
-                   '221dcfd8-04fc-5083-e053-10a3070a64e3',
-                   '221dcfd8-04fd-5083-e053-10a3070a64e3',
-                   '221dcfd8-04fe-5083-e053-10a3070a64e3',
-                   '221dcfd8-04ff-5083-e053-10a3070a64e3'
-                   ]
-
 xpath_list = [  # ('netcdf_attribute', 'metadata.key'),
+    ('ecat_id', 'mdb:MD_Metadata/mdb:alternativeMetadataReference/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gco:CharacterString'),
     ('title', 'mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:citation/cit:CI_Citation/cit:title/gco:CharacterString'),
     ('uuid', 'mdb:MD_Metadata/mdb:metadataIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString'),
-    ('parent_uuid', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gcx:FileName/TEXT'),
+    ('parent_uuid', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gcx:FileName'),
     ('parent_id_type', 'mdb:MD_Metadata/mdb:parentMetadata/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:description/gco:CharacterString'),
     ('abstract', 'mdb:MD_Metadata/mdb:identificationInfo/mri:MD_DataIdentification/mri:abstract/gco:CharacterString'),
     ('lineage_statement', 'mdb:MD_Metadata/mdb:resourceLineage/mrl:LI_Lineage/mrl:statement/gco:CharacterString'),
@@ -40,7 +23,8 @@ xpath_list = [  # ('netcdf_attribute', 'metadata.key'),
     ('distribution_descriptions', 'mdb:MD_Metadata/mdb:distributionInfo/mrd:MD_Distribution/mrd:distributionFormat/mrd:MD_Format/mrd:formatDistributor/mrd:MD_Distributor/mrd:distributorTransferOptions/mrd:MD_DigitalTransferOptions/mrd:onLine/cit:CI_OnlineResource/cit:description/gco:CharacterString'),
 ]
 
-field_list = ['title',
+field_list = ['ecat_id',
+              'title',
               'uuid',
               'doi',
               'parent_uuid',
@@ -53,30 +37,43 @@ field_list = ['title',
               'bounds_south',
               'bounds_north']
 
-csv_path = '/home/547/axi547/national_coverage_metadata.csv'  # Path for NCI
-# csv_path = '/home/user/national_coverage_metadata.csv' # Path for local VM
-
 # Externally visible GeoNetwork
-GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
-# GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng' # Internally
-# visible GeoNetwork via port tunneling
+# GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
+# Internally visible GeoNetwork via port tunneling
+GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
 
 
 def main():
+
     def get_xml_by_id(geonetwork_url, identifier):
         xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, identifier)
+        print 'URL = %s' % xml_url
         return urllib.urlopen(xml_url).read()
+
+    assert len(sys.argv) == 3, 'Usage: %s <uuid_list_file> <output_csv_file>'
+
+    uuid_list_file = open(sys.argv[1], 'r')
+    identifier_list = uuid_list_file.readlines()
+    uuid_list_file.close()
+
+    csv_path = sys.argv[2]
 
     spreadsheet_dict = {}
     for identifier in identifier_list:
         print 'Reading XML for UUID %s' % identifier
 
         xml_text = get_xml_by_id(GA_GEONETWORK, identifier)
+        #print xml_text
 
         #xml_tree = lxml.html.fromstring(xml_text)
 
         xml_metadata = XMLMetadata()
-        xml_metadata.read_string(xml_text)
+        try:
+            xml_metadata.read_string(xml_text)
+        except:
+            print 'Metadata read failed for ID %s' % identifier
+            continue
+
         record_dict = {}
         spreadsheet_dict[identifier] = record_dict
 
@@ -90,14 +87,20 @@ def main():
         record_dict['parent_uuid'] = parent_id_dict.get('UUID')
 
         # Convert comma separated strings into lists
-        record_dict['distribution_urls'] = record_dict[
-            'distribution_urls'].split(', ')
-        record_dict['distribution_protocols'] = record_dict[
-            'distribution_protocols'].split(', ')
-        record_dict['distribution_names'] = record_dict[
-            'distribution_names'].split(', ')
-        record_dict['distribution_descriptions'] = record_dict[
-            'distribution_descriptions'].split(', ')
+        try:
+            record_dict['distribution_urls'] = record_dict[
+                'distribution_urls'].split(', ')
+            record_dict['distribution_protocols'] = record_dict[
+                'distribution_protocols'].split(', ')
+            record_dict['distribution_names'] = record_dict[
+                'distribution_names'].split(', ')
+            record_dict['distribution_descriptions'] = record_dict[
+                'distribution_descriptions'].split(', ')
+        except:
+            record_dict['distribution_urls'] = []
+            record_dict['distribution_protocols'] = []
+            record_dict['distribution_names'] = []
+            record_dict['distribution_descriptions'] = []
 
         distributions = []
         record_dict['distributions'] = distributions
@@ -122,7 +125,7 @@ def main():
         for key in record_dict.keys():
             if isinstance(record_dict[key], str) and re.match(
                     'bounds_.*', key) is None:
-                record_dict[key] = '"' + record_dict[key].strip() + '"'
+                record_dict[key] = '"' + record_dict[key].strip().replace('"', '""') + '"'
 
     dist_count = max([len(record_dict['distributions'])
                       for record_dict in spreadsheet_dict.values()])
@@ -139,7 +142,7 @@ def main():
 
     for record_dict in [spreadsheet_dict[xml]
                         for xml in sorted(spreadsheet_dict.keys())]:
-        spreadsheet_line = ','.join([record_dict[key] for key in field_list])
+        spreadsheet_line = ','.join([record_dict.get(key) or '""' for key in field_list])
 
         for dist_index in range(len(record_dict['distributions'])):
             dist_dict = record_dict['distributions'][dist_index]
