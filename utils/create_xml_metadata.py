@@ -146,6 +146,15 @@ def main():
         
     calculated_values['UUID'] = str(dataset_uuid)   
     
+    dataset_doi = metadata_object.get_metadata(['NetCDF', 'doi'])
+    if not dataset_doi and False: #TODO: Mint a new DOI and write it to the netCDF file 
+        dataset_doi = '' #TODO: Replace this with call to DOI minter - might be problematic from a non-GA source address
+        nc_dataset.doi = dataset_doi
+        nc_dataset.sync()
+        print 'Fresh DOI %s generated and written to netCDF file' % dataset_uuid
+        
+    calculated_values['DOI'] = str(dataset_doi)   
+    
     WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
     WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
                      min([coordinate[1] for coordinate in WGS84_bbox]),
@@ -157,9 +166,7 @@ def main():
     calculated_values['SLAT'] = str(WGS84_extents[1])
     calculated_values['WLON'] = str(WGS84_extents[2])
     calculated_values['NLAT'] = str(WGS84_extents[3])
-    
-    #calculated_values['CELLSIZE_DEG'] = (WGS84_extents[2] - WGS84_extents[0]) / 
-    
+        
     #template_class = None
     template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
     metadata_object.merge_root_metadata_from_object(template_metadata_object)

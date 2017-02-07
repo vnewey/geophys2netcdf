@@ -1,6 +1,7 @@
 {
 	"DATASET_AUTHOR": "Geophysical Acquisition & Processing Section",
 	"DATASET_TITLE": " Total Magnetic Intensity (TMI) grid of %%Survey/SURVEYNAME%% survey",
+	"DOI": "%%Calculated/DOI%%",
 	"ECAT_ID": "%%NetCDF/ecat_id%%",
 	"END_DATE": "%%Calculated/END_DATE%%",
 	"KEYWORD_PROJECT_CODE": "project",
