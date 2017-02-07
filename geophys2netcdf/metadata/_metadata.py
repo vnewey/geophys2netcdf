@@ -86,8 +86,11 @@ class Metadata(object):
                 subtree = self.get_metadata(
                     key_path_list, find_first_key(key, subtree))
             elif key:
-                subtree = subtree.get(key)
-                logger.debug('key = %s, value = %s', key, subtree)
+                try:
+                    subtree = subtree.get(key)
+                    logger.debug('key = %s, value = %s', key, subtree)
+                except:
+                    pass
 
         return subtree
 
