@@ -7,6 +7,7 @@ Created on Apr 7, 2016
 import sys
 import subprocess
 import re
+import netCDF4
 from geophys2netcdf import ERS2NetCDF
 
 
@@ -24,6 +25,7 @@ def main():
         try:
             g2n_object = ERS2NetCDF()
             g2n_object.update_nc_metadata(nc_path, do_stats=True)
+
             # Kind of redundant, but possibly useful for debugging
             g2n_object.check_json_metadata()
         except Exception as e:
