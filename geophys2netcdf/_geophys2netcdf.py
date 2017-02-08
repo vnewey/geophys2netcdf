@@ -359,8 +359,13 @@ class Geophys2NetCDF(object):
         attribute_dict['geospatial_lon_units'] = xunits
         attribute_dict['geospatial_lat_units'] = yunits
 
-        convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(
-            netcdf2convex_hull(self.netcdf_dataset, 2000000000))]  # Process dataset in pieces <= 2GB in size
+        try:
+            convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(
+                netcdf2convex_hull(self.netcdf_dataset, 2000000000))]  # Process dataset in pieces <= 2GB in size
+        except:
+            print 'Unable to compute convex hull. Using rectangular bounding box instead.'
+            convex_hull = extents
+
 #        print convex_hull
         attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([' '.join(
             ['%.4f' % ordinate for ordinate in coordinates]) for coordinates in convex_hull]) + '))'
