@@ -364,9 +364,9 @@ class Geophys2NetCDF(object):
                 netcdf2convex_hull(self.netcdf_dataset, 2000000000))]  # Process dataset in pieces <= 2GB in size
         except:
             print 'Unable to compute convex hull. Using rectangular bounding box instead.'
-            convex_hull = extents
+            convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(bbox_corners + [bbox_corners[0]])]
 
-#        print convex_hull
+        print convex_hull
         attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([' '.join(
             ['%.4f' % ordinate for ordinate in coordinates]) for coordinates in convex_hull]) + '))'
 
