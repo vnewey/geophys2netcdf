@@ -44,7 +44,28 @@ def main():
             
             value_dict['keywords'] += [{'value': keyword,
                                         'code': keyword_code
-                                        } for keyword in keywords]
+                                        } for keyword in keywords
+                                       ]
+        
+        # Create dict containing distribution info for DOI if required
+        value_dict['distributions'] = []
+        dataset_doi = metadata_object.get_metadata(['Calculated', 'DOI'])
+        if dataset_doi:
+            distribution_dict = {'formatSpecification': 'html',
+                                  'distributor_name': 'Geoscience Australia',
+                                  'distributor_telephone': '+61 2 6249 9966',
+                                  'distributor_address': 'GPO Box 378',
+                                  'distributor_city': 'Canberra',
+                                  'distributor_state': 'ACT',
+                                  'distributor_postcode': '2601',
+                                  'distributor_country': 'Australia',
+                                  'distributor_email': 'clientservices@ga.gov.au',
+                                  'url': dataset_doi,
+                                  'protocol': 'WWW:LINK-1.0-http--link',
+                                  'name': 'Digital Object Identifier',
+                                  'description': 'Dataset DOI'
+                                  }
+            value_dict['distributions'].append(distribution_dict)
         
         return xml_template.render(**value_dict)
 
@@ -153,7 +174,26 @@ def main():
         nc_dataset.sync()
         print 'Fresh DOI %s generated and written to netCDF file' % dataset_uuid
         
-    calculated_values['DOI'] = str(dataset_doi)   
+    distributions = []
+    dataset_doi = 'Calculated'
+    if dataset_doi:
+        calculated_values['DOI'] = str(dataset_doi) 
+          
+        distributions.append({'formatSpecification': 'html',
+                              'distributor_name': 'Geoscience Australia',
+                              'distributor_telephone': '+61 2 6249 9966',
+                              'distributor_address': 'GPO Box 378',
+                              'distributor_city': 'Canberra',
+                              'distributor_state': 'ACT',
+                              'distributor_postcode': '2601',
+                              'distributor_country': 'Australia',
+                              'distributor_email': 'clientservices@ga.gov.au',
+                              'url': dataset_doi,
+                              'protocol': 'WWW:LINK-1.0-http--link',
+                              'name': 'Digital Object Identifier',
+                              'description': 'Dataset DOI'
+                              }
+                             )
     
     WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
     WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),

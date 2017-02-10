@@ -542,14 +542,14 @@
       </mri:defaultLocale>
     </mri:MD_DataIdentification>
   </mdb:identificationInfo>
-  {% if False %}<mdb:distributionInfo>
+  {% if distributions %}<mdb:distributionInfo>
     <mrd:MD_Distribution>
       {% for distribution in distributions %}<mrd:distributionFormat>
         <mrd:MD_Format>
           <mrd:formatSpecificationCitation>
             <cit:CI_Citation>
               <cit:title>
-                <gco:CharacterString>{{distribution.formatSpecification}}</gco:CharacterString>
+                <gco:CharacterString>{{distribution['formatSpecification']}}</gco:CharacterString>
               </cit:title>
               <cit:date>
                 <cit:CI_Date>
@@ -572,14 +572,14 @@
                   <cit:party>
                     <cit:CI_Organisation>
                       <cit:name>
-                        <gco:CharacterString>{{distribution.distributor.name}}</gco:CharacterString>
+                        <gco:CharacterString>{{distribution['distributor_name']}}</gco:CharacterString>
                       </cit:name>
                       <cit:contactInfo>
                         <cit:CI_Contact>
                           <cit:phone>
                             <cit:CI_Telephone>
                               <cit:number>
-                                <gco:CharacterString>{{distribution.distributor.telephone}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_telephone']}}</gco:CharacterString>
                               </cit:number>
                               <cit:numberType>
                                 <cit:CI_TelephoneTypeCode codeList="codeListLocation#CI_TelephoneTypeCode" codeListValue="voice"/>
@@ -589,22 +589,22 @@
                           <cit:address>
                             <cit:CI_Address>
                               <cit:deliveryPoint>
-                                <gco:CharacterString>{{distribution.distributor.address}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_address']}}</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
-                                <gco:CharacterString>{{distribution.distributor.city}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_city']}}</gco:CharacterString>
                               </cit:city>
                               <cit:administrativeArea>
-                                <gco:CharacterString>{{distribution.distributor.state}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_state']}}</gco:CharacterString>
                               </cit:administrativeArea>
                               <cit:postalCode>
-                                <gco:CharacterString>{{distribution.distributor.postcode}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_postcode']}}</gco:CharacterString>
                               </cit:postalCode>
                               <cit:country>
-                                <gco:CharacterString>{{distribution.distributor.country}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_country']}}</gco:CharacterString>
                               </cit:country>
                               <cit:electronicMailAddress>
-                                <gco:CharacterString>{{distribution.distributor.email}}</gco:CharacterString>
+                                <gco:CharacterString>{{distribution['distributor_email']}}</gco:CharacterString>
                               </cit:electronicMailAddress>
                             </cit:CI_Address>
                           </cit:address>
@@ -619,16 +619,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>{{distribution.url}}</gco:CharacterString>
+                        <gco:CharacterString>{{distribution['url']}}</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
-                        <gco:CharacterString>{{distribution.protocol}}</gco:CharacterString>
+                        <gco:CharacterString>{{distribution['protocol']}}</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>{{distribution.name}}</gco:CharacterString>
+                        <gco:CharacterString>{{distribution['name']}}</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>{{distribution.description}}</gco:CharacterString>
+                        <gco:CharacterString>{{distribution['description']}}</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
