@@ -44,6 +44,7 @@ import netCDF4
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import PropertyIsEqualTo  # , PropertyIsLike, BBox
 import tempfile
+from pprint import pprint
 
 import json
 import urllib
@@ -72,6 +73,7 @@ class Geophys2NetCDF(object):
     FILE_EXTENSION = None  # Unknown for base class
     DEFAULT_CHUNK_SIZE = 128  # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
+    DECIMAL_PLACES = 12 # Number of decimal places to which geometry values should be rounded
 
     METADATA_MAPPING = None  # Needs to be defined in subclasses
 
@@ -238,7 +240,7 @@ class Geophys2NetCDF(object):
         '''
         #TODO: Need something better than just printing.
         # self.import_metadata()
-        print self._metadata_dict
+        pprint(self._metadata_dict)
 
     def get_metadata(self, metadata_path, default_namespace='gmd:'):
         '''
@@ -340,8 +342,8 @@ class Geophys2NetCDF(object):
 
         else:  # Use native coordinates
             extents = np.array(bbox_corners)
-            xres = geoTransform[1]
-            yres = geoTransform[5]
+            xres = round(geoTransform[1], Geophys2NetCDF.DECIMAL_PLACES)
+            yres = round(geoTransform[5], Geophys2NetCDF.DECIMAL_PLACES)
             xunits, yunits = (self._netcdf_dataset.variables[
                               dimension_name].units for dimension_name in dimension_names)
 
@@ -366,19 +368,8 @@ class Geophys2NetCDF(object):
             print 'Unable to compute convex hull. Using rectangular bounding box instead.'
             convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(bbox_corners + [bbox_corners[0]])]
 
-        print convex_hull
         attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([' '.join(
             ['%.4f' % ordinate for ordinate in coordinates]) for coordinates in convex_hull]) + '))'
-
-        #======================================================================
-        # # Trace clockwise around original bounding polygon (which isn't necessarily orthogonal in new CRS) starting from top left - don't expand bounding box
-        # attribute_dict['geospatial_bounds'] = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (extents[0,0], extents[0,1], #xmin, ymin,
-        #                                                                                         extents[2,0], extents[2,1], #xmax, ymin,
-        #                                                                                         extents[3,0], extents[3,1], #xmax, ymax,
-        #                                                                                         extents[1,0], extents[1,1], #xmin, ymax,
-        #                                                                                         extents[0,0], extents[0,1], #xmin, ymin
-        #                                                                                         )
-        #======================================================================
 
         attribute_dict['geospatial_bounds_crs'] = spatial_ref
 
@@ -387,6 +378,7 @@ class Geophys2NetCDF(object):
 
         # Set attributes defined in self.METADATA_MAPPING
         # Scan list in reverse to give priority to earlier entries
+        #TODO: Improve this coding - it's a bit crap
         keys_read = []
         for key, metadata_path in self.METADATA_MAPPING:
             # Skip any keys already read
