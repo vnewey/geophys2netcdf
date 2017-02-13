@@ -71,13 +71,18 @@ def main():
 
     # Start of main function
     assert len(
-        sys.argv) == 4, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path>' % sys.argv[0]
+        sys.argv) >= 4 and len(sys.argv) <= 5, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path> [<xml_output_dir>]' % sys.argv[0]
     json_text_template_path = sys.argv[1]
     xml_template_path = sys.argv[2]
     netcdf_path = sys.argv[3]
+    if len(sys.argv) == 5:
+        xml_dir = sys.argv[4]
+    else:
+        xml_dir = '.'
 #    jetcat_path = sys.argv[x]
 
-    xml_path = os.path.abspath(os.path.splitext(os.path.basename(netcdf_path))[0] + '.xml')
+    xml_path = os.path.abspath(os.path.join(xml_dir, os.path.splitext(os.path.basename(netcdf_path))[0] + '.xml'))
+    print xml_dir, xml_path
 
     metadata_object = Metadata()
 

@@ -34,10 +34,6 @@ def main():
             print '%s now has eCat ID set to %d' % (nc_path, ecat_id)
             ecat_id += 1
 
-        # Retrospective fixup - may not be required
-        nc_dataset.Conventions = nc_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6').replace(', ', ',')
-
         nc_dataset.close()
 
 #        print 'Updating metadata in %s' % nc_path
