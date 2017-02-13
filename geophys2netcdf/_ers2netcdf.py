@@ -158,13 +158,13 @@ class ERS2NetCDF(Geophys2NetCDF):
         logger.info('Finished translating %s to %s',
                     self._input_path, self._output_path)
 
-    def update_nc_metadata(self, output_path=None, do_stats=False):
+    def update_nc_metadata(self, output_path=None, do_stats=False, xml_path=None):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
         Overrides Geophys2NetCDF.update_nc_metadata
         '''
         Geophys2NetCDF.update_nc_metadata(
-            self, output_path, do_stats=do_stats)  # Call inherited method
+            self, output_path, do_stats=do_stats, xml_path)  # Call inherited method
 
         self._netcdf_dataset.sync()
 
@@ -197,13 +197,13 @@ class ERS2NetCDF(Geophys2NetCDF):
             logger.warning(
                 'WARNING: Command "%s" returned non-zero status.', ' '.join(chmod_command))
 
-    def import_metadata(self):
+    def import_metadata(self, xml_path=None):
         '''
         Function to read metadata from all available sources and set self._metadata_dict.
         Overrides Geophys2NetCDF.import_metadata()
         '''
         Geophys2NetCDF.import_metadata(
-            self)  # Call inherited function (will only read GDAL metadata from source dataset)
+            self, xml_path)  # Call inherited function (will only read GDAL metadata from source dataset)
 
         # Read data from both .ers and .isi files into separate  metadata
         # subtrees
@@ -227,8 +227,18 @@ class ERS2NetCDF(Geophys2NetCDF):
 
         if not self._uuid:
             self.get_uuid(title)
-
-        if self._uuid:
+            
+        # Open XML file if path provided
+        if xml_path and os.path.isfile(xml_path):
+            try:
+                xml_file = open(xml_path, 'r')
+                self._metadata_dict['GA_CSW'] = self.get_metadata_dict_from_xml(xml_file.read())
+                xml_file.close()
+            except Exception as e:
+                logger.warning('ERROR: Unable to retrieve CSW metadata from  file %s: %s' % (
+                    xml_path, e.message))
+            
+        elif self._uuid:
             # Get record from GA CSW
             try:
                 #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.GA_CSW, self._uuid)
@@ -240,15 +250,17 @@ class ERS2NetCDF(Geophys2NetCDF):
                 logger.warning('ERROR: Unable to retrieve CSW record %s from %s: %s' % (
                     self._uuid, Geophys2NetCDF.GA_CSW, e.message))
     
-            # Get record from NCI CSW (Optional)
-            try:
-                #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
-                #logger.debug('NCI csw_record = %s', csw_record)
-                #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
-                self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
-                    Geophys2NetCDF.NCI_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
-            except Exception as e:
-                logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (
-                    self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
+            #===================================================================
+            # # Get record from NCI CSW (Optional)
+            # try:
+            #     #csw_record = self.get_csw_record_by_id(Geophys2NetCDF.NCI_CSW, self._uuid)
+            #     #logger.debug('NCI csw_record = %s', csw_record)
+            #     #self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(csw_record.xml)
+            #     self._metadata_dict['NCI_CSW'] = self.get_metadata_dict_from_xml(self.get_csw_xml_by_id(
+            #         Geophys2NetCDF.NCI_CSW, self._uuid))  # ['csw:GetRecordByIdResponse']
+            # except Exception as e:
+            #     logger.warning('WARNING: Unable to retrieve CSW record %s from %s: %s' % (
+            #         self._uuid, Geophys2NetCDF.NCI_CSW, e.message))
+            #===================================================================
 
         logger.debug('self._metadata_dict = %s', self._metadata_dict)

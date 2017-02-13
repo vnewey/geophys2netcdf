@@ -188,7 +188,7 @@ class Geophys2NetCDF(object):
             os.path.dirname(self._output_path),
             Geophys2NetCDF.EXCLUDED_EXTENSIONS)
 
-    def update_nc_metadata(self, output_path=None, do_stats=False):
+    def update_nc_metadata(self, output_path=None, do_stats=False, xml_path=None):
         '''
         Function to import all available metadata and set attributes in NetCDF file.
         Should be overridden in subclasses for each specific format but called first to perform initialisations
@@ -214,7 +214,7 @@ class Geophys2NetCDF(object):
         assert self._metadata_dict, 'No metadata acquired'
         self.set_netcdf_metadata_attributes(do_stats=do_stats)
 
-    def import_metadata(self):
+    def import_metadata(self, xml_path=None):
         '''
         Virtual function to read metadata from all available sources and set self._metadata_dict.
         Should be overridden for each specific format
