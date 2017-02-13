@@ -22,8 +22,8 @@ def main():
     else:
         xml_dir = None
 
-    nc_path_list = [filename for filename in subprocess.check_output(
-        ['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
+    nc_path_list = sorted([filename for filename in subprocess.check_output(
+        ['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)])
 
     for nc_path in nc_path_list:
         print 'Updating metadata in %s' % nc_path
