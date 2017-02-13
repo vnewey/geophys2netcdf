@@ -209,7 +209,7 @@ class Geophys2NetCDF(object):
             logger.error('Unable to open NetCDF file %s: %s',
                          (self._output_path, e.message))
             raise
-        self.import_metadata()
+        self.import_metadata(xml_path)
 
         assert self._metadata_dict, 'No metadata acquired'
         self.set_netcdf_metadata_attributes(do_stats=do_stats)
@@ -365,7 +365,7 @@ class Geophys2NetCDF(object):
             convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(
                 netcdf2convex_hull(self.netcdf_dataset, 2000000000))]  # Process dataset in pieces <= 2GB in size
         except:
-            print 'Unable to compute convex hull. Using rectangular bounding box instead.'
+            logger.info('Unable to compute convex hull. Using rectangular bounding box instead.')
             convex_hull = [coordinate[0:2] for coordinate in coord_trans.TransformPoints(bbox_corners + [bbox_corners[0]])]
 
         attribute_dict['geospatial_bounds'] = 'POLYGON((' + ', '.join([' '.join(

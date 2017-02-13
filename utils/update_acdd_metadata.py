@@ -35,7 +35,7 @@ def main():
 
         try:
             g2n_object = ERS2NetCDF()
-            g2n_object.update_nc_metadata(nc_path, do_stats=True, xml_path)
+            g2n_object.update_nc_metadata(nc_path, do_stats=True, xml_path=xml_path)
 
             # Kind of redundant, but possibly useful for debugging
             g2n_object.check_json_metadata()

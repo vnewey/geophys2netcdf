@@ -164,7 +164,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         Overrides Geophys2NetCDF.update_nc_metadata
         '''
         Geophys2NetCDF.update_nc_metadata(
-            self, output_path, do_stats=do_stats, xml_path)  # Call inherited method
+            self, output_path, do_stats=do_stats, xml_path=xml_path)  # Call inherited method
 
         self._netcdf_dataset.sync()
 
@@ -203,7 +203,7 @@ class ERS2NetCDF(Geophys2NetCDF):
         Overrides Geophys2NetCDF.import_metadata()
         '''
         Geophys2NetCDF.import_metadata(
-            self, xml_path)  # Call inherited function (will only read GDAL metadata from source dataset)
+            self, xml_path=xml_path)  # Call inherited function (will only read GDAL metadata from source dataset)
 
         # Read data from both .ers and .isi files into separate  metadata
         # subtrees
