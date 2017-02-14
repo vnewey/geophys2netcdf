@@ -63,13 +63,16 @@ def main():
         file_template = '*.nc'
     
     if os.path.isfile(source_path):
+        print 'Reading UUIDs from list file %s' % source_path
         uuid_list_file = open(source_path, 'r')
         identifier_list = uuid_list_file.readlines()
         uuid_list_file.close()
     elif os.path.isdir(source_path):
+        print 'Reading UUIDs from netCDF files in directory %s' % source_path
         nc_path_list = [filename for filename in subprocess.check_output(
             ['find', source_path, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
     
+        print '%d files found in %s.' % (len(nc_path_list), source_path)
         identifier_list = []
         for nc_path in nc_path_list:
             nc_dataset = netCDF4.Dataset(nc_path, 'r')
@@ -80,6 +83,8 @@ def main():
             nc_dataset.close()
     else:
         raise Exception('Invalid source: Must be UUID list or directory containing netCDF files')
+    
+    print '%d UUIDs found in %s.' % (len(identifier_list), source_path)
     
     csv_path = sys.argv[2]
 
