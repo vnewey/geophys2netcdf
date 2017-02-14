@@ -16,6 +16,11 @@ from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
 from geophys_utils._crs_utils import transform_coords
 from geophys2netcdf.metadata import TemplateMetadata
 
+try:
+    from geophys2netcdf.metadata import ArgusMetadata
+except:
+    pass
+
 def main():
     '''
     Main function
@@ -71,14 +76,24 @@ def main():
 
     # Start of main function
     assert len(
-        sys.argv) >= 4 and len(sys.argv) <= 5, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path> [<xml_output_dir>]' % sys.argv[0]
+        sys.argv) >= 4 and len(sys.argv) <= 8, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path> [<xml_output_dir>]' % sys.argv[0]
     json_text_template_path = sys.argv[1]
     xml_template_path = sys.argv[2]
     netcdf_path = sys.argv[3]
-    if len(sys.argv) == 5:
+    if len(sys.argv) >= 5:
         xml_dir = sys.argv[4]
     else:
         xml_dir = '.'
+        
+    if len(sys.argv) == 8:
+        db_user = sys.argv[5]
+        db_password = sys.argv[6]
+        db_alias = sys.argv[7]
+    else:
+        db_user = None
+        db_password = None
+        db_alias = None
+        
 #    jetcat_path = sys.argv[x]
 
     xml_path = os.path.abspath(os.path.join(xml_dir, os.path.splitext(os.path.basename(netcdf_path))[0] + '.xml'))
@@ -102,8 +117,13 @@ def main():
 #    jetcat_metadata = JetCatMetadata(source, jetcat_path=jetcat_path)
 #    metadata_object.merge_root_metadata_from_object(jetcat_metadata)
 
-    survey_metadata = SurveyMetadata(source)
-    metadata_object.merge_root_metadata_from_object(survey_metadata)
+    try:
+        survey_metadata = SurveyMetadata(source)
+        metadata_object.merge_root_metadata_from_object(survey_metadata)
+    except Exception as e:
+        print e.message, 'Attempting direct DB read'
+        survey_metadata = ArgusMetadata(db_user, db_password, db_alias, source)
+        metadata_object.merge_root_metadata('Survey', survey_metadata.metadata_dict, overwrite=True) # Fake Survey metadata from DB query
 
     nc_grid_utils = NetCDFGridUtils(nc_dataset)
     
@@ -153,13 +173,13 @@ def main():
         
     calculated_values['CONVERSION_DATETIME'] = conversion_datetime_string
     
-    survey_id = metadata_object.get_metadata(['Survey', 'SURVEYID'])
+    survey_id = str(metadata_object.get_metadata(['Survey', 'SURVEYID']))
     try:
-        dataset_survey_id = nc_dataset.survey_id
+        dataset_survey_id = str(nc_dataset.survey_id)
         assert (set([int(value_string.strip()) for value_string in dataset_survey_id.split(',') if value_string.strip()]) == 
                 set([int(value_string.strip()) for value_string in survey_id.split(',') if value_string.strip()])), 'NetCDF survey ID %s is inconsistent with %s' % (dataset_survey_id, survey_id)
     except:
-        nc_dataset.survey_id = survey_id
+        nc_dataset.survey_id = str(survey_id)
         nc_dataset.sync()
         print 'Survey ID %s written to netCDF file' % survey_id
 

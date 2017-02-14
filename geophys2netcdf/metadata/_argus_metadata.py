@@ -30,7 +30,7 @@ class ArgusMetadata(Metadata):
     # Murray's Argus query
     # N.B: Need to use text substitution for multiple survey IDs - can't use parameterised query
     ARGUS_QUERY = '''SELECT
-       TO_NUMBER(regexp_substr(A.SURVEYS.SURVEYID, '^\d+$')) as SURVEYID,
+       A.SURVEYS.SURVEYID,
        A.SURVEYS.SURVEYNAME,
        A.SURVEYS.STATE,
        A.SURVEYS.OPERATOR,
@@ -66,7 +66,9 @@ class ArgusMetadata(Metadata):
         ARGUS.AIRSURVEYS.DIGITAL_DATA,
         A.SURVEYS.GEODETIC_DATUM,
         ARGUS.AIRSURVEYS.ASL,
-        ARGUS.AIRSURVEYS.AGL
+        ARGUS.AIRSURVEYS.AGL,
+        ARGUS.AIRMAG.INSTRUMENT MAG_INSTRUMENT,
+        ARGUS.AIRRAD.INSTRUMENT RAD_INSTRUMENT
 from a.surveys
 join a.entities using (eno)
 join a.entity_types using (entity_type)
@@ -74,7 +76,7 @@ join argus.airsurveys using (eno)
 left join argus.airdem using (eno)
 left join argus.airmag using (eno)
 left join argus.airrad using (eno)
-where TO_NUMBER(regexp_substr(A.SURVEYS.SURVEYID, '^\d+$')) in ({SURVEY_IDS})'''
+where A.SURVEYS.SURVEYID in ({SURVEY_IDS})'''
     
     MIN_SURVEY_ID = 20
 
@@ -157,7 +159,7 @@ where TO_NUMBER(regexp_substr(A.SURVEYS.SURVEYID, '^\d+$')) in ({SURVEY_IDS})'''
 
         # N.B: Need to use text substitution for multiple survey IDs - can't use parameterised query
         SQL = ArgusMetadata.ARGUS_QUERY.format(**{'SURVEY_IDS': 
-                                                  ', '.join([str(survey_id) 
+                                                  ', '.join(["'" + str(survey_id) + "'"
                                                              for survey_id in survey_ids
                                                              ]
                                                             )
@@ -169,7 +171,7 @@ where TO_NUMBER(regexp_substr(A.SURVEYS.SURVEYID, '^\d+$')) in ({SURVEY_IDS})'''
             self.argus_fields = [field_desc[0] for field_desc in query_result.description]
                 
         for argus_record in query_result:
-            print argus_record
+            #print argus_record
             survey_metadata_dict = dict(zip(self.argus_fields, [str(field) if field else '' 
                                                                 for field in argus_record
                                                                 ]

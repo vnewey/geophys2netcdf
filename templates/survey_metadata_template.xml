@@ -519,7 +519,7 @@
             <mco:MD_RestrictionCode codeList="codeListLocation#MD_RestrictionCode" codeListValue="license"/>
           </mco:useConstraints>
           <mco:otherConstraints>
-            <gco:CharacterString>Creative Commons Attribution 4.0 International Licence</gco:CharacterString>
+            <gco:CharacterString>{{LICENSE}}</gco:CharacterString>
           </mco:otherConstraints>
         </mco:MD_LegalConstraints>
       </mri:resourceConstraints>
