@@ -1,6 +1,9 @@
 import sys
 import re
 import urllib
+import os
+import subprocess
+import netCDF4
 from geophys2netcdf.metadata import XMLMetadata
 
 xpath_list = [  # ('netcdf_attribute', 'metadata.key'),
@@ -50,12 +53,34 @@ def main():
         print 'URL = %s' % xml_url
         return urllib.urlopen(xml_url).read()
 
-    assert len(sys.argv) == 3, 'Usage: %s <uuid_list_file> <output_csv_file>'
-
-    uuid_list_file = open(sys.argv[1], 'r')
-    identifier_list = uuid_list_file.readlines()
-    uuid_list_file.close()
-
+    assert len(sys.argv) == 3 or len(sys.argv) == 4, 'Usage: %s <source_path> <output_csv_file> [<file_template>]'
+    
+    source_path = sys.argv[1]
+    
+    if len(sys.argv) == 4:
+        file_template = sys.argv[3]
+    else:
+        file_template = '*.nc'
+    
+    if os.path.isfile(source_path):
+        uuid_list_file = open(source_path, 'r')
+        identifier_list = uuid_list_file.readlines()
+        uuid_list_file.close()
+    elif os.path.isdir(source_path):
+        nc_path_list = [filename for filename in subprocess.check_output(
+            ['find', source_path, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
+    
+        identifier_list = []
+        for nc_path in nc_path_list:
+            nc_dataset = netCDF4.Dataset(nc_path, 'r')
+            try:
+                identifier_list.append(nc_dataset.uuid)
+            except:
+                pass
+            nc_dataset.close()
+    else:
+        raise Exception('Invalid source: Must be UUID list or directory containing netCDF files')
+    
     csv_path = sys.argv[2]
 
     spreadsheet_dict = {}
