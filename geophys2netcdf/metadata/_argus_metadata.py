@@ -216,11 +216,11 @@ where A.SURVEYS.SURVEYID in ({SURVEY_IDS})'''
         
         argus_states = self.get_metadata('STATE')
         if state not in argus_states:
-            logger.warning('Filename state "%s" inconsistend with Argus state "%s"' % (state, argus_states))
+            logger.warning('Filename state "%s" inconsistent with Argus state "%s"' % (state, argus_states))
 
         argus_dataset_types = self.get_metadata('DATATYPES')
         if dataset_type not in argus_dataset_types:
-            logger.warning('Filename dataset type "%s" inconsistend with Argus dataset type "%s"' % (dataset_type, argus_dataset_types))
+            logger.warning('Filename dataset type "%s" inconsistent with Argus dataset type "%s"' % (dataset_type, argus_dataset_types))
 
         return self._metadata_dict
 
