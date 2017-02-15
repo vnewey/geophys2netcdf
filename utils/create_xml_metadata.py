@@ -55,22 +55,22 @@ def main():
         # Create dict containing distribution info for DOI if required
         value_dict['distributions'] = []
         dataset_doi = metadata_object.get_metadata(['Calculated', 'DOI'])
-        dataset_uuid = metadata_object.get_metadata(['Calculated', 'UUID'])
         if dataset_doi:
+            #TODO: Make this more robust in case template is missing ORGANISATION_* attributes
             distribution_dict = {'formatSpecification': 'html',
-                                  'distributor_name': 'Geoscience Australia',
-                                  'distributor_telephone': '+61 2 6249 9966',
-                                  'distributor_address': 'GPO Box 378',
-                                  'distributor_city': 'Canberra',
-                                  'distributor_state': 'ACT',
-                                  'distributor_postcode': '2601',
-                                  'distributor_country': 'Australia',
-                                  'distributor_email': 'clientservices@ga.gov.au',
-                                  'url': dataset_doi,
-                                  'protocol': 'WWW:LINK-1.0-http--link',
-                                  'name': 'Digital Object Identifier for dataset %s' % dataset_uuid,
-                                  'description': 'Dataset DOI'
-                                  }
+                                 'distributor_name': metadata_object.get_metadata(['Template', 'ORGANISATION_NAME']),
+                                 'distributor_telephone': metadata_object.get_metadata(['Template', 'ORGANISATION_PHONE']),
+                                 'distributor_address': metadata_object.get_metadata(['Template', 'ORGANISATION_ADDRESS']),
+                                 'distributor_city': metadata_object.get_metadata(['Template', 'ORGANISATION_CITY']),
+                                 'distributor_state': metadata_object.get_metadata(['Template', 'ORGANISATION_STATE']),
+                                 'distributor_postcode': metadata_object.get_metadata(['Template', 'ORGANISATION_POSTCODE']),
+                                 'distributor_country': metadata_object.get_metadata(['Template', 'ORGANISATION_COUNTRY']),
+                                 'distributor_email': metadata_object.get_metadata(['Template', 'ORGANISATION_EMAIL']),
+                                 'url': dataset_doi,
+                                 'protocol': 'WWW:LINK-1.0-http--link',
+                                 'name': 'Digital Object Identifier for dataset %s' % metadata_object.get_metadata(['Calculated', 'UUID']),
+                                 'description': 'Dataset DOI'
+                                 }
             value_dict['distributions'].append(distribution_dict)
         
         return xml_template.render(**value_dict)
