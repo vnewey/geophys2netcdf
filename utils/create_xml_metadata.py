@@ -55,6 +55,7 @@ def main():
         # Create dict containing distribution info for DOI if required
         value_dict['distributions'] = []
         dataset_doi = metadata_object.get_metadata(['Calculated', 'DOI'])
+        dataset_uuid = metadata_object.get_metadata(['Calculated', 'UUID'])
         if dataset_doi:
             distribution_dict = {'formatSpecification': 'html',
                                   'distributor_name': 'Geoscience Australia',
@@ -67,7 +68,7 @@ def main():
                                   'distributor_email': 'clientservices@ga.gov.au',
                                   'url': dataset_doi,
                                   'protocol': 'WWW:LINK-1.0-http--link',
-                                  'name': 'Digital Object Identifier',
+                                  'name': 'Digital Object Identifier for dataset %s' % dataset_uuid,
                                   'description': 'Dataset DOI'
                                   }
             value_dict['distributions'].append(distribution_dict)
