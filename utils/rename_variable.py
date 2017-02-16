@@ -50,10 +50,6 @@ def main():
             variable.long_name = long_variable_name
             print '%s.variables["%s"].long_name changed to %s' % (nc_path, new_variable_name, long_variable_name)
 
-        # Retrospective fixupZZ
-        nc_dataset.Conventions = nc_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6').replace(', ', ',')
-
         nc_dataset.close()
 
         print 'Updating metadata in %s' % nc_path
