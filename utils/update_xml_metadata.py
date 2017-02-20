@@ -21,11 +21,15 @@ class XMLUpdater(object):
     # externally-facing GeoNetwork - DO NOT USE!!!
     # GA's internal GeoNetwork via port forward. Need to use this to obtain
     # complete metadata
-    # GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
-    GA_GEONETWORK = 'http://intranet.ga.gov.au/geonetwork/srv/eng'
-    THREDDS_ROOT_DIR = '/g/data1/rr2/'
+    GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+    #GA_GEONETWORK = 'http://intranet.ga.gov.au/geonetwork/srv/eng'
 
-    THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+    THREDDS_ROOT_DIR = '/g/data2/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/'
+    THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
+
+    #THREDDS_ROOT_DIR = '/g/data1/rr2/'
+    #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+
     # print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
 
     def __init__(self, update_bounds=True, update_distributions=True, xml_dir=None):
@@ -205,7 +209,7 @@ class XMLUpdater(object):
 
             # Read XML template file
             distributionInfo_template_file = open(
-                '../distributionInfo_template.xml')
+                '../templates/distributionInfo_template.xml')
             distributionInfo_template_text = distributionInfo_template_file.read()
             distributionInfo_template_file.close()
 
@@ -412,9 +416,9 @@ def main():
     xml_updater = XMLUpdater(update_bounds=True, update_distributions=True, xml_dir=xml_dir)
 
     for nc_path in sys.argv[nc_list_slice]:
-        try:
+        if True:#try:
             xml_updater.update_xml(nc_path)
-        except Exception as e:
+        else:#except Exception as e:
             print 'XML update failed for %s:\n%s' % (nc_path, e.message)
 
 
