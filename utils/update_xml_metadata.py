@@ -9,6 +9,7 @@ import re
 import urllib
 import netCDF4
 from lxml import etree
+from xml.dom.minidom import parseString
 from geophys2netcdf import THREDDSCatalog
 from geophys2netcdf.metadata_json import read_json_metadata
 
@@ -394,8 +395,12 @@ class XMLUpdater(object):
 
         xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
-
-        xml_file.write(etree.tostring(xml_tree, pretty_print=True))
+   
+        xml_file.write(parseString(etree.tostring(xml_tree, 
+                                                  encoding="utf-8")).toprettyxml(indent="  ", 
+                                                                                 newl="\n", 
+                                                                                 encoding="utf-8")
+                       )
 
         xml_file.close()
         print 'Finished writing XML to file %s' % xml_path
@@ -416,9 +421,9 @@ def main():
     xml_updater = XMLUpdater(update_bounds=True, update_distributions=True, xml_dir=xml_dir)
 
     for nc_path in sys.argv[nc_list_slice]:
-        if True:#try:
+        try:
             xml_updater.update_xml(nc_path)
-        else:#except Exception as e:
+        except Exception as e:
             print 'XML update failed for %s:\n%s' % (nc_path, e.message)
 
 
