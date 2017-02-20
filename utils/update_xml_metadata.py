@@ -15,8 +15,8 @@ from geophys2netcdf.metadata_json import read_json_metadata
 
 class XMLUpdater(object):
 
-    # XML_DIR = '/home/547/axi547/national_coverage_metadata'
-    XML_DIR = './'
+    # DEFAULT_XML_DIR = '/home/547/axi547/national_coverage_metadata'
+    DEFAULT_XML_DIR = './'
     # GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # GA's
     # externally-facing GeoNetwork - DO NOT USE!!!
     # GA's internal GeoNetwork via port forward. Need to use this to obtain
@@ -28,7 +28,7 @@ class XMLUpdater(object):
     THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
     # print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
 
-    def __init__(self, update_bounds=True, update_distributions=True):
+    def __init__(self, update_bounds=True, update_distributions=True, xml_dir=None):
 
         # TODO: Work out some way of making this faster.
         def get_thredds_catalog(thredds_catalog_url):
@@ -65,6 +65,8 @@ class XMLUpdater(object):
                 self.THREDDS_CATALOG_URL)
         else:
             self.thredds_catalog = None
+            
+        self.xml_dir = xml_dir or XMLUpdater.DEFAULT_XML_DIR
 
     def update_xml(self, nc_path):
         '''
@@ -386,7 +388,7 @@ class XMLUpdater(object):
         if self.update_distributions:
             update_distributions(xml_tree)
 
-        xml_path = os.path.abspath(os.path.join(self.XML_DIR, '%s.xml' % uuid))
+        xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % uuid))
         xml_file = open(xml_path, 'w')
 
         xml_file.write(etree.tostring(xml_tree, pretty_print=True))
@@ -397,11 +399,19 @@ class XMLUpdater(object):
 
 def main():
     assert len(
-        sys.argv) > 1, 'Usage: %s <netcdf_file> [<netcdf_file>...]' % sys.argv[0]
+        sys.argv) > 1, 'Usage: %s <netcdf_file> [<netcdf_file>...] [<xml_dir>]' % sys.argv[0]
+        
+    # Check whether XML output directory has been specified
+    if os.path.isdir(sys.argv[-1]):
+        xml_dir = os.path.abspath(sys.argv[-1])
+        nc_list_slice = slice(1, -1) # Last argument is output directory 
+    else:
+        xml_dir = None
+        nc_list_slice = slice(1, None) # All arguments are netCDF files
 
-    xml_updater = XMLUpdater(update_bounds=True, update_distributions=True)
+    xml_updater = XMLUpdater(update_bounds=True, update_distributions=True, xml_dir=xml_dir)
 
-    for nc_path in sys.argv[1:]:
+    for nc_path in sys.argv[nc_list_slice]:
         try:
             xml_updater.update_xml(nc_path)
         except Exception as e:
