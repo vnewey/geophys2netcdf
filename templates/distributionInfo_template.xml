@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <mdb:MD_Metadata xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/1.0"
   xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/1.0" xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0"
   xmlns:gcx="http://standards.iso.org/iso/19115/-3/gcx/1.0" xmlns:gex="http://standards.iso.org/iso/19115/-3/gex/1.0"
@@ -59,7 +58,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -87,21 +86,21 @@
               <mrd:distributorTransferOptions>
                 <mrd:MD_DigitalTransferOptions>
                   <mrd:transferSize>
-                    <gco:Real>%NC_SIZE_MB%</gco:Real>
+                    <gco:Real>%%NC_FILE_SIZE_MB%%</gco:Real>
                   </mrd:transferSize>
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>file://%NC_PATH%</gco:CharacterString>
+                        <gco:CharacterString>file://%%NC_FILE_PATH%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>FILE:GEO</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>NetCDF file on NCI filesystem for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>NetCDF file on NCI filesystem for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>Fully qualified pathname of NetCDF file on NCI filesystem for dataset %UUID%. Users must be logged onto the NCI network to access this file system. (md5sum=%NC_MD5SUM%)</gco:CharacterString>
+                        <gco:CharacterString>Fully qualified pathname of NetCDF file on NCI filesystem for dataset %%UUID%%. Users must be logged onto the NCI network to access this file system. (md5sum=%%NC_FILE_MD5SUM%%)</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -160,7 +159,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -190,16 +189,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%THREDDS_CATALOG_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%THREDDS_CATALOG_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>THREDDS catalog page for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>THREDDS catalog page for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>THREDDS catalog page for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>THREDDS catalog page for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -258,7 +257,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -288,17 +287,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%NCSS_URL%/dataset.html</gco:CharacterString>
+                        <gco:CharacterString>%%NCSS_URL%%/dataset.html</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>NCSS</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>NCSS for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>NCSS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>NetCDF Subset Service for dataset
-													%UUID%</gco:CharacterString>
+                        <gco:CharacterString>NetCDF Subset Service for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -357,7 +355,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -387,18 +385,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%NC_HTTP_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%NC_HTTP_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>NetCDF file download via HTTP for
-													dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>NetCDF file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>NetCDF file download via HTTP for
-													dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>NetCDF file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -457,7 +453,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -487,18 +483,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%ZIP_HTTP_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%ZIP_HTTP_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>Zipped ERS file download via HTTP for
-													dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>Zipped ERS file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>Zipped ERS file download via HTTP for
-													dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>Zipped ERS file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -557,7 +551,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -587,16 +581,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%OPENDAP_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%OPENDAP_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--opendap</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>OPeNDAP for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>OPeNDAP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>OPeNDAP Service for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>OPeNDAP Service for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -655,7 +649,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -685,17 +679,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%WCS_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%WCS_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>OGC:WCS</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>WCS for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>WCS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>OGC Web Coverage Service for dataset
-													%UUID%</gco:CharacterString>
+                        <gco:CharacterString>OGC Web Coverage Service for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -754,7 +747,7 @@
                             <cit:CI_Address>
                               <cit:deliveryPoint>
                                 <gco:CharacterString>The Australian National University,
-																	143 Ward Road</gco:CharacterString>
+143 Ward Road</gco:CharacterString>
                               </cit:deliveryPoint>
                               <cit:city>
                                 <gco:CharacterString>Acton</gco:CharacterString>
@@ -784,17 +777,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%WMS_URL%</gco:CharacterString>
+                        <gco:CharacterString>%%WMS_URL%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>OGC:WMS</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>WMS for dataset %UUID%</gco:CharacterString>
+                        <gco:CharacterString>WMS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>OGC Web Mapping Service for dataset
-													%UUID%</gco:CharacterString>
+                        <gco:CharacterString>OGC Web Mapping Service for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -900,12 +892,10 @@
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>Australian Geophysical Archive Data
-													Delivery System</gco:CharacterString>
+                        <gco:CharacterString>Australian Geophysical Archive Data Delivery System</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>Download from Geoscience Australia
-													Geophysical Archive Data Delivery System</gco:CharacterString>
+                        <gco:CharacterString>Download from Geoscience Australia Geophysical Archive Data Delivery System</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>
@@ -1005,18 +995,16 @@
                   <mrd:onLine>
                     <cit:CI_OnlineResource>
                       <cit:linkage>
-                        <gco:CharacterString>%DOI%</gco:CharacterString>
+                        <gco:CharacterString>%%DOI%%</gco:CharacterString>
                       </cit:linkage>
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
                       <cit:name>
-                        <gco:CharacterString>Digital Object Identifier for dataset
-													%UUID%</gco:CharacterString>
+                        <gco:CharacterString>Digital Object Identifier for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
                       <cit:description>
-                        <gco:CharacterString>Digital Object Identifier for dataset
-													%UUID%</gco:CharacterString>
+                        <gco:CharacterString>Digital Object Identifier for dataset %%UUID%%</gco:CharacterString>
                       </cit:description>
                     </cit:CI_OnlineResource>
                   </mrd:onLine>

@@ -195,9 +195,9 @@ class XMLUpdater(object):
             template_dict = {
                 'UUID': uuid,
                 'DOI': doi,
-                'NC_PATH': os.path.abspath(nc_path),
-                'NC_SIZE_MB': str(nc_size_mb),
-                'NC_MD5SUM': nc_md5sum,
+                'NC_FILE_PATH': os.path.abspath(nc_path),
+                'NC_FILE_SIZE_MB': str(nc_size_mb),
+                'NC_FILE_MD5SUM': nc_md5sum,
                 'THREDDS_CATALOG_URL': thredds_catalog_list[0],
                 'NC_HTTP_URL': nc_distribution_dict.get('HTTPServer'),
                 'NCSS_URL': nc_distribution_dict.get('NetcdfSubset'),
@@ -224,7 +224,7 @@ class XMLUpdater(object):
                     print 'WARNING: %s not set in template XML' % key
                 else:
                     distributionInfo_template_text = re.sub(
-                        '%%%s%%' %
+                        '%%%%%s%%%%' %
                         key,
                         template_dict[key],
                         distributionInfo_template_text)
