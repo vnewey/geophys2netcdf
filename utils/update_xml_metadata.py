@@ -84,7 +84,7 @@ class XMLUpdater(object):
             Function to return complete, native (ISO19115-3) XML text for metadata record with specified UUID
             '''
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
-            print 'URL = %s' % xml_url
+            #print 'URL = %s' % xml_url
             return urllib.urlopen(xml_url).read()
 
         def update_bounds(nc_dataset, xml_tree):
@@ -206,7 +206,7 @@ class XMLUpdater(object):
                 'WMS_URL': nc_distribution_dict.get('WMS'),
                 'ZIP_HTTP_URL': zip_distribution_dict.get('HTTPServer'),
             }
-    #        print template_dict
+            #print template_dict
 
             # Read XML template file
             distributionInfo_template_file = open(
@@ -229,7 +229,7 @@ class XMLUpdater(object):
                         template_dict[key],
                         distributionInfo_template_text)
 
-    #        print distributionInfo_template_text
+            #print distributionInfo_template_text
             source_distributionInfo_tree = etree.fromstring(distributionInfo_template_text).find(
                 path='mdb:distributionInfo', namespaces=xml_tree.nsmap)
 
@@ -279,7 +279,7 @@ class XMLUpdater(object):
                             'cit:linkage', namespaces=xml_tree.nsmap).find(
                             'gco:CharacterString', namespaces=xml_tree.nsmap).text
                         match = re.match(
-                            '(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', source_linkage)
+                            '(\w+)://([^/]*)((/[^/\?]+){0,2}).*/([^/]+)$', source_linkage)
                         if match is None:
                             print 'Unable to parse %s' % source_linkage
                             continue
@@ -308,7 +308,7 @@ class XMLUpdater(object):
                                 'cit:linkage', namespaces=xml_tree.nsmap).find(
                                 'gco:CharacterString', namespaces=xml_tree.nsmap).text
                             match = re.match(
-                                '(\w+)://([^/]+)((/[^/\?]+){0,2}).*/([^/]+)$', dest_linkage)
+                                '(\w+)://([^/]*)((/[^/\?]+){0,2}).*/([^/]+)$', dest_linkage)
                             if match is None:
                                 print 'Unable to parse %s' % dest_linkage
                                 continue
@@ -393,13 +393,15 @@ class XMLUpdater(object):
         if self.update_distributions:
             update_distributions(xml_tree)
 
-        xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % uuid))
+        xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % os.path.splitext(os.path.basename(nc_path))[0]))
         xml_file = open(xml_path, 'w')
    
         xml_file.write(parseString(etree.tostring(xml_tree, 
-                                                  encoding="utf-8")).toprettyxml(indent="  ", 
-                                                                                 newl="\n", 
-                                                                                 encoding="utf-8")
+                                                  encoding="utf-8",
+                                                  pretty_print=False,
+                                                  with_tail=False)).toprettyxml(indent="", 
+                                                                                newl="", 
+                                                                                encoding="utf-8")
                        )
 
         xml_file.close()
