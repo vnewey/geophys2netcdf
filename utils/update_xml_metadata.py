@@ -10,6 +10,7 @@ import urllib
 import netCDF4
 from lxml import etree
 from geophys2netcdf import THREDDSCatalog
+from geophys2netcdf.metadata_json import read_json_metadata
 
 
 class XMLUpdater(object):
@@ -167,6 +168,14 @@ class XMLUpdater(object):
         def update_distributions(xml_tree):
             nc_distribution_dict = self.thredds_catalog.find_url_dict(nc_path)
             assert nc_distribution_dict, 'No THREDDS endpoints found for %s' % nc_path
+            
+            # Calculate file info
+            nc_size_mb = os.stat(nc_path).st_size / 1000000.0 # Powers of 10 used instead of powers of 2 for a more conservative number            
+            metadata_dict = read_json_metadata(os.path.dirname(nc_path))
+            nc_md5sum = [file_dict['md5'] 
+                         for file_dict in metadata_dict['files'] 
+                         if file_dict['file'] == os.path.basename(nc_path)
+                         ][0]
 
             zip_path = os.path.splitext(nc_path)[0] + '.zip'
             zip_distribution_dict = self.thredds_catalog.find_url_dict(
@@ -179,7 +188,9 @@ class XMLUpdater(object):
             template_dict = {
                 'UUID': uuid,
                 'DOI': doi,
-                # Should be one - fail otherwise
+                'NC_PATH': os.path.abspath(nc_path),
+                'NC_SIZE_MB': str(nc_size_mb),
+                'NC_MD5SUM': nc_md5sum,
                 'THREDDS_CATALOG_URL': thredds_catalog_list[0],
                 'NC_HTTP_URL': nc_distribution_dict.get('HTTPServer'),
                 'NCSS_URL': nc_distribution_dict.get('NetcdfSubset'),
@@ -192,7 +203,7 @@ class XMLUpdater(object):
 
             # Read XML template file
             distributionInfo_template_file = open(
-                'distributionInfo_template.xml')
+                '../distributionInfo_template.xml')
             distributionInfo_template_text = distributionInfo_template_file.read()
             distributionInfo_template_file.close()
 
