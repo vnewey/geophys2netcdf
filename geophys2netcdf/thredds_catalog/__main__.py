@@ -24,9 +24,8 @@ def main():
             re.sub(
                 '\W',
                 '_',
-                
                     re.sub(
-                        '^http://dap.*\.nci\.org\.au/thredds/',
+                        '(http://dap[^\.]*\.nci\.org\.au/thredds/)|(\.html)',
                         '',
                         thredds_catalog_urls)))[0] +
             '.yaml')

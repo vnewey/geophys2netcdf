@@ -50,9 +50,8 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
                 re.sub(
                     '\W',
                     '_',
-                    
                         re.sub(
-                            '^http://dap.*\.nci\.org\.au/thredds/',
+                            '(http://dap[^\.]*\.nci\.org\.au/thredds/)|(\.html)',
                             '',
                             thredds_catalog_urls)))[0] +
                 '.yaml')
