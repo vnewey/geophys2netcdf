@@ -48,6 +48,7 @@ import dateutil.parser
 from dateutil import tz
 import pytz
 import yaml
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Logging level for this module
@@ -85,21 +86,15 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
         self.verbose = verbose
         if yaml_path:
             self.load(yaml_path)
-            self.thredds_catalog_urls = self.thredds_catalog_dict.keys()[0] # Root key
-            self.thredds_catalog_url_list = [thredds_catalog_url.strip() for thredds_catalog_url in thredds_catalog_urls.split(',')]
         else:
             thredds_catalog_urls = thredds_catalog_urls or self.DEFAULT_THREDDS_CATALOGUE_URLS
             self.thredds_catalog_url_list = [thredds_catalog_url.strip() for thredds_catalog_url in thredds_catalog_urls.split(',')]
             
-                                          
-            self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)
-                                         for thredds_catalog_url in self.thredds_catalog_url_list 
-                                         }
-            
-            # Add single root key for multiple URLs
-            if len(self.thredds_catalog_url_list) > 1:
-                self.thredds_catalog_dict = {thredds_catalog_urls: # Comma separated list string
-                                             self.thredds_catalog_dict}
+            # Top level dict is an OrderedDict to implement prioritised search through specified catalogues                              
+            self.thredds_catalog_dict = OrderedDict((thredds_catalog_url, self.get_thredds_dict(thredds_catalog_url))
+                                                     for thredds_catalog_url in self.thredds_catalog_url_list 
+                                                    )
+
 
     def get_thredds_dict(self, thredds_catalog_urls):
         '''
@@ -285,14 +280,14 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
     def find_url_dict(self, file_path):
         '''
         Function to return dict of {<protocol>: <url>, <protocol>: <url>,...} for a given filename
-        Returns empty dict for failed match, keeps the shorter of two URLs when duplicates found
+        Returns empty dict for failed match, returns first of multiple URLs when duplicate protocols found
         '''
         # Convert list of tuples to dict - remove duplicate protocols
         result_dict = {}
         for protocol, url in self.find_url_list(file_path):
             existing_url = result_dict.get(protocol)
             # Keep the shorter of the two URLs when duplicate protocols found
-            if existing_url is None or (len(url) < len(existing_url)):
+            if existing_url is None:
                 result_dict[protocol] = url
 
         return result_dict
@@ -345,7 +340,12 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
         '''
         subtree_dict = subtree_dict or self.thredds_catalog_dict
         result = ''
-        for key in sorted(subtree_dict.keys()):
+        
+        key_list = subtree_dict.keys()
+        if type(subtree_dict) != OrderedDict:
+            key_list = sorted(key_list)
+            
+        for key in key_list:
             result += ('  ' * level) + key
             value = subtree_dict[key]
 

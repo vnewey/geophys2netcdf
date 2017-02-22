@@ -26,33 +26,35 @@ class XMLUpdater(object):
     #GA_GEONETWORK = 'http://intranet.ga.gov.au/geonetwork/srv/eng'
 
     #THREDDS_ROOT_DIR = '/g/data2/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/'
-    #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
+    #THREDDS_CATALOG_URLS = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
 
     THREDDS_ROOT_DIR = '/g/data1/rr2/National_Coverages/'
-    #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
-    THREDDS_CATALOG_URL = 'http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
-http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
+    #THREDDS_CATALOG_URLS = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+    THREDDS_CATALOG_URLS = '\
+http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
 http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html,\
+http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
 http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html'
 
-    # print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
+    # print 'thredds_catalog_urls = %s' % THREDDS_CATALOG_URLS
 
     def __init__(self, update_bounds=True, update_distributions=True, xml_dir=None):
 
         # TODO: Work out some way of making this faster.
-        def get_thredds_catalog(thredds_catalog_url):
+        def get_thredds_catalog(thredds_catalog_urls):
             '''
             Function to return a THREDDSCatalog either from a pre-cached YAML file or read from specified THREDDS catalog
             '''
             yaml_path = os.path.abspath(
+                os.path.splitext(
                 re.sub(
                     '\W',
                     '_',
-                    os.path.splitext(
+                    
                         re.sub(
                             '^http://dap.*\.nci\.org\.au/thredds/',
                             '',
-                            thredds_catalog_url))[0]) +
+                            thredds_catalog_urls)))[0] +
                 '.yaml')
             # print 'yaml_path = %s' % yaml_path
 
@@ -60,8 +62,8 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
                 print 'Loading previously cached catalogue tree from %s' % yaml_path
                 tc = THREDDSCatalog(yaml_path=yaml_path)
             else:
-                print 'Crawling THREDDS catalog %s\nWARNING: This operation may take several hours to complete!' % thredds_catalog_url
-                tc = THREDDSCatalog(thredds_catalog_url=thredds_catalog_url)
+                print 'Crawling THREDDS catalog %s\nWARNING: This operation may take several hours to complete!' % thredds_catalog_urls
+                tc = THREDDSCatalog(thredds_catalog_urls=thredds_catalog_urls)
                 tc.dump(yaml_path)
 
             return tc
@@ -71,7 +73,7 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
 
         if self.update_distributions:
             self.thredds_catalog = get_thredds_catalog(
-                self.THREDDS_CATALOG_URL)
+                self.THREDDS_CATALOG_URLS)
         else:
             self.thredds_catalog = None
             
