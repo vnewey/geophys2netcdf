@@ -28,7 +28,7 @@ class XMLUpdater(object):
     #THREDDS_ROOT_DIR = '/g/data2/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/'
     #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
 
-    THREDDS_ROOT_DIR = '/g/data1/rr2/'
+    THREDDS_ROOT_DIR = '/g/data1/rr2/National_Coverages/'
     #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
     THREDDS_CATALOG_URL = 'http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
 http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
