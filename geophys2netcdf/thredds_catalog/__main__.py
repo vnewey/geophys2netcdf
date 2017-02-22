@@ -7,7 +7,7 @@ Created on 22Feb.,2017
 import sys
 import os
 import re
-from pprint import pprint
+#from pprint import pprint
 from geophys2netcdf.thredds_catalog import THREDDSCatalog
 
 def main():
@@ -17,7 +17,7 @@ def main():
         yaml_file_path = sys.argv[1]
         tc = THREDDSCatalog(yaml_path=yaml_file_path)
     else: 
-        thredds_catalog_url = sys.argv[1]
+        thredds_catalog_urls = sys.argv[1]
     
         yaml_file_path = os.path.abspath(
             re.sub(
@@ -27,14 +27,16 @@ def main():
                     re.sub(
                         '^http://dap.*\.nci\.org\.au/thredds/',
                         '',
-                        thredds_catalog_url))[0]) +
+                        thredds_catalog_urls))[0]) +
             '.yaml')
         # print 'yaml_path = %s' % yaml_path
     
-        tc = THREDDSCatalog(thredds_catalog_url=thredds_catalog_url)
+        tc = THREDDSCatalog(thredds_catalog_urls=thredds_catalog_urls)
         tc.dump(yaml_file_path)
         
-    pprint(tc.thredds_catalog_dict)
+    print(tc.indented_text())
+    
+    #pprint(tc.find_url_dict('/g/data1/rr2/National_Coverages/IR_gravity_anomaly_Australia_V1/IR_gravity_anomaly_Australia_V1.nc'))
 
 if __name__ == '__main__':
     main()

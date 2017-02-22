@@ -25,11 +25,15 @@ class XMLUpdater(object):
     GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
     #GA_GEONETWORK = 'http://intranet.ga.gov.au/geonetwork/srv/eng'
 
-    THREDDS_ROOT_DIR = '/g/data2/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/'
-    THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
+    #THREDDS_ROOT_DIR = '/g/data2/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/'
+    #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
 
-    #THREDDS_ROOT_DIR = '/g/data1/rr2/'
+    THREDDS_ROOT_DIR = '/g/data1/rr2/'
     #THREDDS_CATALOG_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+    THREDDS_CATALOG_URL = 'http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
+http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
+http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html,\
+http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html'
 
     # print 'thredds_catalog_url = %s' % THREDDS_CATALOG_URL
 

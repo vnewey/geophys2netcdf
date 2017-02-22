@@ -71,42 +71,54 @@ class THREDDSCatalog(object):
     Class definition for THREDDSCatalog
     '''
     # DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalog.html'
-    DEFAULT_THREDDS_CATALOGUE_URL = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
+    DEFAULT_THREDDS_CATALOGUE_URLS = 'http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
+http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html'
 
-    def __init__(self, thredds_catalog_url=None,
+    def __init__(self, thredds_catalog_urls=None,
                  yaml_path=None, verbose=False):
         '''
         Constructor for class THREDDSCatalog
-        Launches a crawler to examine every THREDDS catalog page underneath the nominated thredds_catalog_url
+        Launches a crawler to examine every THREDDS catalog page underneath the nominated thredds_catalog_urls
         '''
-        assert (yaml_path and not thredds_catalog_url) or (
-            thredds_catalog_url and not yaml_path), 'yaml_path or thredds_catalog_url should be specified, but not both.'
+        assert (yaml_path and not thredds_catalog_urls) or (
+            thredds_catalog_urls and not yaml_path), 'yaml_path or thredds_catalog_urls should be specified, but not both.'
         self.verbose = verbose
         if yaml_path:
             self.load(yaml_path)
+            self.thredds_catalog_urls = self.thredds_catalog_dict.keys()[0] # Root key
+            self.thredds_catalog_url_list = [thredds_catalog_url.strip() for thredds_catalog_url in thredds_catalog_urls.split(',')]
         else:
-            thredds_catalog_url = thredds_catalog_url or self.DEFAULT_THREDDS_CATALOGUE_URL
-            self.thredds_catalog_dict = {
-                thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)}
+            thredds_catalog_urls = thredds_catalog_urls or self.DEFAULT_THREDDS_CATALOGUE_URLS
+            self.thredds_catalog_url_list = [thredds_catalog_url.strip() for thredds_catalog_url in thredds_catalog_urls.split(',')]
+            
+                                          
+            self.thredds_catalog_dict = {thredds_catalog_url: self.get_thredds_dict(thredds_catalog_url)
+                                         for thredds_catalog_url in self.thredds_catalog_url_list 
+                                         }
+            
+            # Add single root key for multiple URLs
+            if len(self.thredds_catalog_url_list) > 1:
+                self.thredds_catalog_dict = {thredds_catalog_urls: # Comma separated list string
+                                             self.thredds_catalog_dict}
 
-    def get_thredds_dict(self, thredds_catalog_url):
+    def get_thredds_dict(self, thredds_catalog_urls):
         '''
         get_thredds_dict - recursive function to parse specified THREDDS catalogue URL and return a nested dict
-        Parameter: thredds_catalog_url - string specifying URL of THREDDS catalog
+        Parameter: thredds_catalog_urls - string specifying URL of THREDDS catalog
         '''
         def get_absolute_url(href):
             # Create absolute URL
             if href.startswith(
                     '/'):  # Absolute href - should start with "/thredds/"
-                return re.sub('/thredds/.*', href, thredds_catalog_url)
+                return re.sub('/thredds/.*', href, thredds_catalog_urls)
             else:  # Relative href
-                return re.sub('catalog.html$', href, thredds_catalog_url)
+                return re.sub('catalog.html$', href, thredds_catalog_urls)
 
         thredds_catalog_dict = {}
 
         if self.verbose:
-            logger.info('Opening %s', thredds_catalog_url)
-        data = urllib.urlopen(thredds_catalog_url).read()
+            logger.info('Opening %s', thredds_catalog_urls)
+        data = urllib.urlopen(thredds_catalog_urls).read()
         logger.debug('data = %s', data)
 
         tree = lxml.html.fromstring(data)
@@ -325,3 +337,25 @@ class THREDDSCatalog(object):
             else:  # Nothing found for basename - should never happen
                 logger.debug('No URLs found for %s', find_path)
                 return []
+            
+
+    def indented_text(self, subtree_dict=None, level=0):
+        '''
+        Recursive function to return indented text representing catalog tree
+        '''
+        subtree_dict = subtree_dict or self.thredds_catalog_dict
+        result = ''
+        for key in sorted(subtree_dict.keys()):
+            result += ('  ' * level) + key
+            value = subtree_dict[key]
+
+            if type(value) == str:
+                result += ': ' + value + '\n'
+            elif type(value) == dict:
+                result += '\n' + self.indented_text(value, level+1)
+            else:
+                raise Exception('Unrecognised value type')
+            
+        return result
+        
+        
