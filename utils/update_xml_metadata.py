@@ -167,15 +167,11 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
             assert dest_MD_DataIdentification_tree is not None, 'dest_MD_DataIdentification_tree element does not exist'
 
             # Delete any existing mri:extent elements
-            while True:
-                dest_extent_tree = dest_MD_DataIdentification_tree.find(
-                    path='mri:extent', namespaces=xml_tree.nsmap)
+            for dest_extent_tree in dest_MD_DataIdentification_tree.iterfind(
+                path='mri:extent', namespaces=xml_tree.nsmap):
             
-                if dest_extent_tree is None: # All gone - proceed to create new one
-                    break
-                else:
-                    print 'Deleting existing mri:extent subtree'
-                    dest_MD_DataIdentification_tree.delete()
+                print 'Removing existing mri:extent subtree'
+                dest_MD_DataIdentification_tree.remove(dest_extent_tree)
             
             print 'Creating new mri:extent subtree'
             dest_MD_DataIdentification_tree.append(source_extent_tree)
