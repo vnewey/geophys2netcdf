@@ -130,7 +130,7 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
             <mri:extent>
                 <gex:EX_Extent>
                     <gex:description>
-                        <gco:CharacterString>unknown</gco:CharacterString>
+                        <gco:CharacterString>Orthogonal WGS84 Bounding Box</gco:CharacterString>
                     </gex:description>
                     <gex:geographicElement>
                         <gex:EX_GeographicBoundingBox>
