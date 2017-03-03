@@ -14,7 +14,7 @@ from shutil import rmtree
 import glob
 from osgeo import gdal, gdalconst
 import netCDF4
-from geophys2netcdf.array_pieces import array_pieces
+from geophys_utils._array_pieces import array_pieces
 import numpy as np
 from collections import OrderedDict
 from functools import reduce
