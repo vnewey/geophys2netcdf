@@ -8,7 +8,6 @@ import netCDF4
 import re
 import os
 import uuid
-from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
@@ -128,9 +127,12 @@ def main():
         survey_metadata = SurveyMetadata(source)
         metadata_object.merge_root_metadata_from_object(survey_metadata)
     except Exception as e:
-        print e.message, 'Attempting direct DB read'
-        survey_metadata = ArgusMetadata(db_user, db_password, db_alias, source)
-        metadata_object.merge_root_metadata('Survey', survey_metadata.metadata_dict, overwrite=True) # Fake Survey metadata from DB query
+        print 'Unable to read from Survey API:\n%s\nAttempting direct Oracle DB read' % e.message
+        try:
+            survey_metadata = ArgusMetadata(db_user, db_password, db_alias, source) # This will fail if we haven't been able to import ArgusMetadata 
+            metadata_object.merge_root_metadata('Survey', survey_metadata.metadata_dict, overwrite=True) # Fake Survey metadata from DB query
+        except Exception as e:
+            print 'Unable to perform direct Oracle DB read: %s' % e.message
 
     nc_grid_utils = NetCDFGridUtils(nc_dataset)
     

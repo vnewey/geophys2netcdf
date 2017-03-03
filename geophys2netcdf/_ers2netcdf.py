@@ -151,8 +151,6 @@ class ERS2NetCDF(Geophys2NetCDF):
             self._netcdf_dataset.renameVariable(
                 'Band1', re.sub('\W', '_', band_name[0:16]))
 
-        self._netcdf_dataset.Conventions = self._netcdf_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6') + ', ACDD-1.3'
         # Will close output file for writing and write checksum and uuid files
         self.update_nc_metadata()
         logger.info('Finished translating %s to %s',

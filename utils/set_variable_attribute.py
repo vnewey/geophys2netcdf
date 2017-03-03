@@ -43,10 +43,6 @@ def main():
 
         setattr(variable, attribute_name, attribute_value)
 
-        # Retrospective fixup
-        nc_dataset.Conventions = nc_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6').replace(', ', ',')
-
         print 'Final %s.%s = %s' % (variable.name, attribute_name, getattr(variable, attribute_name))
 
         nc_dataset.close()

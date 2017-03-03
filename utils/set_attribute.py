@@ -33,10 +33,6 @@ def main():
         except Exception as e:
             print 'Unable to set attribute %s to %s: %s' % (attribute_name, attribute_value, e.message)
 
-        # Retrospective fixup
-        nc_dataset.Conventions = nc_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6').replace(', ', ',')
-
         nc_dataset.close()
 
         print 'Updating metadata in %s' % nc_path

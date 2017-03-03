@@ -39,10 +39,6 @@ def main():
         variable_name = variable.name
         variable.units = units
 
-        # Retrospective fixup
-        nc_dataset.Conventions = nc_dataset.Conventions.replace(
-            'CF-1.5', 'CF-1.6').replace(', ', ',')
-
         nc_dataset.close()
 
         print '%s.variables["%s"].units = %s' % (nc_path, variable_name, units)
