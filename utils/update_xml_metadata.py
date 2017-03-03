@@ -130,7 +130,7 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
             <mri:extent>
                 <gex:EX_Extent>
                     <gex:description>
-                        <gco:CharacterString>unknown</gco:CharacterString>
+                        <gco:CharacterString>Orthogonal WGS84 Bounding Box</gco:CharacterString>
                     </gex:description>
                     <gex:geographicElement>
                         <gex:EX_GeographicBoundingBox>
@@ -173,8 +173,11 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
                 print 'Removing existing mri:extent subtree'
                 dest_MD_DataIdentification_tree.remove(dest_extent_tree)
             
-            print 'Creating new mri:extent subtree'
-            dest_MD_DataIdentification_tree.append(source_extent_tree)
+            print 'Creating new mri:extent subtree after mri:topicCategory'
+            mri_topicCategory_tree = dest_MD_DataIdentification_tree.find(
+                path='mri:topicCategory', namespaces=xml_tree.nsmap)
+            dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(mri_topicCategory_tree)+1, 
+                                                   source_extent_tree)
 
             return
 
