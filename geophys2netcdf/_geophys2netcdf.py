@@ -143,7 +143,7 @@ class Geophys2NetCDF(object):
                    '-of', 'netCDF',
                    '-co', 'FORMAT=NC4C',
                    '-co', 'COMPRESS=DEFLATE',
-                   '-co', 'WRITE_BOTTOMUP=YES',
+                   '-co', 'WRITE_BOTTOMUP=NO', # N.B: This was previously YES, but GDAL doesn't like it
                    input_path,
                    temp_path
                    ]
