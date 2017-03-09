@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Initial logging level for this module
 
 FLOAT_TOLERANCE = 0.000001
+#MAX_BYTES = 500000000 # 500MB
+MAX_BYTES = 1000000000 # 1GB
 
 
 class ERS2NetCDFChecker(object):
@@ -397,7 +399,7 @@ class ERS2NetCDFChecker(object):
                 print 'Note: y-axis indexing is Northward-positive in netCDF file'
         
             for nc_piece_array, start_indices in array_pieces(
-                    data_variable, 1000000000):  # 1GB Pieces
+                    data_variable, max_bytes=MAX_BYTES):
                 piece_size = reduce(lambda x, y: x * y, nc_piece_array.shape)
                 # print start_indices, nc_piece_array.shape, piece_size
 
@@ -429,7 +431,7 @@ class ERS2NetCDFChecker(object):
                 percentage_difference_piece_array = np.absolute(
                     1.0 - nc_piece_array / ers_piece_array) * 100.0
 
-                if pixel_count:  # Not the first piecee
+                if pixel_count:  # Not the first piece
                     min_nc_value = min(min_nc_value, np.nanmin(nc_piece_array))
                     max_nc_value = max(max_nc_value, np.nanmax(nc_piece_array))
                     min_ers_value = min(
