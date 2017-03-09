@@ -16,8 +16,8 @@ def main():
     data_stats_csv_path = sys.argv[3]
     max_bytes = int(sys.argv[4]) if len(sys.argv) == 5 else None
 
-    nc_path_list = [filename for filename in subprocess.check_output(
-        ['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)]
+    nc_path_list = sorted([filename for filename in subprocess.check_output(
+        ['find', root_dir, '-name', file_template]).split('\n') if re.search('\.nc$', filename)])
 
     data_stats_csv_file = open(data_stats_csv_path, 'w')
     
