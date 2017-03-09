@@ -377,7 +377,17 @@ class ERS2NetCDFChecker(object):
             max_ers_value = None
             min_percentage_difference = None
             max_percentage_difference = None
-
+            
+            y_variable = (nc_dataset.variables.get('lat') 
+                          or nc_dataset.variables.get('y')
+                          )
+            
+            y_inverted = (y_variable[-1] < self.y_variable[0])
+            if y_inverted:
+                print 'Note: y-axis indexing is Southward-positive in netCDF file'
+            else:
+                print 'Note: y-axis indexing is Northward-positive in netCDF file'
+        
             for nc_piece_array, start_indices in array_pieces(
                     data_variable, 1000000000):  # 1GB Pieces
                 piece_size = reduce(lambda x, y: x * y, nc_piece_array.shape)
@@ -386,18 +396,27 @@ class ERS2NetCDFChecker(object):
                 if isinstance(nc_piece_array, np.ma.core.MaskedArray):
                     nc_piece_array = nc_piece_array.data
 
-                # Invert NetCDF array to convert LL origin to UL
-                nc_piece_array = np.flipud(nc_piece_array)
-
-                # Note reversed indices to match YX ordering in NetCDF with XY
-                # ordering in ERS
-                ers_piece_array = ers_band.ReadAsArray(
-                    start_indices[1],
-                    ers_gdal_dataset.RasterYSize -
-                    start_indices[0] -
-                    nc_piece_array.shape[0],
-                    nc_piece_array.shape[1],
-                    nc_piece_array.shape[0])
+                if y_inverted: # NetCDF and ERS have the same Y-axis orientation
+                    # Note reversed indices to match YX ordering in NetCDF with XY
+                    # ordering in GDAL
+                    ers_piece_array = ers_band.ReadAsArray(
+                        start_indices[1],
+                        start_indices[0],
+                        nc_piece_array.shape[1],
+                        nc_piece_array.shape[0])
+                else: # Need to flip and relocate array
+                    # Invert NetCDF piece array to convert LL origin to UL
+                    nc_piece_array = np.flipud(nc_piece_array)
+    
+                    # Note reversed indices to match YX ordering in NetCDF with XY
+                    # ordering in GDAL
+                    ers_piece_array = ers_band.ReadAsArray(
+                        start_indices[1],
+                        ers_gdal_dataset.RasterYSize -
+                        start_indices[0] -
+                        nc_piece_array.shape[0],
+                        nc_piece_array.shape[1],
+                        nc_piece_array.shape[0])
 
                 percentage_difference_piece_array = np.absolute(
                     1.0 - nc_piece_array / ers_piece_array) * 100.0

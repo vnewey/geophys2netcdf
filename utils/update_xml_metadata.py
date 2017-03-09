@@ -29,12 +29,13 @@ class XMLUpdater(object):
     #THREDDS_CATALOG_URLS = 'http://dapds00.nci.org.au/thredds/catalog/uc0/rr2_dev/rcb547/AWAGS_Levelled_Grids/catalog.html'
 
     THREDDS_ROOT_DIR = '/g/data1/rr2/National_Coverages/'
+    # Comma-separated list of one or more URLS in search order
     #THREDDS_CATALOG_URLS = 'http://dapds00.nci.org.au/thredds/catalogs/rr2/catalog.html'
     THREDDS_CATALOG_URLS = '\
 http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
-http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html,\
 http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/catalog.html,\
-http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html'
+http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html,\
+http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.html'
 
     # print 'thredds_catalog_urls = %s' % THREDDS_CATALOG_URLS
 
@@ -415,8 +416,7 @@ http://dapds00.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
 
         xml_file.close()
         print 'Finished writing XML to file %s' % xml_path
-
-
+        
 def main():
     assert len(
         sys.argv) > 1, 'Usage: %s <netcdf_file> [<netcdf_file>...] [<xml_dir>]' % sys.argv[0]
