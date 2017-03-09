@@ -382,7 +382,7 @@ class ERS2NetCDFChecker(object):
                           or nc_dataset.variables.get('y')
                           )
             
-            y_inverted = (y_variable[-1] < self.y_variable[0])
+            y_inverted = (y_variable[-1] < y_variable[0])
             if y_inverted:
                 print 'Note: y-axis indexing is Southward-positive in netCDF file'
             else:
