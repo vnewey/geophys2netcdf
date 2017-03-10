@@ -91,6 +91,7 @@ def main():
     else:
         xml_dir = '.'
         
+    # Optional arguments for DB connection - not required at NCI
     if len(sys.argv) == 8:
         db_user = sys.argv[5]
         db_password = sys.argv[6]
@@ -100,8 +101,6 @@ def main():
         db_password = None
         db_alias = None
         
-#    jetcat_path = sys.argv[x]
-
     xml_path = os.path.abspath(os.path.join(xml_dir, os.path.splitext(os.path.basename(netcdf_path))[0] + '.xml'))
     print xml_dir, xml_path
 
@@ -152,9 +151,7 @@ def main():
             
         calculated_values['YEAR'] = str(year)    
     except:
-        calculated_values['YEAR'] = 'UNKNOWN'
-        
-   
+        calculated_values['YEAR'] = 'UNKNOWN' 
     
     #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
     calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
@@ -163,12 +160,12 @@ def main():
     try:
         calculated_values['START_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'STARTDATE'])), '%d-%b-%y').date().isoformat()
     except:
-        calculated_values['START_DATE'] = 'UNKNOWN'    
+        calculated_values['START_DATE'] = None   
     
     try:
         calculated_values['END_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'ENDDATE'])), '%d-%b-%y').date().isoformat()
     except:
-        calculated_values['END_DATE'] = 'UNKNOWN'    
+        calculated_values['END_DATE'] = None 
     
     #history = "Wed Oct 26 14:34:42 2016: GDAL CreateCopy( /local/el8/axi547/tmp/mWA0769_770_772_773.nc, ... )"
     try:
