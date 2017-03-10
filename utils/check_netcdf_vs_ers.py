@@ -212,7 +212,7 @@ class ERS2NetCDFChecker(object):
 
                 return value
 
-            if True:#try:
+            try:
                 # TODO: Make this work with UTM datasets - untested
                 ers_file = open(ers_path)
                 lines = ers_file.readlines()
@@ -306,7 +306,7 @@ class ERS2NetCDFChecker(object):
                     value - geotransform[3]) < FLOAT_TOLERANCE), 'ERS & GDAL Y origin are not equal'
 
                 return True
-            else:#except:
+            except:
                 # Dump ERS file
                 if self.debug:
                     for line in lines:
@@ -319,7 +319,7 @@ class ERS2NetCDFChecker(object):
         assert os.path.isfile(
             nc_path), 'NetCDF file %s does not exist' % nc_path
 
-        if True:#try:
+        try:
             ers_gdal_dataset = gdal.Open(ers_path, gdalconst.GF_Read)
             assert ers_gdal_dataset, 'Unable to open ERS file %s using GDAL' % ers_path
 
@@ -478,7 +478,7 @@ class ERS2NetCDFChecker(object):
             print 'min ers_value = %f, mean ers_value = %f, max ers_value = %f' % (min_ers_value, mean_ers_value, max_ers_value)
             print 'min percentage_difference = %f%%, mean percentage_difference = %f%%, max percentage_difference = %f%%' % (min_percentage_difference, mean_percentage_difference, max_percentage_difference)
 
-        else:#except Exception as e:
+        except Exception as e:
             print 'FAIL: %s' % e.message
 
 
