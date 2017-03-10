@@ -16,7 +16,6 @@ from osgeo import gdal, gdalconst
 import netCDF4
 from geophys_utils import array_pieces
 import numpy as np
-from collections import OrderedDict
 from functools import reduce
 from geophys2netcdf.metadata import ERSMetadata
 from pprint import pprint
