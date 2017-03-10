@@ -18,6 +18,8 @@ from geophys_utils import array_pieces
 import numpy as np
 from collections import OrderedDict
 from functools import reduce
+from geophys2netcdf.metadata import ERSMetadata
+from pprint import pprint
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
@@ -213,78 +215,21 @@ class ERS2NetCDFChecker(object):
                 return value
 
             try:
-                # TODO: Make this work with UTM datasets - untested
-                ers_file = open(ers_path)
-                lines = ers_file.readlines()
-                ers_file.close()
-
-                ers_dict = {}
-                hierarchy = OrderedDict()  # Flat key:value list of current dict path
-                section_dict = ers_dict
-                for line in lines:
-                    #                print 'line = %s' % line
-                    begin_match = re.match(
-                        '\s*(\S+) Begin', line, re.IGNORECASE)
-                    if begin_match:
-                        current_section = begin_match.group(1)
-    #                    print 'current_section = %s' % current_section
-                        new_section_dict = {}
-                        section_dict[current_section] = new_section_dict
-                        hierarchy[current_section] = new_section_dict
-                        section_dict = new_section_dict
-                        continue
-
-                    end_match = re.match('\s*(\S+) End', line, re.IGNORECASE)
-                    if end_match:
-                        end_section = end_match.group(1)
-                        assert end_section == current_section, 'Malformed sections in ERS file: End found for %s when current section is %s' % (
-                            end_section, current_section)
-                        # Remove last key:value pair
-                        del hierarchy[end_section]
-                        if hierarchy:  # Not yet at root
-                            current_section = hierarchy.keys()[-1]
-                            section_dict = hierarchy[current_section]
-                        else:
-                            current_section = None
-                            section_dict = ers_dict
-                        continue
-
-                    keyvalue_match = re.match(
-                        '\s*(\S+)\s*=\s*(\S+.*)', line, re.IGNORECASE)
-                    if keyvalue_match:
-                        key = keyvalue_match.group(1)
-                        value = keyvalue_match.group(2)
-                        section_dict[key] = re.sub(
-                            '^"|"$', '', value).strip()  # Strip double quotes from string
-                        if section_dict[key][0] == '{':
-                            open_key = key
-                        else:
-                            open_key = None
-                        continue
-
-                    if open_key:
-                        section_dict[open_key] = section_dict[
-                            open_key] + ' ' + re.sub('\s+', ' ', line.strip())
-                        if section_dict[open_key][-1] == '}':
-                            open_key = None
-                    else:
-                        assert False, 'Unhandled line: "%s"' % line.strip()
-
-                assert section_dict == ers_dict, 'Section not closed in ERS file'
-    #            print ers_dict
-                assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo'][
-                        'Xdimension']) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
+                ers_metadata = ERSMetadata(ers_path)
+                
+                assert (abs(float(ers_metadata.get_metadata(['DatasetHeader', 'RasterInfo', 'CellInfo', 
+                        'Xdimension'])) - geotransform[1]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel X size are not equal'
 
                 # N.B: Sign changed to deal with GDAL's UL origin
-                assert (abs(float(ers_dict['DatasetHeader']['RasterInfo']['CellInfo'][
-                        'Ydimension']) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
+                assert (abs(float(ers_metadata.get_metadata(['DatasetHeader', 'RasterInfo', 'CellInfo', 
+                        'Ydimension'])) + geotransform[5]) < FLOAT_TOLERANCE), 'ERS & GDAL pixel Y size are not equal'
 
                 try:
-                    value_string = ers_dict['DatasetHeader'][
-                        'RasterInfo']['RegistrationCoord']['Longitude']
+                    value_string = ers_metadata.get_metadata(['DatasetHeader', 
+                        'RasterInfo', 'RegistrationCoord', 'Longitude'])
                 except:
-                    value_string = ers_dict['DatasetHeader'][
-                        'RasterInfo']['RegistrationCoord']['Eastings']
+                    value_string = ers_metadata.get_metadata(['DatasetHeader', 
+                        'RasterInfo', 'RegistrationCoord', 'Eastings'])
                 try:
                     value = float(value_string)
                 except:
@@ -293,11 +238,11 @@ class ERS2NetCDFChecker(object):
                     value - geotransform[0]) < FLOAT_TOLERANCE), 'ERS & GDAL X origin are not equal'
 
                 try:
-                    value_string = ers_dict['DatasetHeader'][
-                        'RasterInfo']['RegistrationCoord']['Latitude']
+                    value_string = ers_metadata.get_metadata(['DatasetHeader', 
+                        'RasterInfo', 'RegistrationCoord', 'Latitude'])
                 except:
-                    value_string = ers_dict['DatasetHeader'][
-                        'RasterInfo']['RegistrationCoord']['Northings']
+                    value_string = ers_metadata.get_metadata(['DatasetHeader', 
+                        'RasterInfo', 'RegistrationCoord', 'Northings'])
                 try:
                     value = float(value_string)
                 except:
@@ -307,10 +252,9 @@ class ERS2NetCDFChecker(object):
 
                 return True
             except:
-                # Dump ERS file
+                # Dump ERS metadata dict
                 if self.debug:
-                    for line in lines:
-                        print line.replace('\n', '')
+                    pprint(ers_metadata.metadata_dict)
                 raise
 
         print 'Comparing ERS file %s and NetCDF file %s' % (ers_path, nc_path)
