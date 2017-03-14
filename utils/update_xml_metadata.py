@@ -79,6 +79,15 @@ http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
             
         self.xml_dir = xml_dir or XMLUpdater.DEFAULT_XML_DIR
 
+    def prettify_xml(self, xml_text):
+        '''
+        Helper function to return a prettified XML string
+        '''
+        return parseString(xml_text).toprettyxml(indent="", 
+                                                 newl="", 
+                                                 encoding="utf-8"
+                                                 )        
+    
     def update_xml(self, nc_path):
         '''
         Function to read, update and write XML metadata for specified NetCDF file
@@ -387,14 +396,35 @@ http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
             raise Exception('DOI not found in %s' % nc_path)
 
         print 'Processing Dataset %s with UUID %s' % (nc_path, uuid)
+        
+        xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % os.path.splitext(os.path.basename(nc_path))[0]))
 
-        xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
+        # Read XML from file if it exists
+        if os.path.isfile(xml_path):
+            xml_file = open(xml_path, 'r')
+            xml_text = xml_file.read()
+            xml_file.close()
+        else: # Get XML from web service query
+            xml_text = get_xml_by_id(self.GA_GEONETWORK, uuid)
+            
+        # Attempt to read XML text into etree
         try:
             xml_tree = etree.fromstring(xml_text)
         except Exception as e:
             print xml_text
             raise e
 
+        # Create backup directory if it doesn't exist
+        backup_dir = os.path.abspath(os.path.join(self.xml_dir, 'backup'))
+        if not os.path.isdir(backup_dir):
+            os.mkdir(backup_dir) 
+                                                   
+        # Write original XML into backup file
+        backup_path = os.path.join(backup_dir, '%s.xml' % os.path.basename(xml_path))
+        backup_file = open(backup_path, 'w')
+        backup_file.write(self.prettify_xml(xml_text))
+        backup_file.close()
+        
         if self.update_bounds:
             update_bounds(nc_dataset, xml_tree)
 
@@ -403,15 +433,14 @@ http://dap-wms.nci.org.au/thredds/catalog/rr2/National_Coverages/http/catalog.ht
         if self.update_distributions:
             update_distributions(xml_tree)
 
-        xml_path = os.path.abspath(os.path.join(self.xml_dir, '%s.xml' % os.path.splitext(os.path.basename(nc_path))[0]))
         xml_file = open(xml_path, 'w')
    
-        xml_file.write(parseString(etree.tostring(xml_tree, 
-                                                  encoding="utf-8",
-                                                  pretty_print=False,
-                                                  with_tail=False)).toprettyxml(indent="", 
-                                                                                newl="", 
-                                                                                encoding="utf-8")
+        xml_file.write(self.prettify_xml(etree.tostring(xml_tree, 
+                                                        encoding="utf-8",
+                                                        pretty_print=False,
+                                                        with_tail=False
+                                                        )
+                                         )
                        )
 
         xml_file.close()
