@@ -17,8 +17,6 @@ from geophys2netcdf.metadata_json import read_json_metadata
 class XMLUpdater(object):
 
 #===============================================================================
-#     # DEFAULT_XML_DIR = '/home/547/axi547/national_coverage_metadata'
-#     DEFAULT_XML_DIR = './'
 #     # GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # GA's
 #     # externally-facing GeoNetwork - DO NOT USE!!!
 #     # GA's internal GeoNetwork via port forward. Need to use this to obtain
@@ -40,6 +38,8 @@ class XMLUpdater(object):
 # 
 #     # print 'thredds_catalog_urls = %s' % THREDDS_CATALOG_URLS
 #===============================================================================
+
+    DEFAULT_XML_DIR = './'
 
     def __init__(self, geonetwork_url, thredds_root_urls, update_bounds=True, update_distributions=True, xml_dir=None):
 
@@ -467,7 +467,7 @@ def main():
 
     for nc_path in sys.argv[nc_list_slice]:
         try:
-            xml_updater.update_xml(nc_path)
+            xml_updater.update_xml(nc_path, geonetwork_url)
         except Exception as e:
             print 'XML update failed for %s:\n%s' % (nc_path, e.message)
 
