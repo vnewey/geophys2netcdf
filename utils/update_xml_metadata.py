@@ -187,11 +187,15 @@ class XMLUpdater(object):
                     dest_MD_DataIdentification_tree.remove(dest_extent_tree)
             
             print 'Creating new mri:extent subtree after temporal mri:extent or mri:topicCategory'
-            preceding_tree = (dest_MD_DataIdentification_tree.find(
-                path='mri:extent', namespaces=xml_tree.nsmap) or
-                              dest_MD_DataIdentification_tree.find(
-                path='mri:topicCategory', namespaces=xml_tree.nsmap)
-                              )
+            preceding_tree = dest_MD_DataIdentification_tree.find(
+                path='mri:extent', namespaces=xml_tree.nsmap) 
+            if preceding_tree is None:
+                preceding_tree = dest_MD_DataIdentification_tree.find(
+                    path='mri:topicCategory', namespaces=xml_tree.nsmap)
+                print 'Creating new mri:extent subtree after temporal mri:extent'
+            else:
+                print 'Creating new mri:extent subtree after mri:topicCategory'
+
             dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
                                                    source_extent_tree)
 
