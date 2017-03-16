@@ -162,13 +162,11 @@ def main():
         calculated_values['START_DATE'] = min(str2datelist(str(metadata_object.get_metadata(['Survey', 'STARTDATE'])))).isoformat()
     except ValueError:
         calculated_values['START_DATE'] = None   
-    print metadata_object.get_metadata(['Survey', 'STARTDATE']), str2datelist(str(metadata_object.get_metadata(['Survey', 'STARTDATE']))), calculated_values['START_DATE']
     
     try:
         calculated_values['END_DATE'] = max(str2datelist(str(metadata_object.get_metadata(['Survey', 'ENDDATE'])))).isoformat()
     except ValueError:
         calculated_values['END_DATE'] = None 
-    print metadata_object.get_metadata(['Survey', 'ENDDATE']), str2datelist(str(metadata_object.get_metadata(['Survey', 'ENDDATE']))), calculated_values['END_DATE']
     
     # Find survey year from end date isoformat string
     try:
