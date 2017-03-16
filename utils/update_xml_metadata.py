@@ -191,9 +191,9 @@ class XMLUpdater(object):
             if preceding_tree is None:
                 preceding_tree = dest_MD_DataIdentification_tree.find(
                     path='mri:topicCategory', namespaces=xml_tree.nsmap)
-                print 'Creating new mri:extent subtree after temporal mri:extent'
+                print 'Creating new mri:extent subtree after temporal mri:topicCategory'
             else:
-                print 'Creating new mri:extent subtree after mri:topicCategory'
+                print 'Creating new mri:extent subtree after mri:extent'
 
             dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
                                                    source_extent_tree)
