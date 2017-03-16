@@ -178,12 +178,13 @@ class XMLUpdater(object):
                 path='.//mri:MD_DataIdentification', namespaces=xml_tree.nsmap)
             assert dest_MD_DataIdentification_tree is not None, 'dest_MD_DataIdentification_tree element does not exist'
 
-            # Delete any existing mri:extent elements
+            # Delete any existing mri:extent elements for spatial extents
             for dest_extent_tree in dest_MD_DataIdentification_tree.iterfind(
                 path='mri:extent', namespaces=xml_tree.nsmap):
             
-                print 'Removing existing mri:extent subtree'
-                dest_MD_DataIdentification_tree.remove(dest_extent_tree)
+                if dest_extent_tree.find('gex:EX_Extent/gex:geographicElement', namespaces=xml_tree.nsmap):
+                    print 'Removing existing mri:extent subtree'
+                    dest_MD_DataIdentification_tree.remove(dest_extent_tree)
             
             print 'Creating new mri:extent subtree after mri:topicCategory'
             mri_topicCategory_tree = dest_MD_DataIdentification_tree.find(
