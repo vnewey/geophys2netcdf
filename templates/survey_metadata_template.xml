@@ -524,17 +524,15 @@
       <mri:topicCategory>
         <mri:MD_TopicCategoryCode>geoscientificInformation</mri:MD_TopicCategoryCode>
       </mri:topicCategory>
-      {% if START_DATE or END_DATE -%}
+      {% if START_DATE and START_DATE != 'UNKNOWN' -%}
       <mri:extent>
         <gex:EX_Extent>
           <gex:temporalElement>
             <gex:EX_TemporalExtent>
               <gex:extent>
                 <gml:TimePeriod gml:id="A1234">
-                  {% if START_DATE -%}
                   <gml:beginPosition>{{START_DATE}}</gml:beginPosition>
-                  {% endif -%}
-                  {% if END_DATE -%}
+                  {% if END_DATE and END_DATE != 'UNKNOWN' -%}
                   <gml:endPosition>{{END_DATE}}</gml:endPosition>
                   {% endif -%}
                 </gml:TimePeriod>
