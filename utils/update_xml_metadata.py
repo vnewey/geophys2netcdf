@@ -75,7 +75,7 @@ class XMLUpdater(object):
 
         if self.update_distributions:
             self.thredds_catalog = get_thredds_catalog(
-                self.thredds_root_urls)
+                thredds_root_urls)
         else:
             self.thredds_catalog = None
             
