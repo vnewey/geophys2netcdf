@@ -158,12 +158,18 @@ def main():
     calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
     
     try:
-        calculated_values['START_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'STARTDATE'])), '%d-%b-%y').date().isoformat()
+        calculated_values['START_DATE'] = min([datetime.strptime(datetime_string.strip(), '%d-%b-%y').date() 
+                                               for datetime_string in str(metadata_object.get_metadata(['Survey', 'STARTDATE'])
+                                                                          ).split(',')]
+                                              ).isoformat()
     except:
         calculated_values['START_DATE'] = None   
     
     try:
-        calculated_values['END_DATE'] = datetime.strptime(str(metadata_object.get_metadata(['Survey', 'ENDDATE'])), '%d-%b-%y').date().isoformat()
+        calculated_values['END_DATE'] = max([datetime.strptime(datetime_string.strip(), '%d-%b-%y').date() 
+                                               for datetime_string in str(metadata_object.get_metadata(['Survey', 'ENDDATE'])
+                                                                          ).split(',')]
+                                              ).isoformat()
     except:
         calculated_values['END_DATE'] = None 
     
