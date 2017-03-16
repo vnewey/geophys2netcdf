@@ -426,7 +426,7 @@ class XMLUpdater(object):
             os.mkdir(backup_dir) 
                                                    
         # Write original XML into backup file
-        backup_path = os.path.join(backup_dir, '%s.xml' % os.path.basename(xml_path))
+        backup_path = os.path.join(backup_dir, '%s.bck' % os.path.basename(xml_path))
         backup_file = open(backup_path, 'w')
         backup_file.write(self.prettify_xml(xml_text))
         backup_file.close()
