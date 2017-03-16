@@ -168,12 +168,13 @@ def main():
         calculated_values['END_DATE'] = None 
     
     #history = "Wed Oct 26 14:34:42 2016: GDAL CreateCopy( /local/el8/axi547/tmp/mWA0769_770_772_773.nc, ... )"
+    #date_modified = "2016-08-29T10:51:42"
     try:
-        conversion_datetime_string = re.match('^(.+):.*', str(metadata_object.get_metadata(['NetCDF', 'history']))).group(1)
         try:
+            conversion_datetime_string = re.match('^(.+):.*', str(metadata_object.get_metadata(['NetCDF', 'history']))).group(1)
             conversion_datetime_string = datetime.strptime(conversion_datetime_string, '%a %b %d %H:%M:%S %Y').isoformat()
         except:
-            pass
+            conversion_datetime_string = metadata_object.get_metadata(['NetCDF', 'date_modified']) or 'UNKNOWN'
     except:
         conversion_datetime_string = 'UNKNOWN'
         
