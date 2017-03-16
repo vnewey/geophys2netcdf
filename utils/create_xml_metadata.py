@@ -154,18 +154,6 @@ def main():
     
     calculated_values['FILENAME'] = os.path.basename(netcdf_path)
     
-    # Find survey year from end date
-    try:
-        year = int(re.match('.*?(\d+)$', metadata_object.get_metadata(['Survey', 'ENDDATE'])).group(1))
-        if year < 20:
-            year += 2000
-        elif year < 100:
-            year += 1900
-            
-        calculated_values['YEAR'] = str(year)    
-    except:
-        calculated_values['YEAR'] = 'UNKNOWN' 
-    
     #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
     calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
     calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
@@ -181,6 +169,12 @@ def main():
         calculated_values['END_DATE'] = max(str2datelist(str(metadata_object.get_metadata(['Survey', 'ENDDATE'])))).isoformat()
     except ValueError:
         calculated_values['END_DATE'] = None 
+    
+    # Find survey year from end date isoformat string
+    try:
+        calculated_values['YEAR'] = re.match('^(\d{4})-', calculated_values['END_DATE']).group(1)
+    except:
+        calculated_values['YEAR'] = 'UNKNOWN' 
     
     #history = "Wed Oct 26 14:34:42 2016: GDAL CreateCopy( /local/el8/axi547/tmp/mWA0769_770_772_773.nc, ... )"
     #date_modified = "2016-08-29T10:51:42"
