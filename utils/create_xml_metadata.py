@@ -177,9 +177,9 @@ def main():
                          max([coordinate[1] for coordinate in WGS84_bbox])
                          ]
         
-    calculated_values['ELON'] = str(WGS84_extents[0])
+    calculated_values['WLON'] = str(WGS84_extents[0])
     calculated_values['SLAT'] = str(WGS84_extents[1])
-    calculated_values['WLON'] = str(WGS84_extents[2])
+    calculated_values['ELON'] = str(WGS84_extents[2])
     calculated_values['NLAT'] = str(WGS84_extents[3])
     
     try:
