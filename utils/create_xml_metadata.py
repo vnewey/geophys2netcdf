@@ -152,7 +152,7 @@ def main():
     
     calculated_values['FILENAME'] = os.path.basename(netcdf_path)
     
-    try: # Try to treat this as a grid
+    try: # Try to treat this as a gridded dataset
         nc_grid_utils = NetCDFGridUtils(nc_dataset)
         print '%s is a gridded dataset' % netcdf_path
     
@@ -161,21 +161,18 @@ def main():
         calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
         
         WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
-        WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
-                         min([coordinate[1] for coordinate in WGS84_bbox]),
-                         max([coordinate[0] for coordinate in WGS84_bbox]),
-                         max([coordinate[1] for coordinate in WGS84_bbox])
-                         ]
-    except:
+
+    except: # Try to treat this as a line dataset
         nc_line_utils = NetCDFLineUtils(nc_dataset)
         print '%s is a line dataset' % netcdf_path
         
         WGS84_bbox = transform_coords(nc_line_utils.native_bbox, nc_line_utils.crs, 'EPSG:4326')
-        WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
-                         min([coordinate[1] for coordinate in WGS84_bbox]),
-                         max([coordinate[0] for coordinate in WGS84_bbox]),
-                         max([coordinate[1] for coordinate in WGS84_bbox])
-                         ]
+        
+    WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
+                     min([coordinate[1] for coordinate in WGS84_bbox]),
+                     max([coordinate[0] for coordinate in WGS84_bbox]),
+                     max([coordinate[1] for coordinate in WGS84_bbox])
+                     ]
         
     calculated_values['WLON'] = str(WGS84_extents[0])
     calculated_values['SLAT'] = str(WGS84_extents[1])
