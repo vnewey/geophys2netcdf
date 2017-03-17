@@ -147,12 +147,14 @@ class SurveyMetadata(Metadata):
 
         basename = os.path.splitext(os.path.basename(filename))[0]
         
+        # Check for conventional gridded dataset filename: e.g. mNSW0409.nc
         match = re.match('([a-z])(\D+)', basename)
-        if not match:
-            return
-            
-        dataset_type = SurveyMetadata.type_dict.get(match.groups()[0].lower())
-        state = self.decode_state(match.groups()[1].upper())
+        if not match: # Not a gridded filename
+            dataset_type = None
+            state = None
+        else:    
+            dataset_type = SurveyMetadata.type_dict.get(match.groups()[0].lower())
+            state = self.decode_state(match.groups()[1].upper())
         
         survey_ids = [survey_id for survey_id in [int(survey_id) 
                                                   for survey_id in re.sub('\D+', ' ', basename).strip().split(' ')
@@ -165,11 +167,11 @@ class SurveyMetadata(Metadata):
         self._filename = filename
         
         survey_states = self.get_metadata('STATE')
-        if state not in survey_states:
+        if state and state not in survey_states:
             logger.warning('Filename state "%s" inconsistent with survey state "%s"' % (state, survey_states))
 
         survey_dataset_types = self.get_metadata('DATATYPES')
-        if dataset_type not in survey_dataset_types:
+        if dataset_type and dataset_type not in survey_dataset_types:
             logger.warning('Filename dataset type "%s" inconsistent with survey dataset type "%s"' % (dataset_type, survey_dataset_types))
 
         return self._metadata_dict

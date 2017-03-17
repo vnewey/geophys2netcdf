@@ -11,8 +11,8 @@ import uuid
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
-from geophys_utils._netcdf_grid_utils import NetCDFGridUtils
-from geophys_utils._crs_utils import transform_coords
+from geophys_utils import NetCDFGridUtils, NetCDFLineUtils
+from geophys_utils import transform_coords
 from geophys2netcdf.metadata import TemplateMetadata
 
 try:
@@ -146,17 +146,41 @@ def main():
         except Exception as e:
             print 'Unable to perform direct Oracle DB read: %s' % e.message
 
-    nc_grid_utils = NetCDFGridUtils(nc_dataset)
-    
     # Add some calculated values to the metadata
     calculated_values = {}
     metadata_object.metadata_dict['Calculated'] = calculated_values
     
     calculated_values['FILENAME'] = os.path.basename(netcdf_path)
     
-    #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
-    calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
-    calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
+    try: # Try to treat this as a grid
+        nc_grid_utils = NetCDFGridUtils(nc_dataset)
+        print '%s is a gridded dataset' % netcdf_path
+    
+        #calculated_values['CELLSIZE'] = str((nc_grid_utils.pixel_size[0] + nc_grid_utils.pixel_size[1]) / 2.0)
+        calculated_values['CELLSIZE_M'] = str(int(round((nc_grid_utils.nominal_pixel_metres[0] + nc_grid_utils.nominal_pixel_metres[1]) / 20.0) * 10))
+        calculated_values['CELLSIZE_DEG'] = str(round((nc_grid_utils.nominal_pixel_degrees[0] + nc_grid_utils.nominal_pixel_degrees[1]) / 2.0, 8))
+        
+        WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
+        WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
+                         min([coordinate[1] for coordinate in WGS84_bbox]),
+                         max([coordinate[0] for coordinate in WGS84_bbox]),
+                         max([coordinate[1] for coordinate in WGS84_bbox])
+                         ]
+    except:
+        nc_line_utils = NetCDFLineUtils(nc_dataset)
+        print '%s is a line dataset' % netcdf_path
+        
+        WGS84_bbox = transform_coords(nc_line_utils.native_bbox, nc_line_utils.crs, 'EPSG:4326')
+        WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
+                         min([coordinate[1] for coordinate in WGS84_bbox]),
+                         max([coordinate[0] for coordinate in WGS84_bbox]),
+                         max([coordinate[1] for coordinate in WGS84_bbox])
+                         ]
+        
+    calculated_values['ELON'] = str(WGS84_extents[0])
+    calculated_values['SLAT'] = str(WGS84_extents[1])
+    calculated_values['WLON'] = str(WGS84_extents[2])
+    calculated_values['NLAT'] = str(WGS84_extents[3])
     
     try:
         calculated_values['START_DATE'] = min(str2datelist(str(metadata_object.get_metadata(['Survey', 'STARTDATE'])))).isoformat()
@@ -187,7 +211,7 @@ def main():
         
     calculated_values['CONVERSION_DATETIME'] = conversion_datetime_string
     
-    survey_id = str(metadata_object.get_metadata(['Survey', 'SURVEYID']))
+    survey_id = metadata_object.get_metadata(['Survey', 'SURVEYID'])
     try:
         dataset_survey_id = str(nc_dataset.survey_id)
         assert (set([int(value_string.strip()) for value_string in dataset_survey_id.split(',') if value_string.strip()]) == 
@@ -199,7 +223,8 @@ def main():
 
     dataset_uuid = metadata_object.get_metadata(['NetCDF', 'uuid'])
     if not dataset_uuid: # Create a new UUID and write it to the netCDF file 
-        dataset_uuid = uuid.uuid4()
+        dataset_uuid = str(uuid.uuid4())
+        print dataset_uuid, type(dataset_uuid)
         nc_dataset.uuid = dataset_uuid
         nc_dataset.sync()
         print 'Fresh UUID %s generated and written to netCDF file' % dataset_uuid
@@ -216,17 +241,6 @@ def main():
     if dataset_doi:
         calculated_values['DOI'] = str(dataset_doi) 
     
-    WGS84_bbox = transform_coords(nc_grid_utils.native_bbox, nc_grid_utils.crs, 'EPSG:4326')
-    WGS84_extents = [min([coordinate[0] for coordinate in WGS84_bbox]),
-                     min([coordinate[1] for coordinate in WGS84_bbox]),
-                     max([coordinate[0] for coordinate in WGS84_bbox]),
-                     max([coordinate[1] for coordinate in WGS84_bbox])
-                     ]
-    
-    calculated_values['ELON'] = str(WGS84_extents[0])
-    calculated_values['SLAT'] = str(WGS84_extents[1])
-    calculated_values['WLON'] = str(WGS84_extents[2])
-    calculated_values['NLAT'] = str(WGS84_extents[3])
         
     #template_class = None
     template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
