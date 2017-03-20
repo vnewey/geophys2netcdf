@@ -213,13 +213,13 @@ class XMLUpdater(object):
                         path='mri:extent', namespaces=xml_tree.nsmap):
                     
                         if dest_extent_tree.find('gex:EX_Extent/gex:temporalElement', namespaces=xml_tree.nsmap) is not None:
-                            print 'Removing existing mri:extent subtree'
+                            print 'Removing existing temporal mri:extent subtree'
                             dest_MD_DataIdentification_tree.remove(dest_extent_tree)                
             
-                    if time_coverage_start: # If start of period is defined, add a new element
+                    if time_coverage_start: # Add a new temporal mri:extent element only if start of period is defined, 
                         preceding_tree = dest_MD_DataIdentification_tree.find(
                             path='mri:topicCategory', namespaces=xml_tree.nsmap)
-                        print 'Creating new mri:extent subtree after mri:topicCategory'
+                        print 'Creating new mri:extent temporal subtree after mri:topicCategory'
         
                         dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
                                                                source_extent_tree)
@@ -231,7 +231,7 @@ class XMLUpdater(object):
                         path='mri:extent', namespaces=xml_tree.nsmap):
                     
                         if dest_extent_tree.find('gex:EX_Extent/gex:geographicElement', namespaces=xml_tree.nsmap) is not None:
-                            print 'Removing existing mri:extent subtree'
+                            print 'Removing existing spatial mri:extent subtree'
                             dest_MD_DataIdentification_tree.remove(dest_extent_tree)                
             
                     preceding_tree = dest_MD_DataIdentification_tree.find(
@@ -239,9 +239,9 @@ class XMLUpdater(object):
                     if preceding_tree is None:
                         preceding_tree = dest_MD_DataIdentification_tree.find(
                             path='mri:topicCategory', namespaces=xml_tree.nsmap)
-                        print 'Creating new mri:extent subtree after mri:topicCategory'
+                        print 'Creating new spatial mri:extent subtree after mri:topicCategory'
                     else:
-                        print 'Creating new mri:extent subtree after temporal mri:extent'
+                        print 'Creating new spatial mri:extent subtree after temporal mri:extent'
         
                     dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
                                                            source_extent_tree)
