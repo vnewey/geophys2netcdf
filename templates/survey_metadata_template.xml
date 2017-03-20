@@ -534,6 +534,8 @@
                   <gml:beginPosition>{{START_DATE}}</gml:beginPosition>
                   {% if END_DATE and END_DATE != 'UNKNOWN' -%}
                   <gml:endPosition>{{END_DATE}}</gml:endPosition>
+                  {% else -%}
+                  <gml:endPosition></gml:endPosition>
                   {% endif -%}
                 </gml:TimePeriod>
               </gex:extent>
