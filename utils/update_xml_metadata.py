@@ -119,84 +119,132 @@ class XMLUpdater(object):
                 :geospatial_lon_resolution = 0.000833332999974346 ;
                 :geospatial_lon_units = "degrees_east" ;
             '''
+            # Attempt to read temporal coverage values from netCDF file, set to empty string if not found
+            try:
+                time_coverage_start = nc_dataset.time_coverage_start
+            except:
+                time_coverage_start = ''
+                
+            try:
+                time_coverage_end = nc_dataset.time_coverage_end
+            except:
+                time_coverage_end = ''
+            
             # Template for mri:extent subtree
             source_tree = etree.fromstring('''
 <mdb:MD_Metadata xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/1.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cat="http://standards.iso.org/iso/19115/-3/cat/1.0"
-    xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/1.0" xmlns:gcx="http://standards.iso.org/iso/19115/-3/gcx/1.0"
-    xmlns:gex="http://standards.iso.org/iso/19115/-3/gex/1.0" xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0"
-    xmlns:srv="http://standards.iso.org/iso/19115/-3/srv/2.0" xmlns:mas="http://standards.iso.org/iso/19115/-3/mas/1.0"
-    xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0" xmlns:mco="http://standards.iso.org/iso/19115/-3/mco/1.0"
-    xmlns:mda="http://standards.iso.org/iso/19115/-3/mda/1.0" xmlns:mds="http://standards.iso.org/iso/19115/-3/mds/1.0"
-    xmlns:mdt="http://standards.iso.org/iso/19115/-3/mdt/1.0" xmlns:mex="http://standards.iso.org/iso/19115/-3/mex/1.0"
-    xmlns:mmi="http://standards.iso.org/iso/19115/-3/mmi/1.0" xmlns:mpc="http://standards.iso.org/iso/19115/-3/mpc/1.0"
-    xmlns:mrc="http://standards.iso.org/iso/19115/-3/mrc/1.0" xmlns:mrd="http://standards.iso.org/iso/19115/-3/mrd/1.0"
-    xmlns:mri="http://standards.iso.org/iso/19115/-3/mri/1.0" xmlns:mrl="http://standards.iso.org/iso/19115/-3/mrl/1.0"
-    xmlns:mrs="http://standards.iso.org/iso/19115/-3/mrs/1.0" xmlns:msr="http://standards.iso.org/iso/19115/-3/msr/1.0"
-    xmlns:mdq="http://standards.iso.org/iso/19157/-2/mdq/1.0" xmlns:mac="http://standards.iso.org/iso/19115/-3/mac/1.0"
-    xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0" xmlns:gml="http://www.opengis.net/gml/3.2"
-    xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:geonet="http://www.fao.org/geonetwork"
-    xsi:schemaLocation="http://standards.iso.org/iso/19115/-3/cat/1.0 http://standards.iso.org/iso/19115/-3/cat/1.0/cat.xsd http://standards.iso.org/iso/19115/-3/cit/1.0 http://standards.iso.org/iso/19115/-3/cit/1.0/cit.xsd http://standards.iso.org/iso/19115/-3/gcx/1.0 http://standards.iso.org/iso/19115/-3/gcx/1.0/gcx.xsd http://standards.iso.org/iso/19115/-3/gex/1.0 http://standards.iso.org/iso/19115/-3/gex/1.0/gex.xsd http://standards.iso.org/iso/19115/-3/lan/1.0 http://standards.iso.org/iso/19115/-3/lan/1.0/lan.xsd http://standards.iso.org/iso/19115/-3/srv/2.0 http://standards.iso.org/iso/19115/-3/srv/2.0/srv.xsd http://standards.iso.org/iso/19115/-3/mas/1.0 http://standards.iso.org/iso/19115/-3/mas/1.0/mas.xsd http://standards.iso.org/iso/19115/-3/mcc/1.0 http://standards.iso.org/iso/19115/-3/mcc/1.0/mcc.xsd http://standards.iso.org/iso/19115/-3/mco/1.0 http://standards.iso.org/iso/19115/-3/mco/1.0/mco.xsd http://standards.iso.org/iso/19115/-3/mda/1.0 http://standards.iso.org/iso/19115/-3/mda/1.0/mda.xsd http://standards.iso.org/iso/19115/-3/mdb/1.0 http://standards.iso.org/iso/19115/-3/mdb/1.0/mdb.xsd http://standards.iso.org/iso/19115/-3/mds/1.0 http://standards.iso.org/iso/19115/-3/mds/1.0/mds.xsd http://standards.iso.org/iso/19115/-3/mdt/1.0 http://standards.iso.org/iso/19115/-3/mdt/1.0/mdt.xsd http://standards.iso.org/iso/19115/-3/mex/1.0 http://standards.iso.org/iso/19115/-3/mex/1.0/mex.xsd http://standards.iso.org/iso/19115/-3/mmi/1.0 http://standards.iso.org/iso/19115/-3/mmi/1.0/mmi.xsd http://standards.iso.org/iso/19115/-3/mpc/1.0 http://standards.iso.org/iso/19115/-3/mpc/1.0/mpc.xsd http://standards.iso.org/iso/19115/-3/mrc/1.0 http://standards.iso.org/iso/19115/-3/mrc/1.0/mrc.xsd http://standards.iso.org/iso/19115/-3/mrd/1.0 http://standards.iso.org/iso/19115/-3/mrd/1.0/mrd.xsd http://standards.iso.org/iso/19115/-3/mri/1.0 http://standards.iso.org/iso/19115/-3/mri/1.0/mri.xsd http://standards.iso.org/iso/19115/-3/mrl/1.0 http://standards.iso.org/iso/19115/-3/mrl/1.0/mrl.xsd http://standards.iso.org/iso/19115/-3/mrs/1.0 http://standards.iso.org/iso/19115/-3/mrs/1.0/mrs.xsd http://standards.iso.org/iso/19115/-3/msr/1.0 http://standards.iso.org/iso/19115/-3/msr/1.0/msr.xsd http://standards.iso.org/iso/19157/-2/mdq/1.0 http://standards.iso.org/iso/19157/-2/mdq/1.0/mdq.xsd http://standards.iso.org/iso/19115/-3/mac/1.0 http://standards.iso.org/iso/19115/-3/mac/1.0/mac.xsd http://standards.iso.org/iso/19115/-3/gco/1.0 http://standards.iso.org/iso/19115/-3/gco/1.0/gco.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd http://www.w3.org/1999/xlink http://www.w3.org/1999/xlink.xsd">
-    <mdb:identificationInfo>
-        <mri:MD_DataIdentification>
-            <mri:extent>
-                <gex:EX_Extent>
-                    <gex:description>
-                        <gco:CharacterString>Orthogonal WGS84 Bounding Box</gco:CharacterString>
-                    </gex:description>
-                    <gex:geographicElement>
-                        <gex:EX_GeographicBoundingBox>
-                            <gex:westBoundLongitude>
-                                <gco:Decimal>%f</gco:Decimal>
-                            </gex:westBoundLongitude>
-                            <gex:eastBoundLongitude>
-                                <gco:Decimal>%f</gco:Decimal>
-                            </gex:eastBoundLongitude>
-                            <gex:southBoundLatitude>
-                                <gco:Decimal>%f</gco:Decimal>
-                            </gex:southBoundLatitude>
-                            <gex:northBoundLatitude>
-                                <gco:Decimal>%f</gco:Decimal>
-                            </gex:northBoundLatitude>
-                        </gex:EX_GeographicBoundingBox>
-                    </gex:geographicElement>
-                </gex:EX_Extent>
-            </mri:extent>
-        </mri:MD_DataIdentification>
-    </mdb:identificationInfo>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cat="http://standards.iso.org/iso/19115/-3/cat/1.0"
+  xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/1.0" xmlns:gcx="http://standards.iso.org/iso/19115/-3/gcx/1.0"
+  xmlns:gex="http://standards.iso.org/iso/19115/-3/gex/1.0" xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0"
+  xmlns:srv="http://standards.iso.org/iso/19115/-3/srv/2.0" xmlns:mas="http://standards.iso.org/iso/19115/-3/mas/1.0"
+  xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0" xmlns:mco="http://standards.iso.org/iso/19115/-3/mco/1.0"
+  xmlns:mda="http://standards.iso.org/iso/19115/-3/mda/1.0" xmlns:mds="http://standards.iso.org/iso/19115/-3/mds/1.0"
+  xmlns:mdt="http://standards.iso.org/iso/19115/-3/mdt/1.0" xmlns:mex="http://standards.iso.org/iso/19115/-3/mex/1.0"
+  xmlns:mmi="http://standards.iso.org/iso/19115/-3/mmi/1.0" xmlns:mpc="http://standards.iso.org/iso/19115/-3/mpc/1.0"
+  xmlns:mrc="http://standards.iso.org/iso/19115/-3/mrc/1.0" xmlns:mrd="http://standards.iso.org/iso/19115/-3/mrd/1.0"
+  xmlns:mri="http://standards.iso.org/iso/19115/-3/mri/1.0" xmlns:mrl="http://standards.iso.org/iso/19115/-3/mrl/1.0"
+  xmlns:mrs="http://standards.iso.org/iso/19115/-3/mrs/1.0" xmlns:msr="http://standards.iso.org/iso/19115/-3/msr/1.0"
+  xmlns:mdq="http://standards.iso.org/iso/19157/-2/mdq/1.0" xmlns:mac="http://standards.iso.org/iso/19115/-3/mac/1.0"
+  xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0" xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:geonet="http://www.fao.org/geonetwork"
+  xsi:schemaLocation="http://standards.iso.org/iso/19115/-3/cat/1.0 http://standards.iso.org/iso/19115/-3/cat/1.0/cat.xsd http://standards.iso.org/iso/19115/-3/cit/1.0 http://standards.iso.org/iso/19115/-3/cit/1.0/cit.xsd http://standards.iso.org/iso/19115/-3/gcx/1.0 http://standards.iso.org/iso/19115/-3/gcx/1.0/gcx.xsd http://standards.iso.org/iso/19115/-3/gex/1.0 http://standards.iso.org/iso/19115/-3/gex/1.0/gex.xsd http://standards.iso.org/iso/19115/-3/lan/1.0 http://standards.iso.org/iso/19115/-3/lan/1.0/lan.xsd http://standards.iso.org/iso/19115/-3/srv/2.0 http://standards.iso.org/iso/19115/-3/srv/2.0/srv.xsd http://standards.iso.org/iso/19115/-3/mas/1.0 http://standards.iso.org/iso/19115/-3/mas/1.0/mas.xsd http://standards.iso.org/iso/19115/-3/mcc/1.0 http://standards.iso.org/iso/19115/-3/mcc/1.0/mcc.xsd http://standards.iso.org/iso/19115/-3/mco/1.0 http://standards.iso.org/iso/19115/-3/mco/1.0/mco.xsd http://standards.iso.org/iso/19115/-3/mda/1.0 http://standards.iso.org/iso/19115/-3/mda/1.0/mda.xsd http://standards.iso.org/iso/19115/-3/mdb/1.0 http://standards.iso.org/iso/19115/-3/mdb/1.0/mdb.xsd http://standards.iso.org/iso/19115/-3/mds/1.0 http://standards.iso.org/iso/19115/-3/mds/1.0/mds.xsd http://standards.iso.org/iso/19115/-3/mdt/1.0 http://standards.iso.org/iso/19115/-3/mdt/1.0/mdt.xsd http://standards.iso.org/iso/19115/-3/mex/1.0 http://standards.iso.org/iso/19115/-3/mex/1.0/mex.xsd http://standards.iso.org/iso/19115/-3/mmi/1.0 http://standards.iso.org/iso/19115/-3/mmi/1.0/mmi.xsd http://standards.iso.org/iso/19115/-3/mpc/1.0 http://standards.iso.org/iso/19115/-3/mpc/1.0/mpc.xsd http://standards.iso.org/iso/19115/-3/mrc/1.0 http://standards.iso.org/iso/19115/-3/mrc/1.0/mrc.xsd http://standards.iso.org/iso/19115/-3/mrd/1.0 http://standards.iso.org/iso/19115/-3/mrd/1.0/mrd.xsd http://standards.iso.org/iso/19115/-3/mri/1.0 http://standards.iso.org/iso/19115/-3/mri/1.0/mri.xsd http://standards.iso.org/iso/19115/-3/mrl/1.0 http://standards.iso.org/iso/19115/-3/mrl/1.0/mrl.xsd http://standards.iso.org/iso/19115/-3/mrs/1.0 http://standards.iso.org/iso/19115/-3/mrs/1.0/mrs.xsd http://standards.iso.org/iso/19115/-3/msr/1.0 http://standards.iso.org/iso/19115/-3/msr/1.0/msr.xsd http://standards.iso.org/iso/19157/-2/mdq/1.0 http://standards.iso.org/iso/19157/-2/mdq/1.0/mdq.xsd http://standards.iso.org/iso/19115/-3/mac/1.0 http://standards.iso.org/iso/19115/-3/mac/1.0/mac.xsd http://standards.iso.org/iso/19115/-3/gco/1.0 http://standards.iso.org/iso/19115/-3/gco/1.0/gco.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd http://www.w3.org/1999/xlink http://www.w3.org/1999/xlink.xsd">
+  <mdb:identificationInfo>
+    <mri:MD_DataIdentification>
+      <mri:extent>
+        <gex:EX_Extent>
+          <gex:temporalElement>
+            <gex:EX_TemporalExtent>
+              <gex:extent>
+                <gml:TimePeriod gml:id="A1234">
+                  <gml:beginPosition>%s</gml:beginPosition>
+                  <gml:endPosition>%s</gml:endPosition>
+                </gml:TimePeriod>
+              </gex:extent>
+            </gex:EX_TemporalExtent>
+          </gex:temporalElement>
+        </gex:EX_Extent>
+      </mri:extent>
+      <mri:extent>
+        <gex:EX_Extent>
+          <gex:description>
+            <gco:CharacterString>Orthogonal WGS84 Bounding Box</gco:CharacterString>
+          </gex:description>
+          <gex:geographicElement>
+            <gex:EX_GeographicBoundingBox>
+              <gex:westBoundLongitude>
+                <gco:Decimal>%f</gco:Decimal>
+              </gex:westBoundLongitude>
+              <gex:eastBoundLongitude>
+                <gco:Decimal>%f</gco:Decimal>
+              </gex:eastBoundLongitude>
+              <gex:southBoundLatitude>
+                <gco:Decimal>%f</gco:Decimal>
+              </gex:southBoundLatitude>
+              <gex:northBoundLatitude>
+                <gco:Decimal>%f</gco:Decimal>
+              </gex:northBoundLatitude>
+            </gex:EX_GeographicBoundingBox>
+          </gex:geographicElement>
+        </gex:EX_Extent>
+      </mri:extent>
+    </mri:MD_DataIdentification>
+  </mdb:identificationInfo>
 </mdb:MD_Metadata>
-''' % (nc_dataset.geospatial_lon_min,
-                nc_dataset.geospatial_lon_max,
-                nc_dataset.geospatial_lat_min,
-                nc_dataset.geospatial_lat_max,
+''' % (time_coverage_start,
+       time_coverage_end,
+       nc_dataset.geospatial_lon_min,
+       nc_dataset.geospatial_lon_max,
+       nc_dataset.geospatial_lat_min,
+       nc_dataset.geospatial_lat_max,
        )
             )
-            source_extent_tree = source_tree.find(
-                path='.//mri:extent', namespaces=xml_tree.nsmap)
 
             dest_MD_DataIdentification_tree = xml_tree.find(
                 path='.//mri:MD_DataIdentification', namespaces=xml_tree.nsmap)
             assert dest_MD_DataIdentification_tree is not None, 'dest_MD_DataIdentification_tree element does not exist'
 
-            # Delete any existing mri:extent elements for spatial extents
-            for dest_extent_tree in dest_MD_DataIdentification_tree.iterfind(
-                path='mri:extent', namespaces=xml_tree.nsmap):
+            # Process both temporal & spatial extents
+            for source_extent_tree in source_tree.iterfind(
+                path='.//mri:extent', namespaces=xml_tree.nsmap):
+                if source_extent_tree.find('gex:EX_Extent/gex:temporalElement', namespaces=xml_tree.nsmap) is not None:
+                    # If source_extent_tree contains the temporal extent
+                    # Delete any existing mri:extent elements for temporal extents
+                    for dest_extent_tree in dest_MD_DataIdentification_tree.iterfind(
+                        path='mri:extent', namespaces=xml_tree.nsmap):
+                    
+                        if dest_extent_tree.find('gex:EX_Extent/gex:temporalElement', namespaces=xml_tree.nsmap) is not None:
+                            print 'Removing existing mri:extent subtree'
+                            dest_MD_DataIdentification_tree.remove(dest_extent_tree)                
             
-                if dest_extent_tree.find('gex:EX_Extent/gex:geographicElement', namespaces=xml_tree.nsmap) is not None:
-                    print 'Removing existing mri:extent subtree'
-                    dest_MD_DataIdentification_tree.remove(dest_extent_tree)
+                    if time_coverage_start: # If start of period is defined, add a new element
+                        preceding_tree = dest_MD_DataIdentification_tree.find(
+                            path='mri:topicCategory', namespaces=xml_tree.nsmap)
+                        print 'Creating new mri:extent subtree after mri:topicCategory'
+        
+                        dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
+                                                               source_extent_tree)
+                        
+                elif source_extent_tree.find('gex:EX_Extent/gex:geographicElement', namespaces=xml_tree.nsmap) is not None:
+                    # If source_extent_tree contains the geographic extent
+                    # Delete any existing mri:extent elements for spatial extents
+                    for dest_extent_tree in dest_MD_DataIdentification_tree.iterfind(
+                        path='mri:extent', namespaces=xml_tree.nsmap):
+                    
+                        if dest_extent_tree.find('gex:EX_Extent/gex:geographicElement', namespaces=xml_tree.nsmap) is not None:
+                            print 'Removing existing mri:extent subtree'
+                            dest_MD_DataIdentification_tree.remove(dest_extent_tree)                
             
-            preceding_tree = dest_MD_DataIdentification_tree.find(
-                path='mri:extent', namespaces=xml_tree.nsmap) 
-            if preceding_tree is None:
-                preceding_tree = dest_MD_DataIdentification_tree.find(
-                    path='mri:topicCategory', namespaces=xml_tree.nsmap)
-                print 'Creating new mri:extent subtree after temporal mri:topicCategory'
-            else:
-                print 'Creating new mri:extent subtree after mri:extent'
-
-            dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
-                                                   source_extent_tree)
+                    preceding_tree = dest_MD_DataIdentification_tree.find(
+                        path='mri:extent', namespaces=xml_tree.nsmap) 
+                    if preceding_tree is None:
+                        preceding_tree = dest_MD_DataIdentification_tree.find(
+                            path='mri:topicCategory', namespaces=xml_tree.nsmap)
+                        print 'Creating new mri:extent subtree after mri:topicCategory'
+                    else:
+                        print 'Creating new mri:extent subtree after temporal mri:extent'
+        
+                    dest_MD_DataIdentification_tree.insert(dest_MD_DataIdentification_tree.index(preceding_tree)+1, 
+                                                           source_extent_tree)
 
             return
 
