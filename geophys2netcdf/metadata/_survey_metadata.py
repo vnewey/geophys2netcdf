@@ -78,15 +78,6 @@ class SurveyMetadata(Metadata):
 
                                      
 
-    def list_from_string(self, comma_separated_string):
-        '''
-        Helper function to return a list of strings from a string containing a comma separated list
-        '''
-        if comma_separated_string:
-            return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
-        else:
-            return []
-    
     def merge_metadata_dict(self, survey_metadata_dict):
         '''
         Helper function to merge new metadata dict into comma-separated lists in 

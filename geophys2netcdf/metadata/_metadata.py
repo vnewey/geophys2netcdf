@@ -358,6 +358,15 @@ class Metadata(object):
                 else:
                     logger.debug('Kept existing value of node %s', key)
 
+    def list_from_string(self, comma_separated_string):
+        '''
+        Helper function to return a list of strings from a string containing a comma separated list
+        '''
+        if comma_separated_string:
+            return [value_string.strip() for value_string in comma_separated_string.split(',') if value_string.strip()]
+        else:
+            return []
+    
     @property
     def filename(self):
         """Returns filename

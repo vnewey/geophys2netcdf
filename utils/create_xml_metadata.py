@@ -9,6 +9,7 @@ import re
 import os
 import uuid
 from datetime import datetime
+from minter import Minter
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from geophys2netcdf.metadata import Metadata, SurveyMetadata, NetCDFMetadata #, JetCatMetadata
 from geophys_utils import NetCDFGridUtils, NetCDFLineUtils
@@ -20,11 +21,13 @@ try:
 except:
     pass
 
+DOI_MINTING_MODE = 'test'
+#DOI_MINTING_MODE = 'prod'
+
 def main():
     '''
     Main function
     '''
-    
     def get_xml_text(xml_template_path, metadata_object):
         '''Helper function to perform substitutions on XML template text
         '''
@@ -80,20 +83,33 @@ def main():
         
         return xml_template.render(**value_dict)
     
-    def str2datelist(multi_date_string):
+    def str2datetimelist(multi_datetime_string):
         '''
-        Helper function to convert comma-separated string containing dates to a list of dates
+        Helper function to convert comma-separated string containing dates to a list of datetimes
         '''
+        datetime_format_list = ['%d-%b-%y', 
+                                '%Y-%m-%dT%H:%M:%S', 
+                                '%Y-%m-%dT%H:%M:%S.%f', 
+                                '%Y-%m-%dT%H:%M:%S%z', 
+                                '%Y-%m-%dT%H:%M:%S.%f%z'
+                                ]
         date_list = []
-        for datetime_string in multi_date_string.split(','):
-            for format in ['%d-%b-%y', '%Y-%m-%dT%H:%M:%S']:
+        for datetime_string in multi_datetime_string.split(','):
+            for datetime_format in datetime_format_list:
                 try:
-                    date_list.append(datetime.strptime(datetime_string.strip(), format).date())
+                    date_list.append(datetime.strptime(datetime_string.strip(), datetime_format))
+                    break
                 except:
                     continue
         return date_list
 
-    # Start of main function
+    def str2datelist(multi_date_string):
+        '''
+        Helper function to convert comma-separated string containing dates to a list of dates
+        '''
+        return [datetime_value.date() for datetime_value in str2datetimelist(multi_date_string)]
+    
+# Start of main function
     assert len(
         sys.argv) >= 4 and len(sys.argv) <= 8, 'Usage: %s <json_text_template_path> <xml_template_path> <netcdf_path> [<xml_output_dir>]' % sys.argv[0]
     json_text_template_path = sys.argv[1]
@@ -229,15 +245,42 @@ def main():
     calculated_values['UUID'] = str(dataset_uuid)   
     
     dataset_doi = metadata_object.get_metadata(['NetCDF', 'doi'])
-    if not dataset_doi and False: #TODO: Mint a new DOI and write it to the netCDF file 
-        dataset_doi = '' #TODO: Replace this with call to DOI minter - might be problematic from a non-GA source address
-        nc_dataset.doi = dataset_doi
-        nc_dataset.sync()
-        print 'Fresh DOI %s generated and written to netCDF file' % dataset_uuid
-        
-    if dataset_doi:
-        calculated_values['DOI'] = str(dataset_doi) 
+    calculated_values['DOI'] = str(dataset_doi)
     
+    # Need template info to mint DOI
+    template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
+    
+    if not dataset_doi: #TODO: Mint a new DOI and write it to the netCDF file 
+        try:
+            doi_minter = Minter(DOI_MINTING_MODE)       
+            doi_success, ecat_id, new_doi = doi_minter.get_a_doi( 
+                                                                ecatid=template_metadata_object.get_metadata(["ECAT_ID"]), 
+                                                                author_names=template_metadata_object.list_from_string(template_metadata_object.get_metadata(["DATASET_AUTHOR"])), 
+                                                                title=template_metadata_object.get_metadata(["DATASET_TITLE"]),
+                                                                resource_type='Dataset', 
+                                                                publisher=template_metadata_object.get_metadata(["ORGANISATION_NAME"]), 
+                                                                publication_year=datetime.now().year, 
+                                                                subjects=template_metadata_object.list_from_string(template_metadata_object.get_metadata(["KEYWORD_THEME_LIST"])), 
+                                                                description=template_metadata_object.get_metadata(["LINEAGE_SOURCE"]), 
+                                                                record_url=None, # Use default URI format
+                                                                output_file_path=None
+                                                                )
+            
+            if doi_success:
+                dataset_doi = str(new_doi)
+                nc_dataset.doi = dataset_doi
+                nc_dataset.sync()
+                print 'Fresh DOI %s generated and written to netCDF file' % dataset_uuid
+            else:
+                print 'WARNING: DOI minting failed with response code %s' % ecat_id
+        except Exception as e:
+            print 'WARNING: Error minting DOI: %s' % e.message
+               
+    if dataset_doi:
+        calculated_values['DOI'] = dataset_doi
+        template_metadata_object.metadata_dict['DOI'] = dataset_doi
+    else:
+        print 'WARNING: DOI not defined'
         
     #template_class = None
     template_metadata_object = TemplateMetadata(json_text_template_path, metadata_object)
