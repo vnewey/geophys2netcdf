@@ -194,6 +194,9 @@
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>THREDDS catalog page for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -292,6 +295,9 @@
                       <cit:protocol>
                         <gco:CharacterString>NCSS</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>NCSS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -390,6 +396,9 @@
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>NetCDF file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -488,6 +497,9 @@
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--link</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>Zipped ERS file download via HTTP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -586,6 +598,9 @@
                       <cit:protocol>
                         <gco:CharacterString>WWW:LINK-1.0-http--opendap</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>OPeNDAP for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -684,6 +699,9 @@
                       <cit:protocol>
                         <gco:CharacterString>OGC:WCS</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>WCS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>
@@ -782,6 +800,9 @@
                       <cit:protocol>
                         <gco:CharacterString>OGC:WMS</gco:CharacterString>
                       </cit:protocol>
+                      <applicationProfile> 
+                        <gco:CharacterString>Unidata:THREDDS Data Server</gco:CharacterString> 
+                      </applicationProfile>  
                       <cit:name>
                         <gco:CharacterString>WMS for dataset %%UUID%%</gco:CharacterString>
                       </cit:name>

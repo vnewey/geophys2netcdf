@@ -6,7 +6,8 @@ Created on 1Aug.,2016
 import sys
 import os
 import re
-import urllib
+#import urllib
+import requests
 import netCDF4
 from lxml import etree
 from xml.dom.minidom import parseString
@@ -101,8 +102,9 @@ class XMLUpdater(object):
             Function to return complete, native (ISO19115-3) XML text for metadata record with specified UUID
             '''
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
-            #print 'URL = %s' % xml_url
-            return urllib.urlopen(xml_url).read()
+            print 'URL = %s' % xml_url
+            #return urllib.urlopen(xml_url).read()
+            return requests.get("https://internal.ecat.ga.gov.au/geonetwork/srv/eng/csw?request=GetCapabilities&service=CSW").content
 
         def update_bounds(nc_dataset, xml_tree):
             '''
@@ -437,7 +439,8 @@ class XMLUpdater(object):
                                                                                                                      dest_MD_Distribution_tree)
                                                                                                                  )
 
-        nc_path = os.path.abspath(nc_path)
+        if not nc_path.startswith('http'):
+            nc_path = os.path.abspath(nc_path)
 
         # Read required values from NetCDF file
         nc_dataset = netCDF4.Dataset(nc_path)
