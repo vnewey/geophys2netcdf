@@ -1,6 +1,6 @@
 import sys
 import re
-import urllib
+import requests
 import os
 import subprocess
 import netCDF4
@@ -49,15 +49,18 @@ field_list = ['ecat_id',
 # Externally visible GeoNetwork
 # GA_GEONETWORK = 'http://ecat.ga.gov.au/geonetwork/srv/eng'
 # Internally visible GeoNetwork via port tunneling
-GA_GEONETWORK = 'http://localhost:8081/geonetwork/srv/eng'
+GA_GEONETWORK = 'https://internal.ecat.ga.gov.au/geonetwork/srv/eng'
 
 
 def main():
 
-    def get_xml_by_id(geonetwork_url, identifier):
-        xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, identifier)
-        print 'URL = %s' % xml_url
-        return urllib.urlopen(xml_url).read()
+    def get_xml_by_id(geonetwork_url, uuid):
+        '''
+        Function to return complete, native (ISO19115-3) XML text for metadata record with specified UUID
+        '''
+        xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
+        #print 'URL = %s' % xml_url
+        return requests.get(xml_url).content
 
     assert len(sys.argv) == 3 or len(sys.argv) == 4, 'Usage: %s <source_path> <output_csv_file> [<file_template>]'
     

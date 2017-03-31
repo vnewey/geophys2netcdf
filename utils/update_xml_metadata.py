@@ -101,7 +101,7 @@ class XMLUpdater(object):
             Function to return complete, native (ISO19115-3) XML text for metadata record with specified UUID
             '''
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
-            print 'URL = %s' % xml_url
+            #print 'URL = %s' % xml_url
             return requests.get(xml_url).content
 
         def update_bounds(nc_dataset, xml_tree):

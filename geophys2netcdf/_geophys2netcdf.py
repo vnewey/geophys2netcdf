@@ -47,7 +47,7 @@ import tempfile
 from pprint import pprint
 
 import json
-import urllib
+import requests
 
 from geophys2netcdf.metadata import XMLMetadata, NetCDFMetadata
 from geophys_utils import netcdf2convex_hull
@@ -63,15 +63,12 @@ class Geophys2NetCDF(object):
     Class definition for Geophys2NETCDF
     Base class for geophysics conversions
     '''
-    NCI_CSW = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng/csw'
-#    GA_CSW = 'http://www.ga.gov.au/geonetwork/srv/en/csw' # Old GeoCat CSW
-#    GA_CSW = 'http://ecat.ga.gov.au/geonetwork/srv/eng/csw' # New externally-visible eCat CSW
-# GA_CSW = 'http://intranet.ga.gov.au/geonetwork/srv/eng/csw' # New
-# internally-visible eCat CSW
-    # Port forwarded GA internal CSW
-    GA_CSW = 'http://localhost:8081/geonetwork/srv/eng/csw'
+    NCI_GEONETWORK_URL = 'http://geonetworkrr2.nci.org.au/geonetwork/srv/eng'
+#    GA_GEONETWORK_URL = 'http://www.ga.gov.au/geonetwork/srv/en' # Old GeoCat CSW
+#    GA_GEONETWORK_URL = 'http://ecat.ga.gov.au/geonetwork/srv/eng' # New externally-visible eCat CSW   
+    GA_GEONETWORK_URL = 'https://internal.ecat.ga.gov.au/geonetwork/srv/eng' # internally-visible eCat CSW
     FILE_EXTENSION = None  # Unknown for base class
-    DEFAULT_CHUNK_SIZE = 128  # Default chunk size for lat & lon dimensions
+    DEFAULT_CHUNK_SIZE = 1024  # Default chunk size for lat & lon dimensions
     EXCLUDED_EXTENSIONS = ['.bck', '.md5', '.uuid', '.json', '.tmp']
     DECIMAL_PLACES = 12 # Number of decimal places to which geometry values should be rounded
 
@@ -570,7 +567,7 @@ class Geophys2NetCDF(object):
         # May need to look up uuid from NCI - GA's GeoNetwork 2.6 does not support wildcard queries
         # TODO: Remove this hack when GA's CSW is updated to v3.X or greater
         if not self._uuid and title:
-            get_uuid_from_title(Geophys2NetCDF.NCI_CSW, title)
+            get_uuid_from_title(Geophys2NetCDF.NCI_GEONETWORK_URL, title)
 
         if not self._uuid:
             logger.warning('Unable to determine unique UUID for %s' % self._output_path)
@@ -595,13 +592,10 @@ class Geophys2NetCDF(object):
 
         return csw.records.values()[0]
 
-    def get_csw_xml_by_id(self, csw_url, identifier):
-        #url = '%s?outputFormat=application%%2Fxml&service=CSW&outputSchema=own&request=GetRecordById&version=2.0.2&elementsetname=full&id=%s' % (csw_url, identifier)
-        # return urllib.urlopen(url).read()
-        xml_url = re.sub('/csw$', '/xml.metadata.get?uuid=%s' %
-                         identifier, csw_url)
-        logger.debug('URL = %s', xml_url)
-        return urllib.urlopen(xml_url).read()
+    def get_csw_xml_by_id(self, geonetwork_url, uuid):
+        xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
+        logger.debug('xml_url = %s', xml_url)
+        return requests.get(xml_url).content
 
     def get_metadata_dict_from_xml(self, xml_string):
         '''
