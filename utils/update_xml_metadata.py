@@ -6,7 +6,6 @@ Created on 1Aug.,2016
 import sys
 import os
 import re
-#import urllib
 import requests
 import netCDF4
 from lxml import etree
@@ -103,8 +102,7 @@ class XMLUpdater(object):
             '''
             xml_url = '%s/xml.metadata.get?uuid=%s' % (geonetwork_url, uuid)
             print 'URL = %s' % xml_url
-            #return urllib.urlopen(xml_url).read()
-            return requests.get("https://internal.ecat.ga.gov.au/geonetwork/srv/eng/csw?request=GetCapabilities&service=CSW").content
+            return requests.get(xml_url).content
 
         def update_bounds(nc_dataset, xml_tree):
             '''
