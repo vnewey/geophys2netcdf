@@ -11,7 +11,7 @@ import re
 from geophys2netcdf.thredds_catalog import THREDDSCatalog
 
 def main():
-    assert len(sys.argv) == 2, 'Usage: %s <thredds_catalog_url>|<yaml_file_path>' % sys.argv[0]
+    assert len(sys.argv) == 2, 'Usage: %s <thredds_catalog_urls>|<yaml_file_path>' % sys.argv[0]
     
     if os.path.isfile(sys.argv[1]):
         yaml_file_path = sys.argv[1]
