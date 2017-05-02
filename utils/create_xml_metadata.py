@@ -252,7 +252,7 @@ def main():
     
     if not dataset_doi: #TODO: Mint a new DOI and write it to the netCDF file 
         try:
-            doi_minter = Minter(DOI_MINTING_MODE)       
+            doi_minter = Minter(mode=DOI_MINTING_MODE, debug=False)       
             doi_success, ecat_id, new_doi = doi_minter.get_a_doi( 
                                                                 ecatid=template_metadata_object.get_metadata(["ECAT_ID"]), 
                                                                 author_names=template_metadata_object.list_from_string(template_metadata_object.get_metadata(["DATASET_AUTHOR"])), 
@@ -267,10 +267,10 @@ def main():
                                                                 )
             
             if doi_success:
-                dataset_doi = str(new_doi)
+                dataset_doi = 'http://dx.doi.org/' + str(new_doi)
                 nc_dataset.doi = dataset_doi
                 nc_dataset.sync()
-                print 'Fresh DOI %s generated and written to netCDF file' % dataset_uuid
+                print 'Fresh DOI %s generated and written to netCDF file' % dataset_doi
             else:
                 print 'WARNING: DOI minting failed with response code %s' % ecat_id
         except Exception as e:
